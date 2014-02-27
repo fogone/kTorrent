@@ -1,10 +1,11 @@
 package ru.nobirds.torrent.bencode
 
 import java.io.InputStream
+import java.io.OutputStream
 
 public object Bencoder {
 
-    public fun bencode(stream:InputStream):Map<String, Any> {
+    public fun decode(stream:InputStream):Map<String, Any> {
         val tokenInputStream = BTokenInputStream(stream)
 
         tokenInputStream.next()
@@ -14,4 +15,9 @@ public object Bencoder {
         return map.value
     }
 
+    public fun encode(stream:OutputStream, map:Map<String, Any>) {
+        val tokenOutputStream = BTokenOutputStream(stream)
+        tokenOutputStream.write(map)
+        stream.flush()
+    }
 }

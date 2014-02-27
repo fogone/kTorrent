@@ -17,7 +17,7 @@ public data class TorrentFiles(
 
 public data class TorrentInfo(
         val pieceLength:Long,
-        val hashes:List<ByteArray>,
+        val hashes:List<String>,
         val files:TorrentFiles)
 
 public data class Announce(

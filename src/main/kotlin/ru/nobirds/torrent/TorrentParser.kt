@@ -42,9 +42,8 @@ public class TorrentParser() {
 
     private val HASH_SIZE = 20
 
-    public fun parse(stream:InputStream):Torrent {
-
-        val map = MapHelper(Bencoder.bencode(stream))
+    public fun parse(source:Map<String, Any>):Torrent {
+        val map = MapHelper(source)
 
         val torrentInfo = parseTorrentInfo(map.getMap("info")!!)
 
@@ -62,6 +61,8 @@ public class TorrentParser() {
                 comment = comment
         )
     }
+
+    public fun parse(stream:InputStream):Torrent = parse(Bencoder.decode(stream))
 
     private fun parseAnnounce(map:MapHelper):Announce {
 
@@ -114,15 +115,15 @@ public class TorrentParser() {
         return TorrentFile(length, path)
     }
 
-    private fun splitHashes(pieces:ByteArray, count:Int):List<ByteArray> {
-        val list = ArrayList<ByteArray>(count)
+    private fun splitHashes(pieces:ByteArray, count:Int):List<String> {
+        val list = ArrayList<String>(count)
 
         var position = 0
 
         count.times {
             val hash = ByteArray(HASH_SIZE)
             System.arraycopy(pieces, position, hash, 0, HASH_SIZE)
-            list.add(hash)
+            list.add(BigInteger(1, hash).toString(16))
             position += HASH_SIZE
         }
 
