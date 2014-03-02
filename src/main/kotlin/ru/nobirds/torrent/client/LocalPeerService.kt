@@ -8,15 +8,19 @@ import ru.nobirds.torrent.config.Config
 import java.net.ServerSocket
 import java.net.SocketException
 import org.springframework.stereotype.Service as service
+import kotlin.properties.Delegates
+import javax.annotation.PostConstruct
 
 public service class LocalPeerService {
 
-    private autowired var _config:Config? = null
+    private autowired var config:Config? = null
 
-    private val config:Config
-        get() = _config!!
+    public var localPeer:Peer by Delegates.notNull()
 
-    public val localPeer:Peer = createLocalPeer()
+    PostConstruct
+    public fun init() {
+        localPeer = createLocalPeer()
+    }
 
     private fun createLocalPeer():Peer {
 
@@ -25,14 +29,14 @@ public service class LocalPeerService {
         if(localAddresses.isEmpty())
             throw IllegalStateException("No local addresses found.")
 
-        val portRange = config.get(ClientProperties.clientPortsRange)
+        val portRange = config!!.get(ClientProperties.clientPortsRange)
 
         val port = findFreePort(portRange)
 
         if(port == null)
             throw IllegalStateException("All configured ports used.")
 
-        val peerId = config.get(ClientProperties.peerId)
+        val peerId = config!!.get(ClientProperties.peerId)
 
         return Peer(peerId, localAddresses.first!!, port.toInt())
     }

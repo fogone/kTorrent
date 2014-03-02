@@ -29,14 +29,14 @@ public class TorrentFileHandler(val parent:File, val torrentFile:TorrentFile) {
         for (item in path) {
             file = File(file, item)
         }
-        file.mkdirs()
+        //file.mkdirs()
         return file
     }
 
 
 }
 
-public class TorrentTask(val torrent:Torrent) {
+public class TorrentTask(val directory:File, val torrent:Torrent) {
 
     private var state:TaskState = TaskState.stopped
 
@@ -51,10 +51,10 @@ public class TorrentTask(val torrent:Torrent) {
     private fun createFiles():Map<String, TorrentFileHandler> {
         val files = torrent.info.files
 
-        val parent = File(files.name)
+        val parent = File(directory, files.name)
 
-        if(!parent.mkdirs())
-            throw IllegalArgumentException("Can't access file ${parent.getAbsolutePath()}")
+//        if(!parent.mkdirs())
+//            throw IllegalArgumentException("Can't access file ${parent.getAbsolutePath()}")
 
         return files.files.map { TorrentFileHandler(parent, it) }.toMap { it.name }
     }

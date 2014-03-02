@@ -21,7 +21,7 @@ public class Config(val raw: Map<String, String>) {
             if (property.hasDefault)
                 return property.default!!
             else
-                throw IllegalArgumentException()
+                throw IllegalArgumentException("No config value for name ${property.name}!")
         }
 
         val parsed = property.parser(value)
@@ -82,4 +82,5 @@ public object Properties {
     public fun string(name:String, default:String):ConfigProperty<String> = property(name, default, Parsers.stringParser)
 
     public fun directory(name:String):ConfigProperty<File> = property(name, Parsers.directoryParser)
+    public fun directory(name:String, default:File):ConfigProperty<File> = property(name, default, Parsers.directoryParser)
 }

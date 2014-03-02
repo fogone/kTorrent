@@ -8,9 +8,9 @@ import ru.nobirds.torrent.config.Config
 import java.util.Properties
 
 ComponentScan(basePackages = array("ru.nobirds.torrent.client"))
-public configuration class TorrentClientConfiguration {
+public open configuration class ClientConfiguration {
 
-    public bean fun config():Config {
+    public open bean fun config():Config {
         val properties = ClassLoader
                 .getSystemResourceAsStream("client.properties")!!
                 .use { stream ->
