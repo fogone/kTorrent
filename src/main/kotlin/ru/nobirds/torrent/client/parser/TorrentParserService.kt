@@ -1,4 +1,4 @@
-package ru.nobirds.torrent
+package ru.nobirds.torrent.client.parser
 
 import java.io.InputStream
 import ru.nobirds.torrent.bencode.BTokenInputStream
@@ -7,38 +7,24 @@ import java.math.BigInteger
 import java.util.Date
 import java.util.ArrayList
 import java.util.Collections
-import ru.nobirds.torrent.bencode.Bencoder
 import java.net.URL
+import org.springframework.stereotype.Service as service
+import org.springframework.beans.factory.annotation.Autowired
+import ru.nobirds.torrent.client.Sha1Service
+import ru.nobirds.torrent.nullOr
+import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.toHexString
+import ru.nobirds.torrent.client.model.Torrent
+import ru.nobirds.torrent.client.model.Announce
+import ru.nobirds.torrent.client.model.TorrentInfo
+import ru.nobirds.torrent.client.model.TorrentFiles
+import ru.nobirds.torrent.client.model.TorrentFile
 
-class MapHelper(val map:Map<String, Any>) {
+public service class TorrentParserService() {
 
-    fun get<T>(key:String, cast:(Any)->T):T? {
-        val value = map[key]
-        return if(value != null) cast(value)
-            else null
-    }
+    private Autowired var bencoderService:BencoderService? = null
 
-    fun getMap(key:String):MapHelper? = get(key) { MapHelper(it as Map<String, Any>) }
-
-    fun getList(key:String):List<Any>? = get(key) { it as List<Any> }
-
-    fun getListOfMaps(key:String):List<MapHelper>? = getList(key).nullOr { map { MapHelper(it as Map<String, Any>) } }
-
-    fun getStrings(key:String):List<String>? = getList(key).nullOr { map { (it as ByteArray).asString() } }
-
-    fun getBytes(key:String):ByteArray? = get(key) { it as ByteArray }
-
-    fun getString(key:String):String? = getBytes(key).nullOr { (this as ByteArray).asString() }
-
-    fun getBigInteger(key:String):BigInteger? = get(key) { it as BigInteger }
-
-    fun getLong(key:String):Long? = getBigInteger(key).nullOr { longValue() }
-
-    fun getDate(key:String):Date? = getLong(key).nullOr { Date(this) }
-
-}
-
-public class TorrentParser() {
+    private Autowired var sha1Service:Sha1Service? = null
 
     private val HASH_SIZE = 20
 
@@ -62,7 +48,7 @@ public class TorrentParser() {
         )
     }
 
-    public fun parse(stream:InputStream):Torrent = parse(Bencoder.decode(stream))
+    public fun parse(stream:InputStream):Torrent = parse(bencoderService!!.decode(stream))
 
     private fun parseAnnounce(map:MapHelper):Announce {
 
@@ -77,6 +63,8 @@ public class TorrentParser() {
     }
 
     private fun parseTorrentInfo(map:MapHelper):TorrentInfo {
+
+        val hash = sha1Service!!.encode(bencoderService!!.encode(map.map))
 
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!
@@ -95,6 +83,7 @@ public class TorrentParser() {
         )
 
         return TorrentInfo(
+                hash = hash,
                 pieceLength = pieceLength,
                 hashes = hashes,
                 files = files
@@ -123,7 +112,7 @@ public class TorrentParser() {
         count.times {
             val hash = ByteArray(HASH_SIZE)
             System.arraycopy(pieces, position, hash, 0, HASH_SIZE)
-            list.add(BigInteger(1, hash).toString(16))
+            list.add(hash.toHexString())
             position += HASH_SIZE
         }
 

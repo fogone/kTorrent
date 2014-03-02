@@ -1,11 +1,12 @@
 package ru.nobirds.torrent.bencode
 
 import java.util.HashMap
+import java.util.LinkedHashMap
 
 
 public class BMap() : AbstractBlockBType<Map<String, Any>>('d') {
 
-    val map:MutableMap<String, Any> = HashMap()
+    private val map:MutableMap<String, Any> = LinkedHashMap()
 
     override fun onChar(stream: BTokenInputStream) {
         val name = stream.processBType() as BBytes
