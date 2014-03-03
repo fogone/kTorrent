@@ -1,35 +1,33 @@
 package ru.nobirds.torrent.client.announce
 
 import org.springframework.web.client.RestTemplate
-import java.util.ArrayList
 import java.net.URL
 import org.springframework.web.util.UriComponentsBuilder
 import org.springframework.beans.factory.annotation.Autowired as autowired
 import org.springframework.stereotype.Service as service
 import ru.nobirds.torrent.client.task.TorrentTask
-import org.springframework.web.util.UriComponents
 import ru.nobirds.torrent.client.parser.MapHelper
 import ru.nobirds.torrent.toHexString
-import java.util.HashMap
-import ru.nobirds.torrent.client.LocalPeerService
 import ru.nobirds.torrent.client.BEncodeHttpMessageConverter
 import ru.nobirds.torrent.client.Peer
+import ru.nobirds.torrent.multiValueMapOf
+import org.springframework.util.MultiValueMap
+import java.util.concurrent.ConcurrentHashMap
+import java.util.ArrayList
 import java.util.Collections
 
 public service class AnnounceService : AnnounceListener {
 
     private autowired var announceUpdaterService:AnnounceUpdaterService? = null
 
-    private autowired var localPeerService: LocalPeerService? = null
-
-    private val tasksByUrls = HashMap<URL, MutableList<TorrentTask>>()
+    private val tasksByUrls = ConcurrentHashMap<URL, MutableList<TorrentTask>>()
 
     private val template = RestTemplate(arrayListOf(BEncodeHttpMessageConverter()))
 
     public fun registerTask(task:TorrentTask) {
         task.torrent.announce.allUrls.forEach {
-            announceUpdaterService!!.registerListener(it, this)
             tasksByUrls.getOrPut(it) { ArrayList() }.add(task)
+            announceUpdaterService!!.registerListener(it, this)
         }
     }
 
@@ -45,8 +43,8 @@ public service class AnnounceService : AnnounceListener {
         task.updatePeers(url, processUrl(url, createUrlParameters(task)))
     }
 
-    private fun createUrlParameters(task:TorrentTask):UriComponents {
-        val localPeer = localPeerService!!.localPeer
+    private fun createUrlParameters(task:TorrentTask):MultiValueMap<String, String> {
+        val localPeer = task.peer
 
         val torrent = task.torrent.info
 
@@ -55,32 +53,35 @@ public service class AnnounceService : AnnounceListener {
 
         val total = torrent.files.totalLength
 
-        return UriComponentsBuilder.newInstance()
-                .queryParam("info_hash", torrent.hash)
-                .queryParam("peer_id", localPeer.id)
-                .queryParam("ip", localPeer.ip)
-                .queryParam("port", localPeer.port)
-                .queryParam("uploaded", uploaded)
-                .queryParam("downloaded", downloaded)
-                .queryParam("left", total - downloaded)
-                .build()
+        return multiValueMapOf(
+                "info_hash" to torrent.hash,
+                "peer_id" to localPeer.id,
+                "ip" to localPeer.ip,
+                "port" to localPeer.port.toString(),
+                "uploaded" to uploaded.toString(),
+                "downloaded" to downloaded.toString(),
+                "left" to (total - downloaded).toString()
+        )
     }
 
-    private fun processUrl(url: URL, parameters:UriComponents):List<Peer> {
+    private fun processUrl(url: URL, parameters:MultiValueMap<String, String>):List<Peer> {
+        try {
+            val uri = UriComponentsBuilder.fromUri(url.toURI())
+                    .queryParams(parameters)
+                    .build().toUri()
 
-        val uri = UriComponentsBuilder.fromUri(url.toURI())
-                .uriComponents(parameters)
-                .build().toUri()
+            val result = template.getForObject(uri, javaClass<Map<String, Any>>())
 
-        val result = template.getForObject(uri, javaClass<Map<String, Any>>())
+            val helper = MapHelper(result!!)
 
-        val helper = MapHelper(result!!)
+            val interval = helper.getLong("interval")!!
 
-        val interval = helper.getLong("interval")!!
+            announceUpdaterService!!.registerAnnounce(url, interval)
 
-        announceUpdaterService!!.registerAnnounce(url, interval)
-
-        return fetchPeers(helper.getListOfMaps("peers")!!)
+            return fetchPeers(helper.getListOfMaps("peers")!!)
+        } catch(e: Exception) {
+            return Collections.emptyList()
+        }
     }
 
     private fun fetchPeers(result:List<MapHelper>):List<Peer> {

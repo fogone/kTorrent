@@ -16,8 +16,12 @@ public class AnnounceMeta(val url:URL, val timer:Timer, var interval:Long) {
     private fun createAndScheduleTask(interval:Long):TimerTask {
         val task = createTask()
         this.interval = interval
+
         if(interval > 0)
             timer.schedule(task, 0, interval)
+        else
+            timer.schedule(task, 0)
+
         return task
     }
 

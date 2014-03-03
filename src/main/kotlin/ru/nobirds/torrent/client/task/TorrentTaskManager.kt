@@ -8,13 +8,17 @@ import ru.nobirds.torrent.client.parser.TorrentParserService
 import java.io.InputStream
 import ru.nobirds.torrent.config.Config
 import ru.nobirds.torrent.client.ClientProperties
+import ru.nobirds.torrent.client.LocalPeerService
+import ru.nobirds.torrent.client.announce.AnnounceService
 
 public service class TorrentTaskManager() {
 
     private autowired var parserService:TorrentParserService? = null
+    private autowired var localPeerService:LocalPeerService? = null
+    private autowired var announceService:AnnounceService? = null
     private autowired var config:Config? = null
 
-    private val tasks = ArrayList<TorrentTaskThread>()
+    private val tasks = ArrayList<TorrentTask>()
 
     public fun add(torrent:InputStream) {
         add(parserService!!.parse(torrent))
@@ -22,9 +26,10 @@ public service class TorrentTaskManager() {
 
     public fun add(torrent:Torrent) {
         val directory = config!!.get(ClientProperties.torrentsDirectory)
-        val taskThread = TorrentTaskThread(directory, torrent)
-        tasks.add(taskThread)
-        taskThread.start()
+        val task = TorrentTask(localPeerService!!.createLocalPeer(), directory, torrent)
+        tasks.add(task)
+        announceService!!.registerTask(task)
+        task.start()
     }
 
 }

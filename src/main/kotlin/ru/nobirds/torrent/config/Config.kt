@@ -4,6 +4,9 @@ import java.util.HashMap
 import ru.nobirds.torrent.component1
 import ru.nobirds.torrent.component2
 import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.Files
 
 public class Config(val raw: Map<String, String>) {
 
@@ -50,17 +53,7 @@ public object Parsers {
         start.toLong().rangeTo(end.toLong())
     }
 
-    public val directoryParser:(String)->File = {
-        val file = File(it)
-
-        if(file.exists() && !file.isDirectory())
-            throw IllegalStateException("File $it is not a directory")
-
-        if(!file.mkdirs())
-            throw IllegalArgumentException("Can't create directory $it")
-
-        file
-    }
+    public val directoryParser:(String)->Path = { Files.createDirectories(Paths.get(it)!!) }
 
 }
 
@@ -81,6 +74,6 @@ public object Properties {
     public fun string(name:String):ConfigProperty<String> = property(name, Parsers.stringParser)
     public fun string(name:String, default:String):ConfigProperty<String> = property(name, default, Parsers.stringParser)
 
-    public fun directory(name:String):ConfigProperty<File> = property(name, Parsers.directoryParser)
-    public fun directory(name:String, default:File):ConfigProperty<File> = property(name, default, Parsers.directoryParser)
+    public fun directory(name:String):ConfigProperty<Path> = property(name, Parsers.directoryParser)
+    public fun directory(name:String, default:Path):ConfigProperty<Path> = property(name, default, Parsers.directoryParser)
 }

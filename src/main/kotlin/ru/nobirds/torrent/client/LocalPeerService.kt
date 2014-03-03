@@ -1,29 +1,20 @@
 package ru.nobirds.torrent.client
 
-import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.Inet4Address
 import org.springframework.beans.factory.annotation.Autowired as autowired
 import ru.nobirds.torrent.config.Config
-import java.net.ServerSocket
-import java.net.SocketException
 import org.springframework.stereotype.Service as service
 import kotlin.properties.Delegates
 import javax.annotation.PostConstruct
+import java.security.SecureRandom
 
 public service class LocalPeerService {
 
     private autowired var config:Config? = null
+    private autowired var sha1Service:Sha1Service? = null
 
-    public var localPeer:Peer by Delegates.notNull()
-
-    PostConstruct
-    public fun init() {
-        localPeer = createLocalPeer()
-    }
-
-    private fun createLocalPeer():Peer {
-
+    public fun createLocalPeer():Peer {
         val localAddresses = findLocalAddresses()
 
         if(localAddresses.isEmpty())
@@ -36,9 +27,15 @@ public service class LocalPeerService {
         if(port == null)
             throw IllegalStateException("All configured ports used.")
 
-        val peerId = config!!.get(ClientProperties.peerId)
+        val peerId = createPeerId()
 
         return Peer(peerId, localAddresses.first!!, port.toInt())
+    }
+
+    private fun createPeerId():String {
+        val bytes = ByteArray(128)
+        SecureRandom().nextBytes(bytes)
+        return sha1Service!!.encode(bytes)
     }
 
     private fun findFreePort(portRange:LongRange):Long? {

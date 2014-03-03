@@ -12,8 +12,6 @@ import ru.nobirds.torrent.client.task.TorrentTask
 
 public service class AnnounceUpdaterService {
 
-    private autowired var announceService: AnnounceService? = null
-
     private val timer = Timer()
 
     private val announces = HashMap<URL, AnnounceMeta>()
