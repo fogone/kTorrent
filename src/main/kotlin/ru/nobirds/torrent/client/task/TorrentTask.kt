@@ -7,27 +7,35 @@ import ru.nobirds.torrent.client.Peer
 import java.util.HashSet
 import java.nio.file.Path
 import java.util.ArrayList
+import ru.nobirds.torrent.client.Sha1Provider
 
-public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) : Thread("Torrent Task") {
+public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) {
 
-    private var state:TaskState = TaskState.stopped
+    private var taskState:TaskState = TaskState.stopped
 
     val uploadStatistics = TrafficStatistics()
 
     val downloadStatistics = TrafficStatistics()
 
-    val files:List<TorrentFileDescriptor> = createFiles()
+    val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
+
+    val state:TorrentState = createTorrentState()
 
     val peers = HashMap<URL, Set<Peer>>()
 
     private val connections = HashSet<Connection>()
 
-    private fun createFiles():List<TorrentFileDescriptor> {
+    private fun createTorrentState():TorrentState {
+        val bitSet = Sha1Provider.checkHashes(torrent.info.hashes, files.compositeRandomAccessFile)
+        return TorrentState(torrent.info.hashes.size, bitSet)
+    }
+
+    private fun createFiles():List<FileDescriptor> {
         val files = torrent.info.files
 
         val parent = directory.resolve(files.name)!!
 
-        return files.files.map { TorrentFileDescriptor(parent, it) }
+        return files.files.map { FileDescriptor(parent, it) }
     }
 
     public fun updatePeers(url:URL, peers:List<Peer>) {

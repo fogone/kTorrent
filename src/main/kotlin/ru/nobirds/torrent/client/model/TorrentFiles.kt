@@ -10,7 +10,7 @@ public data class TorrentFiles(
 
     public val totalLength:Long = files
             .map { it.length }
-            .reduce { total, it -> it + total  } + (length ?: 0)
+            .reduce { total, it -> it + total  }
 
 }
 

@@ -9,8 +9,8 @@ import java.util.ArrayList
 import java.util.Collections
 import java.net.URL
 import org.springframework.stereotype.Service as service
-import org.springframework.beans.factory.annotation.Autowired
-import ru.nobirds.torrent.client.Sha1Service
+import org.springframework.beans.factory.annotation.Autowired as autowired
+import ru.nobirds.torrent.client.Sha1Provider
 import ru.nobirds.torrent.nullOr
 import ru.nobirds.torrent.asString
 import ru.nobirds.torrent.toHexString
@@ -22,9 +22,7 @@ import ru.nobirds.torrent.client.model.TorrentFile
 
 public service class TorrentParserService() {
 
-    private Autowired var bencoderService:BencoderService? = null
-
-    private Autowired var sha1Service:Sha1Service? = null
+    private autowired var bencoderService:BencoderService? = null
 
     private val HASH_SIZE = 20
 
@@ -64,7 +62,7 @@ public service class TorrentParserService() {
 
     private fun parseTorrentInfo(map:MapHelper):TorrentInfo {
 
-        val hash = sha1Service!!.encode(bencoderService!!.encode(map.map))
+        val hash = Sha1Provider.encode(bencoderService!!.encode(map.map))
 
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!

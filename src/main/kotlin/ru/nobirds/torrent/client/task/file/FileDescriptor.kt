@@ -5,13 +5,14 @@ import java.nio.file.Path
 import java.io.RandomAccessFile
 import ru.nobirds.torrent.client.model.TorrentFile
 
-public class TorrentFileDescriptor(val parent:Path, val torrentFile:TorrentFile) {
+public class FileDescriptor(val parent:Path, val torrentFile:TorrentFile) {
 
     private val file = createFile(torrentFile.path)
-    private val randomAccessFile:RandomAccessFile = createRandomAccessFile()
 
-    val name:String
-        get() = file.toUri().toString()
+    val randomAccessFile:RandomAccessFile = createRandomAccessFile()
+
+    public val length:Long
+        get() = randomAccessFile.length()
 
     private fun createRandomAccessFile():RandomAccessFile {
         val randomAccessFile = RandomAccessFile(file.toFile(), "rw")

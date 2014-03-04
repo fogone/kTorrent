@@ -29,7 +29,6 @@ public service class TorrentTaskManager() {
         val task = TorrentTask(localPeerService!!.createLocalPeer(), directory, torrent)
         tasks.add(task)
         announceService!!.registerTask(task)
-        task.start()
     }
 
 }

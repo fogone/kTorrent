@@ -12,7 +12,6 @@ import java.security.SecureRandom
 public service class LocalPeerService {
 
     private autowired var config:Config? = null
-    private autowired var sha1Service:Sha1Service? = null
 
     public fun createLocalPeer():Peer {
         val localAddresses = findLocalAddresses()
@@ -35,7 +34,7 @@ public service class LocalPeerService {
     private fun createPeerId():String {
         val bytes = ByteArray(128)
         SecureRandom().nextBytes(bytes)
-        return sha1Service!!.encode(bytes)
+        return Sha1Provider.encode(bytes)
     }
 
     private fun findFreePort(portRange:LongRange):Long? {

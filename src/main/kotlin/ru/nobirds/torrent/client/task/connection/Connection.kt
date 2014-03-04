@@ -15,21 +15,6 @@ import ru.nobirds.torrent.client.message.MessageHandler
 import ru.nobirds.torrent.client.message.DoNothingMessageHandler
 import ru.nobirds.torrent.closeQuietly
 
-class ConnectionClosedException() : RuntimeException("Connection closed")
-
-class ConnectionInputStream(val stream:InputStream) : FilterInputStream(stream) {
-
-    public override fun read():Int {
-        val value = stream.read()
-
-        if(value == -1)
-            throw ConnectionClosedException()
-
-        return value
-    }
-
-}
-
 public class Connection(val task:TorrentTask, val peer:Peer) : Thread("Connection") {
 
     private val socket by Delegates.lazy { Socket(peer.ip, peer.port) }
