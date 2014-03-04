@@ -7,6 +7,6 @@ public data class Announce(
         val url:URL,
         val additional:List<URL> = Collections.emptyList()) {
 
-    public val allUrls:List<URL> = additional + url
+    public val allUrls:Set<URL> = (additional + url).toSet()
 
 }

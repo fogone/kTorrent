@@ -4,7 +4,7 @@ import java.io.OutputStream
 import java.io.InputStream
 import java.util.BitSet
 
-public object MessageFactory {
+public object MessageSerializerFactory {
 
     public fun findMessageTypeByValue(t:Int):MessageType = MessageType.values().find { it.value == t }!!
 

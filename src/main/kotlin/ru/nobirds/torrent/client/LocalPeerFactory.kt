@@ -8,19 +8,14 @@ import org.springframework.stereotype.Service as service
 import kotlin.properties.Delegates
 import javax.annotation.PostConstruct
 import java.security.SecureRandom
+import java.net.InetAddress
+import org.springframework.web.client.RestTemplate
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+import java.net.InetSocketAddress
 
-public service class LocalPeerService {
+public object LocalPeerFactory {
 
-    private autowired var config:Config? = null
-
-    public fun createLocalPeer():Peer {
-        val localAddresses = findLocalAddresses()
-
-        if(localAddresses.isEmpty())
-            throw IllegalStateException("No local addresses found.")
-
-        val portRange = config!!.get(ClientProperties.clientPortsRange)
-
+    public fun createLocalPeer(portRange:LongRange):Peer {
         val port = findFreePort(portRange)
 
         if(port == null)
@@ -28,7 +23,7 @@ public service class LocalPeerService {
 
         val peerId = createPeerId()
 
-        return Peer(peerId, localAddresses.first!!, port.toInt())
+        return Peer(peerId, InetSocketAddress(InetAddress.getLocalHost(), port.toInt()))
     }
 
     private fun createPeerId():String {
@@ -41,14 +36,4 @@ public service class LocalPeerService {
         return portRange.find { it.toInt().isPortAvailable() }
     }
 
-    private fun findLocalAddresses():List<String> {
-        return NetworkInterface
-                .getNetworkInterfaces()!!
-                .iterator()
-                .flatMap { it.getInetAddresses().iterator() }
-                .filter { it is Inet4Address && it.isSiteLocalAddress() }
-                .map { it.getHostAddress()!! }
-                .filter { !it.equals("127.0.0.1") }
-                .toList()
-    }
 }

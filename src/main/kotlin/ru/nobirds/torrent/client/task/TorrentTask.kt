@@ -8,8 +8,20 @@ import java.util.HashSet
 import java.nio.file.Path
 import java.util.ArrayList
 import ru.nobirds.torrent.client.Sha1Provider
+import java.util.BitSet
+import java.net.Socket
+import ru.nobirds.torrent.client.task.connection.ConnectionListener
+import java.util.concurrent.ArrayBlockingQueue
+import ru.nobirds.torrent.client.message.BitFieldMessage
 
-public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) {
+public trait TaskMessage
+
+public class AddConnectionMessage(val socket:Socket) : TaskMessage
+public class RemoveConnectionMessage(val connection:Connection) : TaskMessage
+public class UpdatePeersMessage(val url:URL, val peers:List<Peer>) : TaskMessage
+public class UpdateTorrentStateMessage() : TaskMessage
+
+public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) : ConnectionListener, Thread("Torrent task") {
 
     private var taskState:TaskState = TaskState.stopped
 
@@ -19,15 +31,24 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-    val state:TorrentState = createTorrentState()
+    val state:TorrentState = TorrentState(torrent.info.hashes.size)
 
     val peers = HashMap<URL, Set<Peer>>()
 
+    private val messages = ArrayBlockingQueue<TaskMessage>(300)
+
     private val connections = HashSet<Connection>()
 
-    private fun createTorrentState():TorrentState {
-        val bitSet = Sha1Provider.checkHashes(torrent.info.hashes, files.compositeRandomAccessFile)
-        return TorrentState(torrent.info.hashes.size, bitSet)
+    public fun sendMessage(message:TaskMessage) {
+        messages.put(message)
+    }
+
+    private fun updateTorrentState() {
+        val bitSet = Sha1Provider.checkHashes(
+                torrent.info.hashes, files.compositeRandomAccessFile)
+
+        state.state.clear()
+        state.state.or(bitSet)
     }
 
     private fun createFiles():List<FileDescriptor> {
@@ -35,20 +56,17 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
         val parent = directory.resolve(files.name)!!
 
+        // if(files exists) sendMessage(UpdateTorrentStateMessage())
+
         return files.files.map { FileDescriptor(parent, it) }
     }
 
-    public fun updatePeers(url:URL, peers:List<Peer>) {
+    private fun updatePeers(url:URL, peers:List<Peer>) {
         this.peers[url] = HashSet(peers)
-        if(!peers.empty)
-            addConnections(peers)
-    }
-
-    private fun addConnections(peers:List<Peer>) {
-        peers.forEach {
-            val connection = Connection(this, it)
-            connections.add(connection)
-            connection.start()
+        if(!peers.empty) {
+            for (peer in peers) {
+                onConnection(Socket(peer.address.getAddress(), peer.address.getPort()))
+            }
         }
     }
 
@@ -56,4 +74,26 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
         connections.remove(connection)
     }
 
+    override fun onConnection(socket: Socket) {
+        sendMessage(AddConnectionMessage(socket))
+    }
+
+    private fun createAndStartConnectionForSocket(socket:Socket) {
+        val connection = Connection(this, socket)
+        connections.add(connection)
+        connection.sendMessage(BitFieldMessage(state.state))
+        connection.start()
+    }
+
+    override fun run() {
+        while(isInterrupted().not()) {
+            val message = messages.take()
+            when(message) {
+                is AddConnectionMessage -> createAndStartConnectionForSocket(message.socket)
+                is RemoveConnectionMessage -> connections.remove(message.connection)
+                is UpdateTorrentStateMessage -> updateTorrentState()
+                is UpdatePeersMessage -> updatePeers(message.url, message.peers)
+            }
+        }
+    }
 }

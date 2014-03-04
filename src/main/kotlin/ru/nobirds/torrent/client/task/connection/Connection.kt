@@ -1,7 +1,7 @@
 package ru.nobirds.torrent.client.task
 
 import ru.nobirds.torrent.client.message.Message
-import ru.nobirds.torrent.client.message.MessageFactory
+import ru.nobirds.torrent.client.message.MessageSerializerFactory
 import ru.nobirds.torrent.client.Peer
 import kotlin.properties.Delegates
 import java.net.Socket
@@ -14,28 +14,39 @@ import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.MessageHandler
 import ru.nobirds.torrent.client.message.DoNothingMessageHandler
 import ru.nobirds.torrent.closeQuietly
+import ru.nobirds.torrent.client.message.BitFieldMessage
 
-public class Connection(val task:TorrentTask, val peer:Peer) : Thread("Connection") {
+public class Connection(val task:TorrentTask, val socket:Socket) : Thread("Connection") {
 
-    private val socket by Delegates.lazy { Socket(peer.ip, peer.port) }
+    private val torrentState:TorrentState = TorrentState(task.torrent.info.hashes.size)
 
-    private val input:InputStream by Delegates.lazy { ConnectionInputStream(socket.getInputStream()!!) }
-    private val output:OutputStream by Delegates.lazy { socket.getOutputStream()!! }
+    private val input:InputStream = ConnectionInputStream(socket.getInputStream()!!)
+    private val output:OutputStream = socket.getOutputStream()!!
 
     private val handlers = createMessageHandlers()
 
     private fun createMessageHandlers():Map<MessageType, MessageHandler<out Message>> = hashMapOf(
-            MessageType.bitfield to BitFieldMessageHandler()
+            MessageType.bitfield to BitFieldMessageHandler(torrentState)
     )
 
     fun sendMessage(message:Message) {
-        val serializer = MessageFactory.getSerializer(message.messageType) as MessageSerializer<Message>
+        val serializer = MessageSerializerFactory.getSerializer(message.messageType)
+                            as MessageSerializer<Message>
+
         serializer.write(output, message)
+    }
+
+    private fun handleMessage(message:Message) {
+        val handler = handlers.getOrElse(message.messageType) { DoNothingMessageHandler }
+                            as MessageHandler<Message>
+
+        handler.handle(message)
     }
 
     override fun run() {
         do {
             try {
+                sendMessage(BitFieldMessage(task.state.state))
                 readAndHandleMessage()
             } catch(e: Exception) {
                 e.printStackTrace() // todo
@@ -44,20 +55,14 @@ public class Connection(val task:TorrentTask, val peer:Peer) : Thread("Connectio
             }
         } while(true)
 
-        task.removeConnection(this)
+        task.sendMessage(RemoveConnectionMessage(this))
     }
 
     private fun readAndHandleMessage() {
-        val messageType = MessageFactory.findMessageTypeByValue(input.read())
-        val serializer = MessageFactory.getSerializer(messageType)
+        val messageType = MessageSerializerFactory.findMessageTypeByValue(input.read())
+        val serializer = MessageSerializerFactory.getSerializer(messageType)
         handleMessage(serializer.read(messageType, input))
     }
 
-    private fun handleMessage(message:Message) {
-        val handler = handlers.getOrElse(message.messageType) { DoNothingMessageHandler }
-                        as MessageHandler<Message>
-
-        handler.handle(message)
-    }
 }
 
