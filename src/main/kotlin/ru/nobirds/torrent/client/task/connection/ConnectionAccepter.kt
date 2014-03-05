@@ -1,7 +1,6 @@
 package ru.nobirds.torrent.client.task.connection
 
 import java.net.ServerSocket
-import ru.nobirds.torrent.client.task.Connection
 import java.util.ArrayList
 import java.net.Socket
 

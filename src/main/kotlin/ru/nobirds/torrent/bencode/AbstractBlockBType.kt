@@ -4,6 +4,9 @@ public abstract class AbstractBlockBType<T>(val start:Char, val end:Char = 'e') 
 
     private var started = false
 
+    override var startPosition = -1L
+    override var endPosition = -1L
+
     private var valueImpl:T? = null
 
     override val value: T
@@ -13,6 +16,7 @@ public abstract class AbstractBlockBType<T>(val start:Char, val end:Char = 'e') 
         when(stream.currentChar()) {
             start -> {
                 if(!started) {
+                    startPosition = stream.position()
                     onStart(stream)
                     started = true
                 }
@@ -22,6 +26,7 @@ public abstract class AbstractBlockBType<T>(val start:Char, val end:Char = 'e') 
                 return false
             }
             end -> {
+                endPosition = stream.position()+1
                 onEnd(stream)
                 valueImpl = createResult()
                 return true

@@ -1,23 +1,21 @@
 package ru.nobirds.torrent.client
 
 import org.junit.Test
-import org.springframework.context.annotation.AnnotationConfigApplicationContext
-import org.junit.runner.RunWith
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.beans.factory.annotation.Autowired
 import ru.nobirds.torrent.client.task.TorrentTaskManager
+import ru.nobirds.torrent.config.Config
+import java.util.HashMap
+import java.util.Properties
+import ru.nobirds.torrent.config.Configs
 
-RunWith(javaClass<SpringJUnit4ClassRunner>())
-ContextConfiguration(classes = array(javaClass<ClientConfiguration>()))
 public class ClientTest {
-
-    private Autowired var taskManager:TorrentTaskManager? = null
 
     Test
     public fun test1() {
+        val config = Configs.fromProperties("client.properties")
 
-        taskManager!!.add(ClassLoader.getSystemResourceAsStream("test1.torrent")!!)
+        val taskManager = TorrentTaskManager(config)
+
+        taskManager.add(ClassLoader.getSystemResourceAsStream("test1.torrent")!!)
 
     }
 

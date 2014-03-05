@@ -1,6 +1,5 @@
 package ru.nobirds.torrent.bencode
 
-import java.util.HashMap
 import java.util.LinkedHashMap
 
 
@@ -8,14 +7,21 @@ public class BMap() : AbstractBlockBType<Map<String, Any>>('d') {
 
     private val map:MutableMap<String, Any> = LinkedHashMap()
 
+    private val children = LinkedHashMap<String, BKeyValuePair>()
+
+    public val pairs:Iterable<BKeyValuePair>
+        get() = children.values()
+
+    public fun get(name:String):BKeyValuePair? = children[name]
+
     override fun onChar(stream: BTokenInputStream) {
-        val name = stream.processBType() as BBytes
+        val bpair = BKeyValuePair()
+        bpair.process(stream)
 
-        stream.next()
+        val value = bpair.value
 
-        val value = stream.processBType()
-
-        map.put(name.toString(), value.value)
+        children.put(bpair.name, bpair)
+        map.put(value.first, value.second)
     }
 
     override fun createResult(): Map<String, Any> = map

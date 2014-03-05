@@ -1,15 +1,12 @@
 package ru.nobirds.torrent.client.parser
 
 import java.io.InputStream
-import ru.nobirds.torrent.bencode.BTokenInputStream
 import ru.nobirds.torrent.bencode.BMap
-import java.math.BigInteger
-import java.util.Date
 import java.util.ArrayList
 import java.util.Collections
 import java.net.URL
-import org.springframework.stereotype.Service as service
-import org.springframework.beans.factory.annotation.Autowired as autowired
+
+
 import ru.nobirds.torrent.client.Sha1Provider
 import ru.nobirds.torrent.nullOr
 import ru.nobirds.torrent.asString
@@ -19,17 +16,18 @@ import ru.nobirds.torrent.client.model.Announce
 import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.client.model.TorrentFiles
 import ru.nobirds.torrent.client.model.TorrentFile
+import ru.nobirds.torrent.bencode.BKeyValuePair
+import ru.nobirds.torrent.bencode.BList
+import ru.nobirds.torrent.bencode.BBytes
 
-public service class TorrentParserService() {
-
-    private autowired var bencoderService:BencoderService? = null
+public class TorrentParser() {
 
     private val HASH_SIZE = 20
 
-    public fun parse(source:Map<String, Any>):Torrent {
+    public fun parse(source:BMap):Torrent {
         val map = MapHelper(source)
 
-        val torrentInfo = parseTorrentInfo(map.getMap("info")!!)
+        val torrentInfo = parseTorrentInfo(map.getMapPair("info")!!)
 
         val announce = parseAnnounce(map)
 
@@ -46,12 +44,12 @@ public service class TorrentParserService() {
         )
     }
 
-    public fun parse(stream:InputStream):Torrent = parse(bencoderService!!.decode(stream))
+    public fun parse(stream:InputStream):Torrent = parse(Bencoder.decodeBMap(stream))
 
     private fun parseAnnounce(map:MapHelper):Announce {
 
         val announces = map.getList("announce-list").nullOr {
-            map { it as List<ByteArray> }.flatMap { it }.map { URL(it.asString()) }
+            map { it as BList }.flatMap { it }.map { URL((it as BBytes).value.asString()) }
         }
 
         return Announce(
@@ -60,9 +58,12 @@ public service class TorrentParserService() {
         )
     }
 
-    private fun parseTorrentInfo(map:MapHelper):TorrentInfo {
+    private fun parseTorrentInfo(pair:BKeyValuePair):TorrentInfo {
+        val map = MapHelper(pair.bvalue as BMap)
 
-        val hash = Sha1Provider.encode(bencoderService!!.encode(map.map))
+        val infoBytes = Bencoder.encodeBType(pair)
+
+        val hash = Sha1Provider.encode(infoBytes)
 
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!

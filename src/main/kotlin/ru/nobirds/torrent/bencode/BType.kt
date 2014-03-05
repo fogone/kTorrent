@@ -6,4 +6,8 @@ public trait BType<T> {
 
     val value:T
 
+    val startPosition:Long
+
+    val endPosition:Long
+
 }

@@ -2,12 +2,9 @@ package ru.nobirds.torrent.client.task
 
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.MessageSerializerFactory
-import ru.nobirds.torrent.client.Peer
-import kotlin.properties.Delegates
 import java.net.Socket
 import java.io.InputStream
 import java.io.OutputStream
-import java.io.FilterInputStream
 import ru.nobirds.torrent.client.message.MessageSerializer
 import ru.nobirds.torrent.client.message.BitFieldMessageHandler
 import ru.nobirds.torrent.client.message.MessageType

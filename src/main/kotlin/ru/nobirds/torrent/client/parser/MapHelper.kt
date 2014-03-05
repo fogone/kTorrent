@@ -4,28 +4,38 @@ import java.util.Date
 import ru.nobirds.torrent.nullOr
 import java.math.BigInteger
 import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.bencode.BType
+import ru.nobirds.torrent.bencode.BKeyValuePair
+import ru.nobirds.torrent.bencode.BList
+import ru.nobirds.torrent.bencode.BBytes
+import ru.nobirds.torrent.bencode.BNumber
 
-class MapHelper(val map:Map<String, Any>) {
+class MapHelper(val map:BMap) {
 
-    fun get<T>(key:String, cast:(Any)->T):T? {
+    fun get<T>(key:String, cast:(BKeyValuePair)->T):T? {
         val value = map[key]
         return if(value != null) cast(value)
         else null
     }
 
-    fun getMap(key:String):MapHelper? = get(key) { MapHelper(it as Map<String, Any>) }
+    fun getMap(key:String):MapHelper? = get(key) { MapHelper(it.bvalue as BMap) }
 
-    fun getList(key:String):List<Any>? = get(key) { it as List<Any> }
+    fun getMapPair(key:String):BKeyValuePair? = get(key) { it }
 
-    fun getListOfMaps(key:String):List<MapHelper>? = getList(key).nullOr { map { MapHelper(it as Map<String, Any>) } }
+    fun getList(key:String):BList? = get(key) { it.bvalue as BList }
 
-    fun getStrings(key:String):List<String>? = getList(key).nullOr { map { (it as ByteArray).asString() } }
+    fun getListOfMaps(key:String):List<MapHelper>? = getList(key).nullOr { map { MapHelper(it as BMap) } }
 
-    fun getBytes(key:String):ByteArray? = get(key) { it as ByteArray }
+    fun getStrings(key:String):List<String>? = getList(key).nullOr { map { (it as BBytes).value.asString() } }
 
-    fun getString(key:String):String? = getBytes(key).nullOr { (this as ByteArray).asString() }
+    fun getBBytes(key:String):BBytes? = get(key) { it.bvalue as BBytes }
+    fun getBytes(key:String):ByteArray? = getBBytes(key).nullOr { value }
 
-    fun getBigInteger(key:String):BigInteger? = get(key) { it as BigInteger }
+    fun getString(key:String):String? = getBytes(key).nullOr { asString() }
+
+    fun getBNumber(key:String):BNumber? = get(key) { it.bvalue as BNumber }
+    fun getBigInteger(key:String):BigInteger? = getBNumber(key).nullOr { value }
 
     fun getLong(key:String):Long? = getBigInteger(key).nullOr { longValue() }
 

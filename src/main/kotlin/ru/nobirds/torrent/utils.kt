@@ -2,8 +2,6 @@ package ru.nobirds.torrent
 
 import java.math.BigInteger
 import java.util.HashMap
-import org.springframework.context.ApplicationContext
-import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.util.MultiValueMap
 import org.springframework.util.LinkedMultiValueMap
 import java.net.Socket
@@ -29,13 +27,6 @@ public fun <T, R> Iterable<T>.toMap(mapper:(T)->R):Map<R, T> {
     return result
 }
 
-public fun <T> Class<T>.configureApplicationContext():ApplicationContext {
-    val applicationContext = AnnotationConfigApplicationContext()
-    applicationContext.register(this)
-    applicationContext.refresh()
-    return applicationContext
-}
-
 public fun <K, V> multiValueMapOf(vararg pairs:Pair<K, V>):MultiValueMap<K, V> {
     val map = LinkedMultiValueMap<K, V>()
 
@@ -52,3 +43,4 @@ public fun Socket.closeQuietly() {
     } catch(e:Exception) {
     }
 }
+

@@ -1,16 +1,11 @@
 package ru.nobirds.torrent.client
 
-import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import ru.nobirds.torrent.client.task.TorrentTaskManager
-import org.springframework.context.ApplicationContext
-import ru.nobirds.torrent.configureApplicationContext
+import ru.nobirds.torrent.config.Configs
 
 public class Client() {
 
-    private val applicationContext = javaClass<ClientConfiguration>()
-            .configureApplicationContext()
-
-    public val taskManager:TorrentTaskManager = applicationContext.getBean(javaClass<TorrentTaskManager>())!!
+    public val taskManager:TorrentTaskManager = TorrentTaskManager(Configs.fromProperties("client.properties"))
 
     public fun start() {
         try {

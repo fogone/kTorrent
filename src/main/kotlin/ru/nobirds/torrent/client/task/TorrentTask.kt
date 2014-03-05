@@ -6,9 +6,7 @@ import java.net.URL
 import ru.nobirds.torrent.client.Peer
 import java.util.HashSet
 import java.nio.file.Path
-import java.util.ArrayList
 import ru.nobirds.torrent.client.Sha1Provider
-import java.util.BitSet
 import java.net.Socket
 import ru.nobirds.torrent.client.task.connection.ConnectionListener
 import java.util.concurrent.ArrayBlockingQueue

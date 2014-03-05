@@ -4,8 +4,6 @@ import java.io.RandomAccessFile
 import java.io.DataInput
 import java.io.DataOutput
 import java.io.DataInputStream
-import java.io.FileInputStream
-import java.io.FilterInputStream
 import java.io.InputStream
 import java.io.DataOutputStream
 import java.io.OutputStream

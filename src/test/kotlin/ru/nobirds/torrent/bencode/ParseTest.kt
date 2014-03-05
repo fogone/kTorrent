@@ -5,33 +5,51 @@ import java.io.FileInputStream
 import java.math.BigInteger
 import java.io.FileOutputStream
 import org.junit.Assert
-import ru.nobirds.torrent.client.parser.TorrentParserService
+import ru.nobirds.torrent.client.parser.TorrentParser
+import ru.nobirds.torrent.client.parser.Bencoder
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import ru.nobirds.torrent.client.Sha1Provider
+import ru.nobirds.torrent.client.parser.MapHelper
 
 
 public class BencodeTest() {
 
-/*
+    val parserService = TorrentParser()
+
     Test
-    public fun test1() {
+    public fun infoHashTest() {
 
-        val torrent = TorrentParserService().parse(ClassLoader.getSystemResourceAsStream("test1.torrent")!!)
+        val stream = ClassLoader.getSystemResourceAsStream("test1.torrent")!!
 
-        println(torrent)
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        stream.buffered().copyTo(byteArrayOutputStream)
+
+        val source = byteArrayOutputStream.toByteArray()
+
+        val map = Bencoder.decodeBMap(ByteArrayInputStream(source))
+
+        val torrent = parserService.parse(map)
+
+        val infoHash = torrent.info.hash
+
+        val binfo = map["info"]!!
+
+        val infoBytes = source.copyOfRange(binfo.startPosition.toInt(), binfo.endPosition.toInt())
+
+        val encoded = Sha1Provider.encode(infoBytes)
+
+        Assert.assertEquals(encoded, infoHash)
     }
 
     Test
-    public fun writeTest() {
+    public fun test2() {
+        val stream = ClassLoader.getSystemResourceAsStream("tmp.bencode")!!
+        val result = Bencoder.decodeBMap(stream)
+        val helper = MapHelper(result)
 
-        val map = Bencoder.decode(ClassLoader.getSystemResourceAsStream("test1.torrent")!!)
+        val warningMessage = helper.getString("warning message")
 
-        val original = TorrentParserService().parse(map)
-
-        Bencoder.encode(FileOutputStream("result.torrent"), map)
-
-        val torrent = TorrentParserService().parse(FileInputStream("result.torrent"))
-
-        Assert.assertTrue(original.equals(torrent))
+        Assert.assertEquals("Invalid info_hash", warningMessage)
     }
-*/
-
 }

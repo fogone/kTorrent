@@ -2,22 +2,25 @@ package ru.nobirds.torrent.client.parser
 
 import java.io.InputStream
 import java.io.OutputStream
-import org.springframework.stereotype.Service as service
+
 import ru.nobirds.torrent.bencode.BTokenInputStream
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BTokenOutputStream
 import java.io.ByteArrayOutputStream
+import ru.nobirds.torrent.bencode.BType
 
-public service class BencoderService {
+public object Bencoder {
 
-    public fun decode(stream:InputStream):Map<String, Any> {
+    public fun decodeBMap(stream:InputStream):BMap {
         val tokenInputStream = BTokenInputStream(stream)
 
         tokenInputStream.next()
 
-        val map = tokenInputStream.processBType() as BMap
+        return tokenInputStream.processBType() as BMap
+    }
 
-        return map.value
+    public fun decode(stream:InputStream):Map<String, Any> {
+        return decodeBMap(stream).value
     }
 
     public fun encode(stream:OutputStream, map:Map<String, Any>) {
@@ -32,4 +35,15 @@ public service class BencoderService {
         return result.toByteArray()
     }
 
+    public fun encodeBType(stream:OutputStream, value:BType<out Any>) {
+        val tokenOutputStream = BTokenOutputStream(stream)
+        tokenOutputStream.writeBObject(value)
+        stream.flush()
+    }
+
+    public fun encodeBType(value:BType<out Any>):ByteArray {
+        val result = ByteArrayOutputStream()
+        encodeBType(result, value)
+        return result.toByteArray()
+    }
 }

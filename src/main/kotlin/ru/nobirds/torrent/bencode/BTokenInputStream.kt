@@ -9,9 +9,12 @@ public class BTokenInputStream(val stream:InputStream) {
 
     public fun hasNext():Boolean = next >= 0
 
+    private var position:Long = -1L
+
     public fun next():Int {
         this.current = this.next
         this.next = stream.read()
+        position++
         return current()
     }
 
@@ -26,10 +29,14 @@ public class BTokenInputStream(val stream:InputStream) {
         this.current = result[count-1].toInt()
         this.next = stream.read()
 
+        position += read+1
+
         return result
     }
 
     public fun current():Int = current
+
+    public fun position():Long = position
 
     public fun currentChar():Char = current.toChar()
 

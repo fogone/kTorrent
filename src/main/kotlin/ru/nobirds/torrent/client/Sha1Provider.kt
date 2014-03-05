@@ -1,10 +1,9 @@
 package ru.nobirds.torrent.client
 
-import org.springframework.stereotype.Service as service
+
 import java.security.MessageDigest
 import ru.nobirds.torrent.toHexString
 import java.util.BitSet
-import ru.nobirds.torrent.client.task.CompositeFileDescriptor
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.DataInput
 
