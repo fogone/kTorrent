@@ -41,7 +41,8 @@ public class AnnounceUpdater(val announceService:AnnounceService, val url:URL, v
     private fun createTask():TimerTask = object : TimerTask() {
         override fun run() {
             for (task in tasks) {
-                task.sendMessage(UpdatePeersMessage(url, announceService.getPeersForTask(task, url)))
+                val peers = announceService.getPeersForTask(task, url)
+                task.sendMessage(UpdatePeersMessage(url, peers))
             }
         }
     }

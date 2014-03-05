@@ -11,6 +11,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import ru.nobirds.torrent.client.Sha1Provider
 import ru.nobirds.torrent.client.parser.MapHelper
+import ru.nobirds.torrent.asString
 
 
 public class BencodeTest() {
@@ -20,12 +21,7 @@ public class BencodeTest() {
     Test
     public fun infoHashTest() {
 
-        val stream = ClassLoader.getSystemResourceAsStream("test1.torrent")!!
-
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        stream.buffered().copyTo(byteArrayOutputStream)
-
-        val source = byteArrayOutputStream.toByteArray()
+        val source = ClassLoader.getSystemResourceAsStream("test1.torrent")!!.readBytes()
 
         val map = Bencoder.decodeBMap(ByteArrayInputStream(source))
 
@@ -33,13 +29,16 @@ public class BencodeTest() {
 
         val infoHash = torrent.info.hash
 
-        val binfo = map["info"]!!
+        val pairs = MapHelper(map).getMap("info")!!.map.pairs.toList()
 
-        val infoBytes = source.copyOfRange(binfo.startPosition.toInt(), binfo.endPosition.toInt())
+        val start = pairs.first!!.startPosition.toInt()
+        val end = pairs.last!!.endPosition.toInt()
 
-        val encoded = Sha1Provider.encode(infoBytes)
+        val infoBytes = source.copyOfRange(start, end)
 
-        Assert.assertEquals(encoded, infoHash)
+        val encoded = Sha1Provider.encodeAsBytes(infoBytes)
+
+        Assert.assertArrayEquals(encoded, infoHash)
     }
 
     Test

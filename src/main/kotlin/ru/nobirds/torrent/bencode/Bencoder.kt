@@ -46,4 +46,18 @@ public object Bencoder {
         encodeBType(result, value)
         return result.toByteArray()
     }
+
+    public fun encodeBTypes(stream:OutputStream, values:Iterable<BType<out Any>>) {
+        val tokenOutputStream = BTokenOutputStream(stream)
+        for (value in values) {
+            tokenOutputStream.writeBObject(value)
+        }
+        stream.flush()
+    }
+
+    public fun encodeBTypes(values:Iterable<BType<out Any>>):ByteArray {
+        val result = ByteArrayOutputStream()
+        encodeBTypes(result, values)
+        return result.toByteArray()
+    }
 }

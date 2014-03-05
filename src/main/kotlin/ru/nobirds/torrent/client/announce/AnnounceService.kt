@@ -73,7 +73,7 @@ public class AnnounceService {
         val total = torrent.files.totalLength
 
         return multiValueMapOf(
-                "info_hash" to torrent.hash,
+                "info_hash" to torrent.hash.toString("UTF-8"),
                 "peer_id" to localPeer.id,
                 //"ip" to localPeer.address.getAddress().toString(),
                 "port" to localPeer.address.getPort().toString(),

@@ -25,6 +25,6 @@ public class Client() {
 public fun main(args:Array<String>) {
     val client = Client()
 
-    client.taskManager.add(ClassLoader.getSystemResourceAsStream("torrent2.torrent")!!)
+    client.taskManager.add(ClassLoader.getSystemResourceAsStream("torrent3.torrent")!!)
     client.start()
 }

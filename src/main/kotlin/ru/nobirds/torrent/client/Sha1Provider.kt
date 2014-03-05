@@ -12,9 +12,11 @@ public object Sha1Provider {
     private val MAX_BUFFER_SIZE = 16 * 1024
 
     public fun encode(bytes:ByteArray):String {
-        return createDigest()
-                .digest(bytes)!!
-                .toHexString()
+        return encodeAsBytes(bytes).toHexString()
+    }
+
+    public fun encodeAsBytes(bytes:ByteArray):ByteArray {
+        return createDigest().digest(bytes)!!
     }
 
     public fun createDigest():MessageDigest = MessageDigest.getInstance("SHA-1")
