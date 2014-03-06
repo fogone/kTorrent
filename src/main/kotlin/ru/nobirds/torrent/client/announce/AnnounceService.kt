@@ -31,7 +31,7 @@ public class AnnounceService {
 
     private val template = RestTemplate(arrayListOf(BEncodeHttpMessageConverter()))
 
-    public fun getPeersByUrl(task:TorrentTask, url:URL):IntervalAndPeers {
+    public fun getTrackerInfoByUrl(task:TorrentTask, url:URL): TrackerInfo {
         val parameters = createUrlParameters(task)
 
         val uri = UriComponentsBuilder.fromUri(url.toURI())
@@ -42,16 +42,27 @@ public class AnnounceService {
 
         val helper = MapHelper(result!!)
 
+        val failureReason = helper.getString("failure reason")
+
+        if(failureReason != null)
+            throw TrackerRequestException(failureReason)
+
         val warning = helper.getString("warning message")
 
         if(warning != null && warning.equalsIgnoreCase("Invalid info_hash"))
-            throw TorrentNotFoundException(task.torrent)
+            throw InfoHashNotFoundException()
 
         val interval = helper.getLong("interval")!!
 
         val peers = fetchPeers(helper.map.getValue("peers")!!)
 
-        return IntervalAndPeers(interval * 1000L, peers)
+        val complete = helper.getInt("complete")!!
+
+        val incomplete = helper.getInt("incomplete")!!
+
+        val trackerId = helper.getString("tracker id")
+
+        return TrackerInfo(interval * 1000L, peers, complete, incomplete, trackerId, warning)
     }
 
     private fun createUrlParameters(task:TorrentTask):MultiValueMap<String, String> {

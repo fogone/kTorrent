@@ -5,6 +5,7 @@ import java.util.HashMap
 import org.springframework.util.MultiValueMap
 import org.springframework.util.LinkedMultiValueMap
 import java.net.Socket
+import java.util.BitSet
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -88,4 +89,24 @@ public object UrlUtils {
         return result.toString()
     }
 
+}
+
+public fun BitSet.isAllSet():Boolean = cardinality() == size()
+
+public fun BitSet.setAll(value:Boolean = true) { set(0, size(), value) }
+
+public fun BitSet.each(value:Boolean, block:(Boolean, Int)->Boolean) {
+    var index = if(value) nextSetBit(0) else nextClearBit(0)
+    while(index != -1) {
+        set(index, block(value, index))
+        index = if(value) nextSetBit(index) else nextClearBit(index)
+    }
+}
+
+public fun BitSet.eachSet(block:(Boolean, Int)->Boolean) {
+    each(true, block)
+}
+
+public fun BitSet.eachClear(block:(Boolean, Int)->Boolean) {
+    each(false, block)
 }

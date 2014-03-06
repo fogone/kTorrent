@@ -6,7 +6,7 @@ import java.util.Timer
 import java.util.TimerTask
 import ru.nobirds.torrent.client.announce.AnnounceService
 import ru.nobirds.torrent.client.task.TorrentTask
-import ru.nobirds.torrent.client.announce.TorrentNotFoundException
+import ru.nobirds.torrent.client.announce.InfoHashNotFoundException
 import org.springframework.web.client.HttpServerErrorException
 import ru.nobirds.torrent.client.Peer
 
@@ -42,24 +42,28 @@ public class HttpUrlTracker(val timer:Timer, val announceService:AnnounceService
         listeners.add(listener)
     }
 
+    private fun setStatus(status:TrackerStatus) {
+        statusImpl = status
+    }
+
     private fun updatePeersAndInterval() {
         try {
-            statusImpl = TrackerStatus.working
+            setStatus(TrackerStatus.working)
 
-            val intervalAndPeers = announceService.getPeersByUrl(task, url)
+            val trackerInfo = announceService.getTrackerInfoByUrl(task, url)
 
-            if(this.interval != interval) {
+            if(this.interval != trackerInfo.interval) {
                 updateInterval(interval)
             }
 
-            if(!intervalAndPeers.peers.isEmpty()) {
-                notifyListeners(intervalAndPeers.peers)
+            if(!trackerInfo.peers.isEmpty()) {
+                notifyListeners(trackerInfo.peers)
             }
 
-            statusImpl = TrackerStatus.waiting
+            setStatus(TrackerStatus.waiting)
         } catch(e: Exception) {
             e.printStackTrace() // todo
-            statusImpl = exceptionMapper.map(e)
+            setStatus(exceptionMapper.map(e))
         }
     }
 
@@ -76,3 +80,4 @@ public class HttpUrlTracker(val timer:Timer, val announceService:AnnounceService
     }
 
 }
+

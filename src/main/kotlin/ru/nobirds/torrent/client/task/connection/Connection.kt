@@ -6,60 +6,76 @@ import java.net.Socket
 import java.io.InputStream
 import java.io.OutputStream
 import ru.nobirds.torrent.client.message.MessageSerializer
-import ru.nobirds.torrent.client.message.BitFieldMessageHandler
 import ru.nobirds.torrent.client.message.MessageType
-import ru.nobirds.torrent.client.message.MessageHandler
-import ru.nobirds.torrent.client.message.DoNothingMessageHandler
 import ru.nobirds.torrent.closeQuietly
 import ru.nobirds.torrent.client.message.BitFieldMessage
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ArrayBlockingQueue
+import java.io.DataInputStream
+import java.io.DataOutputStream
 
-public class Connection(val task:TorrentTask, val socket:Socket) : Thread("Connection") {
+class InputConnectionStreamThread(val stream:InputStream) : Thread("Input connection stream") {
 
-    private val torrentState:TorrentState = TorrentState(task.torrent.info.hashes.size)
+    private val input = DataInputStream(stream)
 
-    private val input:InputStream = ConnectionInputStream(socket.getInputStream()!!)
-    private val output:OutputStream = socket.getOutputStream()!!
+    private val queue:BlockingQueue<Message> = ArrayBlockingQueue(300)
 
-    private val handlers = createMessageHandlers()
+    public fun receive():Message = queue.take()!!
 
-    private fun createMessageHandlers():Map<MessageType, MessageHandler<out Message>> = hashMapOf(
-            MessageType.bitfield to BitFieldMessageHandler(torrentState)
-    )
-
-    fun sendMessage(message:Message) {
-        val serializer = MessageSerializerFactory.getSerializer(message.messageType)
-                            as MessageSerializer<Message>
-
-        serializer.write(output, message)
+    override fun run() {
+        while(!isInterrupted()) {
+            queue.put(readMessage())
+        }
     }
 
-    private fun handleMessage(message:Message) {
-        val handler = handlers.getOrElse(message.messageType) { DoNothingMessageHandler }
-                            as MessageHandler<Message>
+    private fun readMessage():Message {
+        val length = input.readInt()
+        val messageType = MessageSerializerFactory.findMessageTypeByValue(stream.read())
 
-        handler.handle(message)
+        return MessageSerializerFactory
+                .getSerializer<Message>(messageType)
+                .read(length - 1, messageType, input)
+    }
+
+}
+
+class OutputConnectionStreamThread(val stream:OutputStream) : Thread("Output connection stream") {
+
+    private val output = DataOutputStream(stream)
+
+    private val queue:BlockingQueue<Message> = ArrayBlockingQueue(300)
+
+    public fun send(message:Message) {
+        queue.put(message)
     }
 
     override fun run() {
-        do {
-            try {
-                sendMessage(BitFieldMessage(task.state.state))
-                readAndHandleMessage()
-            } catch(e: Exception) {
-                e.printStackTrace() // todo
-                socket.closeQuietly()
-                break;
-            }
-        } while(true)
-
-        task.sendMessage(RemoveConnectionMessage(this))
+        while(!isInterrupted()) {
+            writeMessage(queue.take()!!)
+        }
     }
 
-    private fun readAndHandleMessage() {
-        val messageType = MessageSerializerFactory.findMessageTypeByValue(input.read())
-        val serializer = MessageSerializerFactory.getSerializer(messageType)
-        handleMessage(serializer.read(messageType, input))
+    private fun writeMessage(message:Message) {
+        MessageSerializerFactory.getSerializer<Message>(message.messageType).write(output, message)
     }
 
+}
+
+public class Connection(val task:TorrentTask, val socket:Socket) : Thread("Connection handler thread") {
+
+    private val torrentState:TorrentState = TorrentState(task.torrent.info)
+
+    private val input = InputConnectionStreamThread(ConnectionInputStream(socket.getInputStream()!!))
+    private val output = OutputConnectionStreamThread(socket.getOutputStream()!!)
+
+    fun sendMessage(message:Message) {
+        output.send(message)
+    }
+
+    override fun run() {
+        while(!isInterrupted()) {
+
+        }
+    }
 }
 

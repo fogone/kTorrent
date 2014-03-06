@@ -40,6 +40,7 @@ class MapHelper(val map:BMap) {
     fun getBigInteger(key:String):BigInteger? = getBNumber(key).nullOr { value }
 
     fun getLong(key:String):Long? = getBigInteger(key).nullOr { longValue() }
+    fun getInt(key:String):Int? = getBigInteger(key).nullOr { intValue() }
 
     fun getDate(key:String):Date? = getLong(key).nullOr { Date(this) }
 

@@ -35,7 +35,7 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-    val state:TorrentState = TorrentState(torrent.info.hashes.size)
+    val state:TorrentState = TorrentState(torrent.info)
 
     private val peers = HashSet<Peer>()
 
@@ -55,8 +55,8 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
         val bitSet = Sha1Provider.checkHashes(
                 torrent.info.hashes, files.compositeRandomAccessFile)
 
-        state.state.clear()
-        state.state.or(bitSet)
+        state.done(bitSet)
+
     }
 
     private fun createFiles():List<FileDescriptor> {
@@ -91,7 +91,6 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
     private fun createAndStartConnectionForSocket(socket:Socket) {
         val connection = Connection(this, socket)
         connections.add(connection)
-        connection.sendMessage(BitFieldMessage(state.state))
         connection.start()
     }
 
