@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.bencode
 
-public abstract class AbstractBType<T> : BType<T> {
+public abstract class AbstractBType : BType {
 
     public abstract fun processChar(stream: BTokenInputStream):Boolean
 

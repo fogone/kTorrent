@@ -17,10 +17,6 @@ public class BTokenOutputStream(val stream:OutputStream) {
         stream.write(bytes)
     }
 
-    public fun write(list:List<Any>) {
-        writeList(list) { writeObject(it) }
-    }
-
     public fun write(value:BigInteger) {
         write('i', 'e') {
             stream.write(value.toString().getBytes())
@@ -42,21 +38,13 @@ public class BTokenOutputStream(val stream:OutputStream) {
             }
         }
     }
-
-    public fun write(map:Map<String, Any>) {
-        writeMap(map.entrySet()) {
-            write(it.key.toByteArray("UTF-8"))
-            writeObject(it.value)
-        }
-    }
-
     public fun write(map:BMap) {
-        writeMap(map.pairs) { write(it) }
+        writeMap(map.values()) { write(it) }
     }
 
     public fun write(pair:BKeyValuePair) {
         write(pair.name.toByteArray("UTF-8"))
-        writeBObject(pair.bvalue)
+        writeBObject(pair.value)
     }
 
     public fun write(list:BList) {
@@ -71,16 +59,7 @@ public class BTokenOutputStream(val stream:OutputStream) {
         write(bytes.value)
     }
 
-    public fun writeObject(value:Any) {
-        when(value) {
-            is Map<*, *> -> write(value as Map<String, Any>)
-            is List<*> -> write(value as List<Any>)
-            is BigInteger -> write(value)
-            is ByteArray -> write(value)
-        }
-    }
-
-    public fun writeBObject(value:BType<out Any>) {
+    public fun writeBObject(value:BType) {
         when(value) {
             is BMap -> write(value)
             is BKeyValuePair -> write(value)

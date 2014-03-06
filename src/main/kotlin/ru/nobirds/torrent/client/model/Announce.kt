@@ -4,9 +4,9 @@ import java.net.URL
 import java.util.Collections
 
 public data class Announce(
-        val url:URL,
-        val additional:List<URL> = Collections.emptyList()) {
+        val url:String,
+        val additional:List<String> = Collections.emptyList()) {
 
-    public val allUrls:Set<URL> = (additional + url).toSet()
+    public val allUrls:Set<String> = (additional + url).toSet()
 
 }

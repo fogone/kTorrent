@@ -2,9 +2,14 @@ package ru.nobirds.torrent.bencode
 
 import kotlin.properties.Delegates
 
-public class BKeyValuePair() : BType<Pair<String, Any>> {
+public class BKeyValuePair() : BType {
 
-    private var bpair:Pair<String, BType<out Any>> by Delegates.notNull()
+    private var bpair:Pair<String, BType> by Delegates.notNull()
+
+    public fun set(name:String, value:BType):BKeyValuePair {
+        bpair = name to value
+        return this
+    }
 
     override fun process(stream: BTokenInputStream) {
         startPosition = stream.position()
@@ -22,15 +27,13 @@ public class BKeyValuePair() : BType<Pair<String, Any>> {
         bpair = Pair(nameAsString, value)
     }
 
-    public val bvalue:BType<out Any>
+    public val value:BType
         get() = bpair.second
 
     public val name:String
         get() = bpair.first
 
-    override val value: Pair<String, Any>
-            get() = Pair(name, bpair.second.value)
-
     override var startPosition: Long = 0L
     override var endPosition: Long = 0L
+
 }

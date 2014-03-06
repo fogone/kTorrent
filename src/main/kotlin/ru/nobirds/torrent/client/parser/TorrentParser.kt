@@ -27,7 +27,7 @@ public class TorrentParser() {
     public fun parse(source:BMap):Torrent {
         val map = MapHelper(source)
 
-        val torrentInfo = parseTorrentInfo(map.getMapPair("info")!!)
+        val torrentInfo = parseTorrentInfo(map.getMap("info")!!)
 
         val announce = parseAnnounce(map)
 
@@ -49,20 +49,17 @@ public class TorrentParser() {
     private fun parseAnnounce(map:MapHelper):Announce {
 
         val announces = map.getList("announce-list").nullOr {
-            map { it as BList }.flatMap { it }.map { URL((it as BBytes).value.asString()) }
+            map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
         }
 
         return Announce(
-                url = URL(map.getString("announce")!!),
+                url = map.getString("announce")!!,
                 additional = announces ?: Collections.emptyList()
         )
     }
 
-    private fun parseTorrentInfo(pair:BKeyValuePair):TorrentInfo {
-        val map = MapHelper(pair.bvalue as BMap)
-
-        // val infoBytes = Bencoder.encodeBType(map.map)
-        val infoBytes = Bencoder.encodeBTypes(map.map.pairs)
+    private fun parseTorrentInfo(map:MapHelper):TorrentInfo {
+        val infoBytes = Bencoder.encodeBType(map.map)
 
         val hash = Sha1Provider.encodeAsBytes(infoBytes)
 

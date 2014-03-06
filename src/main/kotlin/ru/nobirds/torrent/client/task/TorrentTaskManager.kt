@@ -15,8 +15,6 @@ public class TorrentTaskManager(val config:Config) {
 
     private val parserService: TorrentParser = TorrentParser()
 
-    private val announceService:AnnounceService = AnnounceService()
-
     private val tasks = ArrayList<TorrentTask>()
 
     public fun add(torrent:InputStream) {
@@ -31,7 +29,6 @@ public class TorrentTaskManager(val config:Config) {
                 directory, torrent)
 
         tasks.add(task)
-        announceService.registerTask(task)
         task.start()
     }
 

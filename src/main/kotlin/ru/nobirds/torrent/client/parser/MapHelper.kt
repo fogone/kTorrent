@@ -19,22 +19,24 @@ class MapHelper(val map:BMap) {
         else null
     }
 
-    fun getMap(key:String):MapHelper? = get(key) { MapHelper(it.bvalue as BMap) }
+    fun getBMap(key:String):BMap? = get(key) {  it.value as BMap }
+
+    fun getMap(key:String):MapHelper? = get(key) { MapHelper(it.value as BMap) }
 
     fun getMapPair(key:String):BKeyValuePair? = get(key) { it }
 
-    fun getList(key:String):BList? = get(key) { it.bvalue as BList }
+    fun getList(key:String):BList? = get(key) { it.value as BList }
 
     fun getListOfMaps(key:String):List<MapHelper>? = getList(key).nullOr { map { MapHelper(it as BMap) } }
 
     fun getStrings(key:String):List<String>? = getList(key).nullOr { map { (it as BBytes).value.asString() } }
 
-    fun getBBytes(key:String):BBytes? = get(key) { it.bvalue as BBytes }
+    fun getBBytes(key:String):BBytes? = get(key) { it.value as BBytes }
     fun getBytes(key:String):ByteArray? = getBBytes(key).nullOr { value }
 
     fun getString(key:String):String? = getBytes(key).nullOr { asString() }
 
-    fun getBNumber(key:String):BNumber? = get(key) { it.bvalue as BNumber }
+    fun getBNumber(key:String):BNumber? = get(key) { it.value as BNumber }
     fun getBigInteger(key:String):BigInteger? = getBNumber(key).nullOr { value }
 
     fun getLong(key:String):Long? = getBigInteger(key).nullOr { longValue() }

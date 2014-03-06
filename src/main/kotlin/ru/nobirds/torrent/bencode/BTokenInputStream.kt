@@ -40,13 +40,13 @@ public class BTokenInputStream(val stream:InputStream) {
 
     public fun currentChar():Char = current.toChar()
 
-    public fun processBType():BType<out Any> {
+    public fun processBType():BType {
         val value = createBType(currentChar())
         value.process(this)
         return value
     }
 
-    private fun createBType(char:Char): BType<out Any> {
+    private fun createBType(char:Char): BType {
         return when(char) {
             'i' -> BNumber()
             'l' -> BList()

@@ -1,10 +1,8 @@
 package ru.nobirds.torrent.bencode
 
-public trait BType<T> {
+public trait BType {
 
     fun process(stream: BTokenInputStream)
-
-    val value:T
 
     val startPosition:Long
 

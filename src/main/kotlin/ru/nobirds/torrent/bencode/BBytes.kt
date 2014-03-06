@@ -1,6 +1,8 @@
 package ru.nobirds.torrent.bencode
 
-public class BBytes() : AbstractBType<ByteArray>() {
+import ru.nobirds.torrent.asString
+
+public class BBytes() : AbstractBType(), BValueType<ByteArray> {
 
     private val builder = StringBuilder()
     private var array:ByteArray? = null
@@ -11,7 +13,12 @@ public class BBytes() : AbstractBType<ByteArray>() {
     override val value: ByteArray
         get() = array!!
 
-    public fun toString():String = String(value, "UTF-8")
+    public fun set(bytes:ByteArray):BBytes {
+        array = bytes
+        return this
+    }
+
+    public fun toString():String = value.asString()
 
     override fun processChar(stream: BTokenInputStream): Boolean {
         when(stream.currentChar()) {

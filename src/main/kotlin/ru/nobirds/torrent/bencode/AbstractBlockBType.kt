@@ -1,16 +1,11 @@
 package ru.nobirds.torrent.bencode
 
-public abstract class AbstractBlockBType<T>(val start:Char, val end:Char = 'e') : AbstractBType<T>() {
+public abstract class AbstractBlockBType(val start:Char, val end:Char = 'e') : AbstractBType() {
 
     private var started = false
 
     override var startPosition = -1L
     override var endPosition = -1L
-
-    private var valueImpl:T? = null
-
-    override val value: T
-        get() = valueImpl!!
 
     override fun processChar(stream: BTokenInputStream): Boolean {
         when(stream.currentChar()) {
@@ -28,7 +23,6 @@ public abstract class AbstractBlockBType<T>(val start:Char, val end:Char = 'e') 
             end -> {
                 endPosition = stream.position()+1
                 onEnd(stream)
-                valueImpl = createResult()
                 return true
             }
             else -> {
@@ -45,7 +39,5 @@ public abstract class AbstractBlockBType<T>(val start:Char, val end:Char = 'e') 
     }
 
     public abstract fun onChar(stream: BTokenInputStream)
-
-    public abstract fun createResult():T
 
 }

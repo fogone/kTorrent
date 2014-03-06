@@ -15,51 +15,43 @@ import java.util.HashMap
 import java.util.Timer
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.client.parser.BEncodeHttpMessageConverter
+import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.toUrlString
+import ru.nobirds.torrent.bencode.BType
+import ru.nobirds.torrent.bencode.BList
+import ru.nobirds.torrent.bencode.BBytes
+import java.io.ByteArrayInputStream
+import java.io.DataInputStream
+import java.net.InetAddress
+import java.net.Inet4Address
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 public class AnnounceService {
 
     private val template = RestTemplate(arrayListOf(BEncodeHttpMessageConverter()))
 
-    private val timer = Timer()
+    public fun getPeersByUrl(task:TorrentTask, url:URL):IntervalAndPeers {
+        val parameters = createUrlParameters(task)
 
-    private val announces = HashMap<URL, AnnounceUpdater>()
+        val uri = UriComponentsBuilder.fromUri(url.toURI())
+                .queryParams(parameters)
+                .build(true).toUri()
 
-    public fun registerAnnounce(url: URL, updateInterval: Long) {
-        announces.getOrPut(url) { AnnounceUpdater(this, url, timer, updateInterval) }.renewInterval(updateInterval)
-    }
+        val result = template.getForObject(uri, javaClass<BMap>())
 
-    public fun registerTask(task:TorrentTask) {
-        task.torrent.announce.allUrls.forEach {
-            announces.getOrPut(it) { AnnounceUpdater(this, it, timer) }.registerTask(task)
-        }
-    }
+        val helper = MapHelper(result!!)
 
-    public fun getPeersForTask(task:TorrentTask, url:URL):List<Peer> {
-        try {
-            val parameters = createUrlParameters(task)
+        val warning = helper.getString("warning message")
 
-            val uri = UriComponentsBuilder.fromUri(url.toURI())
-                    .queryParams(parameters)
-                    .build().toUri()
+        if(warning != null && warning.equalsIgnoreCase("Invalid info_hash"))
+            throw TorrentNotFoundException(task.torrent)
 
-            val result = template.getForObject(uri, javaClass<BMap>())
+        val interval = helper.getLong("interval")!!
 
-            val helper = MapHelper(result!!)
+        val peers = fetchPeers(helper.map.getValue("peers")!!)
 
-            val warning = helper.getString("warning message")
-
-            if(warning != null && warning.equalsIgnoreCase("Invalid info_hash"))
-                throw TorrentNotFoundException(task.torrent)
-
-            val interval = helper.getLong("interval")!!
-
-            registerAnnounce(url, interval)
-
-            return fetchPeers(helper.getListOfMaps("peers")!!)
-        } catch(e: Exception) {
-            e.printStackTrace()
-            return Collections.emptyList()
-        }
+        return IntervalAndPeers(interval * 1000L, peers)
     }
 
     private fun createUrlParameters(task:TorrentTask):MultiValueMap<String, String> {
@@ -73,8 +65,8 @@ public class AnnounceService {
         val total = torrent.files.totalLength
 
         return multiValueMapOf(
-                "info_hash" to torrent.hash.toString("UTF-8"),
-                "peer_id" to localPeer.id,
+                "info_hash" to torrent.hash.toUrlString(),
+                "peer_id" to localPeer.id.toUrlString(),
                 //"ip" to localPeer.address.getAddress().toString(),
                 "port" to localPeer.address.getPort().toString(),
                 "uploaded" to uploaded.toString(),
@@ -83,11 +75,27 @@ public class AnnounceService {
         )
     }
 
-    private fun fetchPeers(result:List<MapHelper>):List<Peer> {
-        return result.map {
-            Peer(it.getBytes("id")!!.toHexString(),
-                    InetSocketAddress(it.getString("ip")!!, it.getLong("port")!!.toInt()))
+    private fun fetchPeers(peers:BType):List<Peer> {
+        return when(peers) {
+            is BList -> parseFullPeersList(peers)
+            is BBytes -> parseCompactPeersList(peers.value)
+            else -> throw IllegalArgumentException()
         }
     }
 
+    private fun parseFullPeersList(peers:BList):List<Peer> = peers.map {
+        val peer = MapHelper(it as BMap)
+        Peer(peer.getBytes("id")!!, InetSocketAddress(peer.getString("ip")!!, peer.getLong("port")!!.toInt()))
+    }
+
+    private fun parseCompactPeersList(bytes:ByteArray):List<Peer> {
+        val source = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
+
+        val ip = ByteArray(4)
+        return (0..bytes.size / 6 - 1).map {
+            source.get(ip)
+            val port = source.getShort().toInt() and 0xffff
+            Peer(ByteArray(0), InetSocketAddress(InetAddress.getByAddress(ip), port))
+        }
+    }
 }

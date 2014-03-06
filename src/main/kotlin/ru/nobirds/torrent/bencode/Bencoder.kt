@@ -19,35 +19,19 @@ public object Bencoder {
         return tokenInputStream.processBType() as BMap
     }
 
-    public fun decode(stream:InputStream):Map<String, Any> {
-        return decodeBMap(stream).value
-    }
-
-    public fun encode(stream:OutputStream, map:Map<String, Any>) {
-        val tokenOutputStream = BTokenOutputStream(stream)
-        tokenOutputStream.write(map)
-        stream.flush()
-    }
-
-    public fun encode(map:Map<String, Any>):ByteArray {
-        val result = ByteArrayOutputStream()
-        encode(result, map)
-        return result.toByteArray()
-    }
-
-    public fun encodeBType(stream:OutputStream, value:BType<out Any>) {
+    public fun encodeBType(stream:OutputStream, value:BType) {
         val tokenOutputStream = BTokenOutputStream(stream)
         tokenOutputStream.writeBObject(value)
         stream.flush()
     }
 
-    public fun encodeBType(value:BType<out Any>):ByteArray {
+    public fun encodeBType(value:BType):ByteArray {
         val result = ByteArrayOutputStream()
         encodeBType(result, value)
         return result.toByteArray()
     }
 
-    public fun encodeBTypes(stream:OutputStream, values:Iterable<BType<out Any>>) {
+    public fun encodeBTypes(stream:OutputStream, values:Iterable<BType>) {
         val tokenOutputStream = BTokenOutputStream(stream)
         for (value in values) {
             tokenOutputStream.writeBObject(value)
@@ -55,7 +39,7 @@ public object Bencoder {
         stream.flush()
     }
 
-    public fun encodeBTypes(values:Iterable<BType<out Any>>):ByteArray {
+    public fun encodeBTypes(values:Iterable<BType>):ByteArray {
         val result = ByteArrayOutputStream()
         encodeBTypes(result, values)
         return result.toByteArray()

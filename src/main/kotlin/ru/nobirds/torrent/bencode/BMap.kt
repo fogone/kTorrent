@@ -1,29 +1,26 @@
 package ru.nobirds.torrent.bencode
 
 import java.util.LinkedHashMap
+import ru.nobirds.torrent.nullOr
 
 
-public class BMap() : AbstractBlockBType<Map<String, Any>>('d') {
+public class BMap(
+        private val children:MutableMap<String, BKeyValuePair> = LinkedHashMap()
+) : AbstractBlockBType('d'), MutableMap<String, BKeyValuePair> by children {
 
-    private val map:MutableMap<String, Any> = LinkedHashMap()
+    public fun getValue(name:String):BType? = get(name).nullOr { value }
 
-    private val children = LinkedHashMap<String, BKeyValuePair>()
+    public fun putValue(name:String, value:BType) {
+        put(name, BKeyValuePair().set(name, value))
+    }
 
-    public val pairs:Iterable<BKeyValuePair>
-        get() = children.values()
-
-    public fun get(name:String):BKeyValuePair? = children[name]
+    public fun getOrPutValue(name:String, defaultValue:()->BType):BType
+            = getOrPut(name) { BKeyValuePair().set(name, defaultValue()) }.value
 
     override fun onChar(stream: BTokenInputStream) {
         val bpair = BKeyValuePair()
         bpair.process(stream)
-
-        val value = bpair.value
-
         children.put(bpair.name, bpair)
-        map.put(value.first, value.second)
     }
-
-    override fun createResult(): Map<String, Any> = map
 
 }

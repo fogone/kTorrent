@@ -19,10 +19,10 @@ public object LocalPeerFactory {
         return Peer(peerId, InetSocketAddress(InetAddress.getLocalHost(), port.toInt()))
     }
 
-    private fun createPeerId():String {
+    private fun createPeerId():ByteArray {
         val bytes = ByteArray(128)
         SecureRandom().nextBytes(bytes)
-        return Sha1Provider.encode(bytes)
+        return Sha1Provider.encodeAsBytes(bytes)
     }
 
     private fun findFreePort(portRange:LongRange):Long? {
