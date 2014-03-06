@@ -16,4 +16,11 @@ public class BitFieldMessage(val pieces:BitSet) : SimpleMessage(MessageType.bitf
 
 public class RequestMessage(val index:Int, val begin:Int, val length:Int) : SimpleMessage(MessageType.request)
 
+public class CancelMessage(val index:Int, val begin:Int, val length:Int) : SimpleMessage(MessageType.cancel)
+
+public class PieceMessage(val index:Int, val begin:Int, val block:ByteArray) : SimpleMessage(MessageType.piece)
+
+public class PortMessage(val port:Int) : SimpleMessage(MessageType.port)
+
+
 

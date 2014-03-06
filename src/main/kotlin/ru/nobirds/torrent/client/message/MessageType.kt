@@ -11,6 +11,7 @@ public enum class MessageType(val value:Int) {
     request:MessageType(6)
     piece:MessageType(7)
     cancel:MessageType(8)
+    port:MessageType(9)
 
 }
 

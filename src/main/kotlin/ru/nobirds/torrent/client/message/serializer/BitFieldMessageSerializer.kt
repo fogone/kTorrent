@@ -2,10 +2,15 @@ package ru.nobirds.torrent.client.message
 
 import java.io.DataOutputStream
 import java.util.BitSet
+import java.io.DataInputStream
 
-public object BitFieldMessageSerializer : AbstractMessageSerializer<BitFieldMessage>() {
+public object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {
 
-    override fun deserialize(messageType: MessageType, body: ByteArray): BitFieldMessage = BitFieldMessage(BitSet.valueOf(body))
+    override fun read(length: Int, messageType: MessageType, stream: DataInputStream): BitFieldMessage {
+        val buffer = ByteArray(length)
+        stream.readFully(buffer)
+        return BitFieldMessage(BitSet.valueOf(buffer))
+    }
 
     override fun write(stream: DataOutputStream, message: BitFieldMessage) {
         val bytes = message.pieces.toByteArray()
