@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.client.task
+package ru.nobirds.torrent.client.task.connection
 
 import java.io.FilterInputStream
 import java.io.InputStream

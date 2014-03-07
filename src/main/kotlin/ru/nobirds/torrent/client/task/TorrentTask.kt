@@ -16,6 +16,7 @@ import java.util.ArrayList
 import ru.nobirds.torrent.client.task.tracker.HttpUrlTracker
 import java.util.Timer
 import ru.nobirds.torrent.client.announce.AnnounceService
+import ru.nobirds.torrent.client.task.connection.Connection
 
 public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) : ConnectionListener, Thread("Torrent task") {
 
@@ -40,6 +41,11 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
     private val peers = HashSet<Peer>()
 
     private val connections = HashSet<Connection>()
+
+    public fun addBlock(index: FreeBlockIndex, block:ByteArray) {
+//        files.write(index, block)
+//        state.done(index)
+    }
 
     private fun createInitialQueue():ArrayBlockingQueue<TaskMessage> {
         val queue = ArrayBlockingQueue<TaskMessage>(300)

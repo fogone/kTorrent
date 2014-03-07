@@ -6,6 +6,7 @@ import ru.nobirds.torrent.toHexString
 import java.util.BitSet
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.DataInput
+import java.util.Arrays
 
 public object Sha1Provider {
 
@@ -21,7 +22,7 @@ public object Sha1Provider {
 
     public fun createDigest():MessageDigest = MessageDigest.getInstance("SHA-1")
 
-    public fun checkHashes(hashes:List<String>, files:CompositeRandomAccessFile):BitSet {
+    public fun checkHashes(hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
         val result = BitSet(hashes.size)
 
         val length = files.length
@@ -37,8 +38,7 @@ public object Sha1Provider {
 
             val digest = readAndCalculateDigest(files.input, buffer, piece)
 
-            val checked = digest.equals(hash)
-            result.set(index, checked)
+            result.set(index, Arrays.equals(digest, hash))
 
             index++
             position += piece
@@ -47,7 +47,7 @@ public object Sha1Provider {
         return result
     }
 
-    private fun readAndCalculateDigest(input:DataInput, buffer:ByteArray, length:Long):String {
+    private fun readAndCalculateDigest(input:DataInput, buffer:ByteArray, length:Long):ByteArray {
         val messageDigest = createDigest()
 
         val bufferSize = buffer.size.toLong()
@@ -63,6 +63,6 @@ public object Sha1Provider {
             position += piece
         }
 
-        return messageDigest.digest()!!.toHexString()
+        return messageDigest.digest()!!
     }
 }

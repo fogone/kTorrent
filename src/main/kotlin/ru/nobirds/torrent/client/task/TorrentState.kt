@@ -8,9 +8,7 @@ import ru.nobirds.torrent.isAllSet
 import ru.nobirds.torrent.setAll
 import ru.nobirds.torrent.eachSet
 
-public class TorrentState(val torrentInfo:TorrentInfo) {
-
-    private val blockSize = 16L * 1024L
+public class TorrentState(val torrentInfo:TorrentInfo, val blockSize:Long = 16L * 1024L) {
 
     private val blocksInPiece = (torrentInfo.pieceLength + blockSize -1 ) / blockSize
 
@@ -23,6 +21,10 @@ public class TorrentState(val torrentInfo:TorrentInfo) {
             BitSet(blocksInPiece.toInt())
         else
             BitSet((totalBlocks - blocksInPiece * it).toInt())
+    }
+
+    public fun findBlockIndexes(freeIndex:FreeBlockIndex):Array<GlobalBlockIndex> {
+        return Array(0) { GlobalBlockIndex(0, 0) } // todo!!!!
     }
 
     public fun isDone(piece:Int, block:Int):Boolean = blocksState[piece].get(block)

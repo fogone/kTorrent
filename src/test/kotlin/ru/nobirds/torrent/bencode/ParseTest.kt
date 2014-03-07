@@ -5,7 +5,7 @@ import java.io.FileInputStream
 import java.math.BigInteger
 import java.io.FileOutputStream
 import org.junit.Assert
-import ru.nobirds.torrent.client.parser.TorrentParser
+import ru.nobirds.torrent.client.parser.TorrentParserImpl
 import ru.nobirds.torrent.client.parser.Bencoder
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -16,11 +16,13 @@ import java.net.ServerSocket
 import java.io.File
 import java.net.URLEncoder
 import java.net.URLDecoder
+import ru.nobirds.torrent.client.parser.TorrentSerializer
+import ru.nobirds.torrent.client.parser.OldTorrentParserImpl
 
 
 public class BencodeTest() {
 
-    val parserService = TorrentParser()
+    val parserService = TorrentParserImpl()
 
     Test
     public fun infoHashTest() {
@@ -44,7 +46,6 @@ public class BencodeTest() {
         Assert.assertArrayEquals(encoded, infoHash)
     }
 
-    Test
     public fun test3() {
         val source = ClassLoader.getSystemResourceAsStream("test2.torrent")!!.readBytes()
 
@@ -60,10 +61,9 @@ public class BencodeTest() {
         Bencoder.encodeBType(FileOutputStream("tmp.torrent"), map)
     }
 
-    Test
     public fun test5() {
         val map = Bencoder.decodeBMap(FileInputStream("tmp.torrent"))
-        val torrent = TorrentParser().parse(map)
+        val torrent = TorrentParserImpl().parse(map)
         println(torrent)
     }
 
@@ -89,4 +89,30 @@ public class BencodeTest() {
         Assert.assertEquals("Invalid info_hash", warningMessage)
     }
 
+    Test
+    public fun test6() {
+        val parser = TorrentParserImpl()
+        val serializer = TorrentSerializer()
+
+        val source = ClassLoader.getSystemResourceAsStream("test1.torrent")!!
+        val torrent = parser.parse(source)
+
+        val buffer = ByteArrayOutputStream()
+        serializer.serialize(torrent, buffer)
+
+        val torrent2 = parser.parse(ByteArrayInputStream(buffer.toByteArray()))
+
+        Assert.assertTrue(torrent.equals(torrent2))
+    }
+
+    Test
+    public fun test7() {
+        val parser = OldTorrentParserImpl()
+        val parser2 = TorrentParserImpl()
+
+        val torrent = parser.parse(ClassLoader.getSystemResourceAsStream("test1.torrent")!!)
+        val torrent2 = parser2.parse(ClassLoader.getSystemResourceAsStream("test1.torrent")!!)
+
+        Assert.assertTrue(torrent.equals(torrent2))
+    }
 }

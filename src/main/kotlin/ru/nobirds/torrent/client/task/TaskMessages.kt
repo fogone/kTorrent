@@ -2,6 +2,7 @@ package ru.nobirds.torrent.client.task
 
 import ru.nobirds.torrent.client.Peer
 import java.net.Socket
+import ru.nobirds.torrent.client.task.connection.Connection
 
 public trait TaskMessage
 

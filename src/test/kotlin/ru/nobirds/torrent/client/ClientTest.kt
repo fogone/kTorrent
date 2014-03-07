@@ -11,7 +11,7 @@ import ru.nobirds.torrent.client.parser.BEncodeHttpMessageConverter
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.client.parser.MapHelper
 import org.junit.Assert
-import ru.nobirds.torrent.client.parser.TorrentParser
+import ru.nobirds.torrent.client.parser.TorrentParserImpl
 import ru.nobirds.torrent.client.parser.Bencoder
 import java.io.ByteArrayInputStream
 import java.net.URLEncoder
@@ -33,7 +33,7 @@ public class ClientTest {
     public fun announceTest() {
         val restTemplate = RestTemplate(arrayListOf(BEncodeHttpMessageConverter()))
 
-        val torrent = TorrentParser().parse(ClassLoader.getSystemResourceAsStream("test2.torrent")!!)
+        val torrent = TorrentParserImpl().parse(ClassLoader.getSystemResourceAsStream("test2.torrent")!!)
 
         val url = "http://comoros.ti.ru/announce?info_hash=${torrent.info.hash.toUrlString()}&peer_id=&port=6881"
 

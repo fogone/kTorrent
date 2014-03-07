@@ -1,6 +1,7 @@
 package ru.nobirds.torrent.bencode
 
 import java.math.BigInteger
+import java.util.Date
 
 public class BListBuilder(val blist:BList = BList()) {
 
@@ -42,16 +43,34 @@ public class BListBuilder(val blist:BList = BList()) {
 
 public class BMapBuilder(val bmap:BMap= BMap()) {
 
-    public fun value(name:String, string:String) {
-        value(name, string.getBytes())
+    public fun numberValue<T>(name:String, number:T?, cast:(T)->BNumber) {
+        if(number != null)
+            value(name, cast(number))
     }
 
-    public fun value(name:String, bytes:ByteArray) {
-        value(name, BBytes().set(bytes))
+    public fun value(name:String, date:Date?) {
+        numberValue(name, date) { BNumber().set(BigInteger(it.getTime().toString())) }
     }
 
-    public fun value(name:String, number:BigInteger) {
-        value(name, BNumber().set(number))
+    public fun value(name:String, number:Long?) {
+        numberValue(name, number) { BNumber().set(BigInteger(it.toString())) }
+    }
+
+    public fun value(name:String, number:BigInteger?) {
+        numberValue(name, number) { BNumber().set(it) }
+    }
+
+    public fun bytesValue<T>(name:String, bytes:T?, cast:(T)->BBytes) {
+        if(bytes != null)
+            value(name, cast(bytes))
+    }
+
+    public fun value(name:String, string:String?) {
+        bytesValue(name, string) { BBytes().set(it.getBytes()) }
+    }
+
+    public fun value(name:String, bytes:ByteArray?) {
+        bytesValue(name, bytes) { BBytes().set(it) }
     }
 
     public fun value(name:String, value:BValueType<out Any>) {
@@ -80,7 +99,7 @@ public class BMapBuilder(val bmap:BMap= BMap()) {
 
 public object BTypeFactory {
 
-    public fun createBMap(bmap:BMap = BMap(), builder:BMapBuilder.()->Unit):BType {
+    public fun createBMap(bmap:BMap = BMap(), builder:BMapBuilder.()->Unit):BMap {
         val result = BMapBuilder(bmap)
         result.builder()
         return result.build()

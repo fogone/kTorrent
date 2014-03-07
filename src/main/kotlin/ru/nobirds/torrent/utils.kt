@@ -6,6 +6,7 @@ import org.springframework.util.MultiValueMap
 import org.springframework.util.LinkedMultiValueMap
 import java.net.Socket
 import java.util.BitSet
+import java.util.Arrays
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -109,4 +110,30 @@ public fun BitSet.eachSet(block:(Boolean, Int)->Boolean) {
 
 public fun BitSet.eachClear(block:(Boolean, Int)->Boolean) {
     each(false, block)
+}
+
+public fun <T> T?.equalsNullable(other:T?):Boolean {
+    if(this == null && other == null)
+        return true
+
+    if(this == null && other != null)
+        return false
+
+    if(this != null && other == null)
+        return false
+
+    return this.equals(other)
+}
+
+public fun ByteArray.equalsArray(other:ByteArray):Boolean = Arrays.equals(this, other)
+
+public fun List<ByteArray>.equalsList(other:List<ByteArray>):Boolean {
+    if(this.size != other.size) return false
+
+    for (i in 0..size-1) {
+        if(!get(i).equalsArray(other.get(i)))
+            return false
+    }
+
+    return true
 }
