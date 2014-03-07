@@ -27,13 +27,5 @@ public class TorrentStateTest() {
         //TorrentSerializer().serialize(torrent, FileOutputStream("D:\\Torrents\\4R6\\tmp.torrent"))
     }
 
-    Test
-    public fun test2() {
-        val directory = Paths.get(ClassLoader.getSystemResource("torrent")!!.toURI())!!
-        val file = Paths.get(ClassLoader.getSystemResource("torrent/test.file")!!.toURI())!!
-
-        val path = directory.relativize(file)
-        print(path)
-    }
 
 }

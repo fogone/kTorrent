@@ -2,6 +2,7 @@ package ru.nobirds.torrent.bencode
 
 import java.util.LinkedHashMap
 import ru.nobirds.torrent.nullOr
+import java.io.StringWriter
 
 
 public class BMap(
@@ -21,6 +22,12 @@ public class BMap(
         val bpair = BKeyValuePair()
         bpair.process(stream)
         children.put(bpair.name, bpair)
+    }
+
+    override fun toString(): String {
+        val writer = StringWriter()
+        BTypeFormatter(writer).format(this)
+        return writer.toString()
     }
 
 }
