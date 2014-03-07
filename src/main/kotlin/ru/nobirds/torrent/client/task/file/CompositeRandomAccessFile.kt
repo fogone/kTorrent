@@ -8,6 +8,7 @@ import java.io.InputStream
 import java.io.DataOutputStream
 import java.io.OutputStream
 import java.io.EOFException
+import ru.nobirds.torrent.closeQuietly
 
 class InputImplementer(val file:CompositeRandomAccessFile) : InputStream() {
     override fun read(): Int = file.read()
@@ -119,4 +120,9 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         current.seek(0)
     }
 
+    public fun close() {
+        for (file in files) {
+            file.closeQuietly()
+        }
+    }
 }

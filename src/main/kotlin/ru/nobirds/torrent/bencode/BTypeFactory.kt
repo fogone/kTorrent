@@ -89,6 +89,10 @@ public class BMapBuilder(val bmap:BMap= BMap()) {
         BMapBuilder(bmap.getOrPutValue(name) { BMap() } as BMap).builder()
     }
 
+    public fun map(name:String, map:BMap) {
+        bmap.putValue(name, map)
+    }
+
     public fun list(name:String, builder: BListBuilder.()->Unit) {
         BListBuilder(bmap.getOrPutValue(name) { BList() } as BList).builder()
     }

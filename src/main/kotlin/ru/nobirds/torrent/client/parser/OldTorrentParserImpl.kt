@@ -55,7 +55,7 @@ public class OldTorrentParserImpl : TorrentParser {
     private fun parseTorrentInfo(map:MapHelper):TorrentInfo {
         val infoBytes = Bencoder.encodeBType(map.map)
 
-        val hash = Sha1Provider.encodeAsBytes(infoBytes)
+        val hash = Sha1Provider.encode(infoBytes)
 
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!

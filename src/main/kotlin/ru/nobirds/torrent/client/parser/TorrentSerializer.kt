@@ -6,6 +6,7 @@ import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BTypeFactory
 import java.math.BigInteger
 import java.io.ByteArrayOutputStream
+import ru.nobirds.torrent.client.model.TorrentInfo
 
 public class TorrentSerializer {
 
@@ -14,7 +15,18 @@ public class TorrentSerializer {
         Bencoder.encodeBType(stream, bmap)
     }
 
-    public fun torrentToBMap(torrent:Torrent):BMap = BTypeFactory.createBMap() {
+    public fun serialize(info:TorrentInfo, stream:OutputStream) {
+        val bmap = torrentInfoToBMap(info)
+        Bencoder.encodeBType(stream, bmap)
+    }
+
+    public fun serialize(info:TorrentInfo):ByteArray {
+        val buffer = ByteArrayOutputStream()
+        serialize(info, buffer)
+        return buffer.toByteArray()
+    }
+
+    public fun torrentToBMap(torrent:Torrent):BMap = BTypeFactory.createBMap {
         value("creation date", torrent.created)
         value("created by", torrent.createdBy)
         value("comment", torrent.comment)
@@ -30,23 +42,25 @@ public class TorrentSerializer {
             }
         }
 
-        val info = torrent.info
-        map("info") {
-            value("piece length", info.pieceLength)
+        map("info", torrentInfoToBMap(torrent.info))
+    }
 
-            val buffer = ByteArrayOutputStream()
-            for (hash in info.hashes) {
-                buffer.write(hash)
-            }
+    public fun torrentInfoToBMap(info:TorrentInfo):BMap = BTypeFactory.createBMap {
+        value("piece length", info.pieceLength)
 
-            value("pieces", buffer.toByteArray())
+        val buffer = ByteArrayOutputStream()
+        for (hash in info.hashes) {
+            buffer.write(hash)
+        }
 
-            val files = info.files
+        value("pieces", buffer.toByteArray())
 
-            value("name", files.name)
-            value("length", files.length)
+        val files = info.files
 
-            if(!files.files.empty)
+        value("name", files.name)
+        value("length", files.length)
+
+        if(!files.files.empty)
             list("files") {
                 for (file in files.files) {
                     map {
@@ -59,7 +73,5 @@ public class TorrentSerializer {
                     }
                 }
             }
-        }
-
     }
 }

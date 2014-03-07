@@ -41,7 +41,7 @@ public class BencodeTest() {
         val end = info.endPosition.toInt()
 
         val infoBytes = source.copyOfRange(start, end)
-        val encoded = Sha1Provider.encodeAsBytes(infoBytes)
+        val encoded = Sha1Provider.encode(infoBytes)
 
         Assert.assertArrayEquals(encoded, infoHash)
     }

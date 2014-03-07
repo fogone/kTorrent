@@ -18,7 +18,7 @@ public class BBytes() : AbstractBType(), BValueType<ByteArray> {
         return this
     }
 
-    public fun toString():String = value.asString()
+    public override fun toString():String = value.asString()
 
     override fun processChar(stream: BTokenInputStream): Boolean {
         when(stream.currentChar()) {

@@ -7,16 +7,14 @@ import java.util.BitSet
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.DataInput
 import java.util.Arrays
+import java.util.ArrayList
+import ru.nobirds.torrent.equalsArray
 
 public object Sha1Provider {
 
     private val MAX_BUFFER_SIZE = 16 * 1024
 
-    public fun encode(bytes:ByteArray):String {
-        return encodeAsBytes(bytes).toHexString()
-    }
-
-    public fun encodeAsBytes(bytes:ByteArray):ByteArray {
+    public fun encode(bytes:ByteArray):ByteArray {
         return createDigest().digest(bytes)!!
     }
 
@@ -29,7 +27,7 @@ public object Sha1Provider {
 
         val pieceLength = length / hashes.size
 
-        val buffer = ByteArray(if(pieceLength < MAX_BUFFER_SIZE) pieceLength.toInt() else MAX_BUFFER_SIZE)
+        /*val buffer = ByteArray(if(pieceLength < MAX_BUFFER_SIZE) pieceLength.toInt() else MAX_BUFFER_SIZE)
 
         var index = 0
         var position = 0L
@@ -39,6 +37,38 @@ public object Sha1Provider {
             val digest = readAndCalculateDigest(files.input, buffer, piece)
 
             result.set(index, Arrays.equals(digest, hash))
+
+            index++
+            position += piece
+        }*/
+
+        val fileHashes = calculateHashes(files, pieceLength)
+
+        for (i in 0..hashes.size - 1) {
+            result.set(i, hashes[i].equalsArray(fileHashes[i]))
+        }
+
+        return result
+    }
+
+    public fun calculateHashes(files:CompositeRandomAccessFile, pieceLength:Long):List<ByteArray> {
+        val result = ArrayList<ByteArray>()
+
+        val length = files.length
+
+        val count:Long = (length + pieceLength - 1) / pieceLength
+
+        val buffer = ByteArray(if(pieceLength < MAX_BUFFER_SIZE) pieceLength.toInt() else MAX_BUFFER_SIZE)
+
+        var index = 0
+        var position = 0L
+
+        for(i in 0..count-1) {
+            val piece = if(position + pieceLength <= length) pieceLength else length - position
+
+            val digest = readAndCalculateDigest(files.input, buffer, piece)
+
+            result.add(digest)
 
             index++
             position += piece

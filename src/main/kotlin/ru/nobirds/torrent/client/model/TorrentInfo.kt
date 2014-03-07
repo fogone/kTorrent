@@ -6,10 +6,10 @@ import java.util.Collections
 import ru.nobirds.torrent.equalsList
 
 public data class TorrentInfo(
-        val hash:ByteArray,
         val pieceLength:Long,
         val hashes:List<ByteArray> = ArrayList(),
-        val files:TorrentFiles) {
+        val files:TorrentFiles,
+        var hash:ByteArray? = null) {
 
     val pieceCount:Int
         get() = hashes.size

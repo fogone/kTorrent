@@ -34,6 +34,17 @@ public class TorrentParserImpl : TorrentParser {
         createdBy(map.getString("created by"))
         comment(map.getString("comment"))
 
+        announce(map.getString("announce")!!) {
+            val announces = map.getList("announce-list").nullOr {
+                map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
+            }
+
+            if(announces != null)
+                for (url in announces) {
+                    url(url)
+                }
+        }
+
         val info = map.getMap("info")!!
         info(info.getLong("piece length")!!) {
             hashOf(Bencoder.encodeBType(info.map))
@@ -62,17 +73,6 @@ public class TorrentParserImpl : TorrentParser {
                 for (file in files) {
                     file(file.getLong("length")!!, *file.getStrings("path")!!.copyToArray())
                 }
-            }
-        }
-
-        announce(map.getString("announce")!!) {
-            val announces = map.getList("announce-list").nullOr {
-                map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
-            }
-
-            if(announces != null)
-            for (url in announces) {
-                url(url)
             }
         }
     }

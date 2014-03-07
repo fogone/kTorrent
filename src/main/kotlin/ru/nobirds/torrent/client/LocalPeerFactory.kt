@@ -22,7 +22,7 @@ public object LocalPeerFactory {
     private fun createPeerId():ByteArray {
         val bytes = ByteArray(128)
         SecureRandom().nextBytes(bytes)
-        return Sha1Provider.encodeAsBytes(bytes)
+        return Sha1Provider.encode(bytes)
     }
 
     private fun findFreePort(portRange:LongRange):Long? {

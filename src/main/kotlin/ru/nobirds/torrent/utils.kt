@@ -7,6 +7,8 @@ import org.springframework.util.LinkedMultiValueMap
 import java.net.Socket
 import java.util.BitSet
 import java.util.Arrays
+import java.io.RandomAccessFile
+import java.io.File
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -137,3 +139,15 @@ public fun List<ByteArray>.equalsList(other:List<ByteArray>):Boolean {
 
     return true
 }
+
+public fun RandomAccessFile.closeQuietly() {
+    try {
+        close()
+    } catch(e:Exception){
+        // no reaction
+    }
+}
+
+public fun File.randomAccess(mode:String = "rw"):RandomAccessFile = RandomAccessFile(this, mode)
+
+public fun String.containsNonPrintable():Boolean = any { it.toInt() !in 32..127 }
