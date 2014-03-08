@@ -3,20 +3,20 @@ package ru.nobirds.torrent.client.task.connection
 import ru.nobirds.torrent.client.message.Message
 import java.net.Socket
 import ru.nobirds.torrent.client.task.TorrentTask
-import ru.nobirds.torrent.client.task.TorrentState
+import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.client.message.SimpleMessage
 import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.closeQuietly
 import ru.nobirds.torrent.client.message.BitFieldMessage
 import java.util.HashSet
-import ru.nobirds.torrent.client.task.FreeBlockIndex
+import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.message.RequestMessage
 import ru.nobirds.torrent.client.message.CancelMessage
 import ru.nobirds.torrent.client.message.PieceMessage
 
 public class Connection(val task:TorrentTask, val socket:Socket) : Thread("Connection handler thread") {
 
-    private val torrentState:TorrentState = TorrentState(task.torrent.info)
+    private val torrentState: TorrentState = TorrentState(task.torrent.info)
 
     private val requested = HashSet<FreeBlockIndex>()
 

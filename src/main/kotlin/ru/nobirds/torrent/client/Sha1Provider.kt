@@ -20,27 +20,8 @@ public object Sha1Provider {
 
     public fun createDigest():MessageDigest = MessageDigest.getInstance("SHA-1")
 
-    public fun checkHashes(hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
+    public fun checkHashes(pieceLength:Long, hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
         val result = BitSet(hashes.size)
-
-        val length = files.length
-
-        val pieceLength = length / hashes.size
-
-        /*val buffer = ByteArray(if(pieceLength < MAX_BUFFER_SIZE) pieceLength.toInt() else MAX_BUFFER_SIZE)
-
-        var index = 0
-        var position = 0L
-        for (hash in hashes) {
-            val piece = if(position + pieceLength <= length) pieceLength else length - position
-
-            val digest = readAndCalculateDigest(files.input, buffer, piece)
-
-            result.set(index, Arrays.equals(digest, hash))
-
-            index++
-            position += piece
-        }*/
 
         val fileHashes = calculateHashes(files, pieceLength)
 

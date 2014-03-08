@@ -1,7 +1,7 @@
 package ru.nobirds.torrent.client
 
 import org.junit.Test
-import ru.nobirds.torrent.client.task.TorrentState
+import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.client.model.TorrentBuilder
 import ru.nobirds.torrent.client.model.Torrents
 import java.io.File
@@ -11,6 +11,11 @@ import ru.nobirds.torrent.client.parser.TorrentSerializer
 import java.io.FileOutputStream
 import ru.nobirds.torrent.bencode.BTypeFormatter
 import java.io.OutputStreamWriter
+import org.junit.Assert
+import java.util.BitSet
+import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
+import ru.nobirds.torrent.randomAccess
+import ru.nobirds.torrent.asString
 
 public class TorrentStateTest() {
 
@@ -20,11 +25,35 @@ public class TorrentStateTest() {
         val directory = File("D:\\Torrents\\4R6").toPath()
         val torrent = Torrents.createTorrentForDirectory(directory, 1024L * 1024L)
 
-        val writer = OutputStreamWriter(System.out)
-        BTypeFormatter(writer).format(TorrentSerializer().torrentToBMap(torrent))
-        writer.flush()
+        TorrentSerializer().torrentToBMap(torrent).toString(System.out)
+    }
 
-        //TorrentSerializer().serialize(torrent, FileOutputStream("D:\\Torrents\\4R6\\tmp.torrent"))
+    Test
+    public fun test2() {
+        val directory = Paths.get(ClassLoader.getSystemResource("torrent")!!.toURI())!!
+        val torrent = Torrents.createTorrentForDirectory(directory, 4)
+
+        val compositeFile = CompositeRandomAccessFile(
+                arrayListOf(File(ClassLoader.getSystemResource("torrent/test.file")!!.toURI()).randomAccess("r"))
+        )
+
+        val state = TorrentState(torrent.info, 2)
+
+        val bitSet = Sha1Provider.checkHashes(torrent.info.pieceLength, torrent.info.hashes, compositeFile)
+
+        state.done(bitSet)
+
+        Assert.assertTrue(state.isDone())
+        Assert.assertEquals(4, state.piecesCount)
+        Assert.assertEquals(7, state.blocksCount)
+
+        val index = state.blockIndexToGlobalIndex(2, 1)
+
+        compositeFile.seek(index.begin.toLong())
+        val buffer = ByteArray(index.length)
+        compositeFile.input.readFully(buffer)
+
+        Assert.assertEquals("AB", buffer.asString())
     }
 
 

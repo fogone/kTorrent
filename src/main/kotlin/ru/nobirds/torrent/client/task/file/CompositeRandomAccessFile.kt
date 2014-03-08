@@ -42,13 +42,17 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
 
     public fun seek(position:Long) {
         var pos = 0L
-        files.forEachWithIndex { index, file ->
+        var index = 0
+
+        for (file in files) {
             if(position in pos..pos+file.length()) {
                 this.index = index
                 file.seek(position - pos)
+                return
             } else {
                 pos += file.length()
             }
+            index++
         }
 
         throw IllegalStateException()

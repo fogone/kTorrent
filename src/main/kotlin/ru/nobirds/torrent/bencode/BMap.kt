@@ -24,10 +24,4 @@ public class BMap(
         children.put(bpair.name, bpair)
     }
 
-    override fun toString(): String {
-        val writer = StringWriter()
-        BTypeFormatter(writer).format(this)
-        return writer.toString()
-    }
-
 }

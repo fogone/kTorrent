@@ -17,6 +17,9 @@ import ru.nobirds.torrent.client.task.tracker.HttpUrlTracker
 import java.util.Timer
 import ru.nobirds.torrent.client.announce.AnnounceService
 import ru.nobirds.torrent.client.task.connection.Connection
+import ru.nobirds.torrent.client.task.state.FreeBlockIndex
+import ru.nobirds.torrent.client.task.state.TaskState
+import ru.nobirds.torrent.client.task.state.TorrentState
 
 public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) : ConnectionListener, Thread("Torrent task") {
 
@@ -24,7 +27,7 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     private val timer = Timer()
 
-    private var taskState:TaskState = TaskState.stopped
+    private var taskState: TaskState = TaskState.stopped
 
     val uploadStatistics = TrafficStatistics()
 
@@ -36,7 +39,7 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-    val state:TorrentState = TorrentState(torrent.info)
+    val state: TorrentState = TorrentState(torrent.info)
 
     private val peers = HashSet<Peer>()
 
@@ -59,10 +62,9 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     private fun rehashTorrentFiles() {
         val bitSet = Sha1Provider.checkHashes(
-                torrent.info.hashes, files.compositeRandomAccessFile)
+                torrent.info.pieceLength, torrent.info.hashes, files.compositeRandomAccessFile)
 
         state.done(bitSet)
-
     }
 
     private fun createFiles():List<FileDescriptor> {

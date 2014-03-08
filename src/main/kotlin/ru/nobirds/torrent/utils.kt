@@ -94,24 +94,24 @@ public object UrlUtils {
 
 }
 
-public fun BitSet.isAllSet():Boolean = cardinality() == size()
+public fun BitSet.isAllSet(size:Int):Boolean = cardinality() == size
 
-public fun BitSet.setAll(value:Boolean = true) { set(0, size(), value) }
+public fun BitSet.setAll(size:Int, value:Boolean = true) { set(0, size, value) }
 
-public fun BitSet.each(value:Boolean, block:(Boolean, Int)->Boolean) {
+public fun BitSet.each(size:Int, value:Boolean, block:(Boolean, Int)->Boolean) {
     var index = if(value) nextSetBit(0) else nextClearBit(0)
-    while(index != -1) {
+    while(index != -1 && index <= size) {
         set(index, block(value, index))
-        index = if(value) nextSetBit(index) else nextClearBit(index)
+        index = if(value) nextSetBit(index+1) else nextClearBit(index+1)
     }
 }
 
-public fun BitSet.eachSet(block:(Boolean, Int)->Boolean) {
-    each(true, block)
+public fun BitSet.eachSet(size:Int, block:(Boolean, Int)->Boolean) {
+    each(size, true, block)
 }
 
-public fun BitSet.eachClear(block:(Boolean, Int)->Boolean) {
-    each(false, block)
+public fun BitSet.eachClear(size:Int, block:(Boolean, Int)->Boolean) {
+    each(size, false, block)
 }
 
 public fun <T> T?.equalsNullable(other:T?):Boolean {
@@ -151,3 +151,6 @@ public fun RandomAccessFile.closeQuietly() {
 public fun File.randomAccess(mode:String = "rw"):RandomAccessFile = RandomAccessFile(this, mode)
 
 public fun String.containsNonPrintable():Boolean = any { it.toInt() !in 32..127 }
+
+public fun Int.divToUp(value:Int):Int = (this + value - 1) / value
+public fun Long.divToUp(value:Long):Long = (this + value - 1L) / value
