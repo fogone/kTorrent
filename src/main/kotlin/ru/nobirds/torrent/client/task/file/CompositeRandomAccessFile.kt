@@ -59,8 +59,6 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
     }
 
     public fun write(b:ByteArray, off:Int, len:Int) {
-        //current.write(b, off, len)
-
         val toWrite = len - off
 
         val currentPosition = current.getFilePointer()
