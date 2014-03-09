@@ -67,8 +67,25 @@ public class BTypeFormatter(val writer:Writer) {
         val string = bbytes.value.asString()
 
         if(string.containsNonPrintable())
-            writer.write("byte[${bbytes.value.size}]")
+            formatBytes(bbytes.value)
         else
             writer.write("'${string}'")
+    }
+
+    private fun formatBytes(bytes:ByteArray) {
+        writer.write("[")
+        level++
+        bytes.iterator().forEachWithStatus {
+            if(it.index()%50 == 0) {
+                writer.write("\n")
+                writeTabs()
+            }
+
+            writer.write((it.value().toInt() and 0xFF).toString())
+            if(it.hasNext())
+                writer.write(",")
+        }
+        level--
+        writer.write("]")
     }
 }

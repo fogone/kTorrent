@@ -175,12 +175,14 @@ public data class IterationStatus<T>(private val iterator:Iterator<T>) {
 }
 
 public fun <T> Iterable<T>.forEachWithStatus(block:(IterationStatus<T>)->Unit) {
-    val iterator = iterator()
+    iterator().forEachWithStatus(block)
+}
 
-    if(!iterator.hasNext())
+public fun <T> Iterator<T>.forEachWithStatus(block:(IterationStatus<T>)->Unit) {
+    if(!this.hasNext())
         return
 
-    val status = IterationStatus(iterator)
+    val status = IterationStatus(this)
     block(status)
     while(status.hasNext()) {
         block(status.next())
