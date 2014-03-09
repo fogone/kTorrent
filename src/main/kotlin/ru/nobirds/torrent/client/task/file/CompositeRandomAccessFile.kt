@@ -9,6 +9,7 @@ import java.io.DataOutputStream
 import java.io.OutputStream
 import java.io.EOFException
 import ru.nobirds.torrent.closeQuietly
+import ru.nobirds.torrent.client.task.state.GlobalBlockIndex
 
 class InputImplementer(val file:CompositeRandomAccessFile) : InputStream() {
     override fun read(): Int = file.read()
@@ -115,6 +116,12 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         }
 
         return value
+    }
+
+    public fun read(index:GlobalBlockIndex, buffer:ByteArray = ByteArray(index.length)):ByteArray {
+        seek(index.begin.toLong())
+        input.readFully(buffer)
+        return buffer
     }
 
     private fun next() {

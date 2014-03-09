@@ -154,3 +154,36 @@ public fun String.containsNonPrintable():Boolean = any { it.toInt() !in 32..127 
 
 public fun Int.divToUp(value:Int):Int = (this + value - 1) / value
 public fun Long.divToUp(value:Long):Long = (this + value - 1L) / value
+
+public data class IterationStatus<T>(private val iterator:Iterator<T>) {
+
+    private var index:Int = 0
+    private var value:T = iterator.next()
+    private var hasNext:Boolean = iterator.hasNext()
+
+    public fun next():IterationStatus<T> {
+        this.index++
+        this.value = iterator.next()
+        this.hasNext = iterator.hasNext()
+        return this
+    }
+
+    public fun value():T = value
+    public fun hasNext():Boolean = hasNext
+    public fun index():Int = index
+
+}
+
+public fun <T> Iterable<T>.forEachWithStatus(block:(IterationStatus<T>)->Unit) {
+    val iterator = iterator()
+
+    if(!iterator.hasNext())
+        return
+
+    val status = IterationStatus(iterator)
+    block(status)
+    while(status.hasNext()) {
+        block(status.next())
+    }
+
+}

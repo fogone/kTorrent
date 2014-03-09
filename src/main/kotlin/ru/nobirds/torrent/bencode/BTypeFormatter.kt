@@ -4,6 +4,7 @@ import java.io.Writer
 import ru.nobirds.torrent.asString
 import ru.nobirds.torrent.toHexString
 import ru.nobirds.torrent.containsNonPrintable
+import ru.nobirds.torrent.forEachWithStatus
 
 public class BTypeFormatter(val writer:Writer) {
 
@@ -22,11 +23,14 @@ public class BTypeFormatter(val writer:Writer) {
         writer.write("{\n")
 
         level++
-        for (pair in bmap.values()) {
+
+        bmap.values().forEachWithStatus {
             writeTabs()
-            writer.write("${pair.name}:")
+            val pair = it.value()
+            writer.write("'${pair.name}':")
             format(pair.value)
-            writer.write(",\n")
+            if(it.hasNext()) writer.write(",")
+            writer.write("\n")
         }
         level--
 
@@ -38,10 +42,11 @@ public class BTypeFormatter(val writer:Writer) {
         writer.write("[\n")
 
         level++
-        for (item in blist) {
+        blist.forEachWithStatus {
             writeTabs()
-            format(item)
-            writer.write(",\n")
+            format(it.value())
+            if(it.hasNext()) writer.write(",")
+            writer.write("\n")
         }
         level--
 
@@ -62,7 +67,7 @@ public class BTypeFormatter(val writer:Writer) {
         val string = bbytes.value.asString()
 
         if(string.containsNonPrintable())
-            writer.write("${bbytes.value.toHexString()}")
+            writer.write("byte[${bbytes.value.size}]")
         else
             writer.write("'${string}'")
     }

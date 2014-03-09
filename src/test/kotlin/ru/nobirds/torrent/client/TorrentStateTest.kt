@@ -25,7 +25,7 @@ public class TorrentStateTest() {
         val directory = File("D:\\Torrents\\4R6").toPath()
         val torrent = Torrents.createTorrentForDirectory(directory, 1024L * 1024L)
 
-        TorrentSerializer().torrentToBMap(torrent).toString(System.out)
+        System.out.println(TorrentSerializer().torrentToBMap(torrent).toString())
     }
 
     Test
@@ -47,13 +47,9 @@ public class TorrentStateTest() {
         Assert.assertEquals(4, state.piecesCount)
         Assert.assertEquals(7, state.blocksCount)
 
-        val index = state.blockIndexToGlobalIndex(2, 1)
-
-        compositeFile.seek(index.begin.toLong())
-        val buffer = ByteArray(index.length)
-        compositeFile.input.readFully(buffer)
-
-        Assert.assertEquals("AB", buffer.asString())
+        Assert.assertEquals("01", compositeFile.read(state.blockIndexToGlobalIndex(0, 0)).asString())
+        Assert.assertEquals("AB", compositeFile.read(state.blockIndexToGlobalIndex(2, 1)).asString())
+        Assert.assertEquals("C", compositeFile.read(state.blockIndexToGlobalIndex(3, 0)).asString())
     }
 
 
