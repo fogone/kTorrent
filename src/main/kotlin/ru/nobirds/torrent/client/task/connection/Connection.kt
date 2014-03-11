@@ -1,27 +1,18 @@
 package ru.nobirds.torrent.client.task.connection
 
-import ru.nobirds.torrent.client.message.Message
 import java.net.Socket
 import ru.nobirds.torrent.client.task.TorrentTask
 import ru.nobirds.torrent.client.task.state.TorrentState
-import ru.nobirds.torrent.client.message.SimpleMessage
-import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.closeQuietly
-import ru.nobirds.torrent.client.message.BitFieldMessage
-import java.util.HashSet
-import ru.nobirds.torrent.client.task.state.FreeBlockIndex
-import ru.nobirds.torrent.client.message.RequestMessage
-import ru.nobirds.torrent.client.message.CancelMessage
-import ru.nobirds.torrent.client.message.PieceMessage
-import ru.nobirds.torrent.client.message.HaveMessage
+import ru.nobirds.torrent.client.task.requirement.SimpleTorrentRequirements
 
 public class Connection(val task:TorrentTask, val socket:Socket) {
 
+    val peerState: TorrentState = TorrentState(task.torrent.info)
+    val requirements = SimpleTorrentRequirements(task.state, peerState)
 
-    private val requested = HashSet<FreeBlockIndex>()
-
-    private val output = OutputConnectionStreamThread(task, socket.getOutputStream()!!)
-    private val input = InputConnectionStreamThread(task, ConnectionInputStream(socket.getInputStream()!!), output)
+    private val output = OutputConnectionStreamThread(task, peerState, socket.getOutputStream()!!)
+    private val input = InputConnectionStreamThread(task, peerState, ConnectionInputStream(socket.getInputStream()!!), output)
 
     public fun start() {
         output.start()

@@ -17,11 +17,9 @@ import ru.nobirds.torrent.client.message.PieceMessage
 import ru.nobirds.torrent.client.task.TorrentTask
 import ru.nobirds.torrent.client.task.state.TorrentState
 
-class InputConnectionStreamThread(val task:TorrentTask, val stream:InputStream, val output:OutputConnectionStreamThread) : Thread("Connection handler thread") {
+class InputConnectionStreamThread(val task:TorrentTask, val peerState:TorrentState,  val stream:InputStream, val output:OutputConnectionStreamThread) : Thread("Connection handler thread") {
 
     private val input = DataInputStream(stream)
-
-    private val torrentState: TorrentState = TorrentState(task.torrent.info)
 
     override fun run() {
         val handshake = receive()
@@ -38,8 +36,8 @@ class InputConnectionStreamThread(val task:TorrentTask, val stream:InputStream, 
 
     private fun handle(message:Message) {
         when(message) {
-            is BitFieldMessage -> torrentState.done(message.pieces)
-            is HaveMessage -> torrentState.done(message.piece)
+            is BitFieldMessage -> peerState.done(message.pieces)
+            is HaveMessage -> peerState.done(message.piece)
             is RequestMessage -> output.sendBlock(FreeBlockIndex(message.index, message.begin, message.length))
             is CancelMessage -> output.cancelBlock(FreeBlockIndex(message.index, message.begin, message.length))
             is PieceMessage -> task.addBlock(FreeBlockIndex(message.index, message.begin, message.block.size), message.block)

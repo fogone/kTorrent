@@ -5,15 +5,15 @@ import ru.nobirds.torrent.client.message.Message
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.io.DataOutputStream
-import java.io.OutputStream
-import java.util.HashSet
 import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.TorrentTask
 import ru.nobirds.torrent.client.message.PieceMessage
 import ru.nobirds.torrent.client.message.SimpleMessage
 import ru.nobirds.torrent.client.message.MessageType
+import ru.nobirds.torrent.client.task.state.TorrentState
+import java.io.OutputStream
 
-class OutputConnectionStreamThread(val task:TorrentTask, val stream:OutputStream) : Thread("Output connection stream") {
+class OutputConnectionStreamThread(val task:TorrentTask, peerState:TorrentState, val stream:OutputStream) : Thread("Output connection stream") {
 
     private val output = DataOutputStream(stream)
 

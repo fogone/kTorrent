@@ -106,6 +106,17 @@ public fun BitSet.each(size:Int, value:Boolean, block:(Boolean, Int)->Boolean) {
     }
 }
 
+public fun BitSet.findIndex(size:Int, value:Boolean, predicate:(Int)->Boolean):Int {
+    var index = if(value) nextSetBit(0) else nextClearBit(0)
+    while(index != -1 && index <= size) {
+        if(predicate(index))
+            return index
+        index = if(value) nextSetBit(index+1) else nextClearBit(index+1)
+    }
+
+    return -1
+}
+
 public fun BitSet.eachSet(size:Int, block:(Boolean, Int)->Boolean) {
     each(size, true, block)
 }
@@ -113,6 +124,8 @@ public fun BitSet.eachSet(size:Int, block:(Boolean, Int)->Boolean) {
 public fun BitSet.eachClear(size:Int, block:(Boolean, Int)->Boolean) {
     each(size, false, block)
 }
+
+public fun BitSet.copy():BitSet = this.clone() as BitSet
 
 public fun <T> T?.equalsNullable(other:T?):Boolean {
     if(this == null && other == null)

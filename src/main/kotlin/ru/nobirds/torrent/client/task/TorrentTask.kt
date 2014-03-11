@@ -1,7 +1,6 @@
 package ru.nobirds.torrent.client.task
 
 import ru.nobirds.torrent.client.model.Torrent
-import java.util.HashMap
 import java.net.URL
 import ru.nobirds.torrent.client.Peer
 import java.util.HashSet
@@ -10,7 +9,6 @@ import ru.nobirds.torrent.client.Sha1Provider
 import java.net.Socket
 import ru.nobirds.torrent.client.task.connection.ConnectionListener
 import java.util.concurrent.ArrayBlockingQueue
-import ru.nobirds.torrent.client.message.BitFieldMessage
 import ru.nobirds.torrent.client.task.tracker.Tracker
 import java.util.ArrayList
 import ru.nobirds.torrent.client.task.tracker.HttpUrlTracker
@@ -18,8 +16,8 @@ import java.util.Timer
 import ru.nobirds.torrent.client.announce.AnnounceService
 import ru.nobirds.torrent.client.task.connection.Connection
 import ru.nobirds.torrent.client.task.state.FreeBlockIndex
-import ru.nobirds.torrent.client.task.state.TaskState
 import ru.nobirds.torrent.client.task.state.TorrentState
+import java.util.HashMap
 
 public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) : ConnectionListener, Thread("Torrent task") {
 
@@ -38,8 +36,6 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
     val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
     val state: TorrentState = TorrentState(torrent.info)
-
-    // val requirements =
 
     private val peers = HashSet<Peer>()
 

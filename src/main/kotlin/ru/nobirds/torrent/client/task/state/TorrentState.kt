@@ -3,20 +3,16 @@ package ru.nobirds.torrent.client.task.state
 import java.util.BitSet
 import ru.nobirds.torrent.client.model.TorrentInfo
 import java.util.ArrayList
-import ru.nobirds.torrent.nullOr
 import ru.nobirds.torrent.isAllSet
 import ru.nobirds.torrent.setAll
 import ru.nobirds.torrent.eachSet
-import ru.nobirds.torrent.client.task.state.FreeBlockIndex
-import ru.nobirds.torrent.client.task.state.GlobalBlockIndex
-import ru.nobirds.torrent.client.task
 import ru.nobirds.torrent.divToUp
 
 public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16L * 1024L) {
 
     private val length = torrentInfo.files.totalLength
 
-    private val pieceLength = torrentInfo.pieceLength
+    val pieceLength = torrentInfo.pieceLength
 
     private val blocksInPiece = pieceLength.divToUp(blockLength).toInt()
 
@@ -43,6 +39,24 @@ public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16
             BitSet(blocksInPiece.toInt())
         else
             BitSet(lastPieceBlocksCount.toInt())
+    }
+
+    private val listeners = ArrayList<StateListener>()
+
+    public fun registerListener(listener:StateListener) {
+        listeners.add(listener)
+    }
+
+    private fun firePieceComplete(piece:Int) {
+        for (listener in listeners) {
+            listener.onPieceComplete(piece)
+        }
+    }
+
+    private fun fireBlockComplete(piece:Int, block:Int) {
+        for (listener in listeners) {
+            listener.onBlockComplete(piece, block)
+        }
     }
 
     public fun blockToIndex(block:Int): BlockIndex {
@@ -77,7 +91,7 @@ public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16
         return BlockIndex(piece, block)
     }
 
-    private fun blockLength(piece:Int, block:Int):Long {
+    public fun blockLength(piece:Int, block:Int):Long {
         if(piece == piecesCount-1 && block == lastPieceBlocksCount - 1)
             return lastBlockLength
 
@@ -100,13 +114,28 @@ public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16
 
     public fun done(piece:Int, block:Int, value:Boolean = true) {
         val pieceState = blocksState[piece]
+
+        val blockStateValue = pieceState.get(block)
         pieceState.set(block, value)
-        piecesState.set(piece, pieceState.isAllSet(blocksInPiece)) // todo
+
+        if(value && value != blockStateValue)
+            fireBlockComplete(piece, block)
+
+        val pieceStateValue = pieceState.isAllSet(blocksInPiece)
+
+        if(pieceStateValue) {
+            firePieceComplete(piece)
+        }
+
+        piecesState.set(piece, pieceStateValue) // todo
     }
 
     public fun done(piece:Int, value:Boolean = true) {
         blocksState[piece].setAll(blocksInPiece, value)
         piecesState.set(piece, value)
+
+        if(value)
+            firePieceComplete(piece)
     }
 
     public fun done(set:BitSet) {
@@ -119,5 +148,6 @@ public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16
         }
     }
 
+    public fun toBitSet(piece:Int):BitSet = blocksState[piece]
     public fun toBitSet():BitSet = piecesState
 }
