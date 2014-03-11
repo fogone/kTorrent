@@ -13,48 +13,24 @@ import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.message.RequestMessage
 import ru.nobirds.torrent.client.message.CancelMessage
 import ru.nobirds.torrent.client.message.PieceMessage
+import ru.nobirds.torrent.client.message.HaveMessage
 
-public class Connection(val task:TorrentTask, val socket:Socket) : Thread("Connection handler thread") {
+public class Connection(val task:TorrentTask, val socket:Socket) {
 
-    private val torrentState: TorrentState = TorrentState(task.torrent.info)
 
     private val requested = HashSet<FreeBlockIndex>()
 
-    private val input = InputConnectionStream(ConnectionInputStream(socket.getInputStream()!!))
-    private val output = OutputConnectionStreamThread(socket.getOutputStream()!!)
+    private val output = OutputConnectionStreamThread(task, socket.getOutputStream()!!)
+    private val input = InputConnectionStreamThread(task, ConnectionInputStream(socket.getInputStream()!!), output)
 
-    fun sendMessage(message:Message) {
-        output.send(message)
-    }
-
-    override fun run() {
+    public fun start() {
         output.start()
-
-        output.send(SimpleMessage(MessageType.handshake))
-        val handshake = input.receive()
-
-        if(handshake.messageType != MessageType.handshake) {
-            close()
-            return
-        }
-
-        while(!isInterrupted()) {
-            handle(input.receive())
-        }
-    }
-
-    private fun handle(message:Message) {
-        when(message) {
-            is BitFieldMessage -> torrentState.done(message.pieces)
-            is RequestMessage -> requested.add(FreeBlockIndex(message.index, message.begin, message.length))
-            is CancelMessage -> requested.remove(FreeBlockIndex(message.index, message.begin, message.length))
-            is PieceMessage -> task.addBlock(FreeBlockIndex(message.index, message.begin, message.block.size), message.block)
-        }
+        input.start()
     }
 
     public fun close() {
         output.interrupt()
-        output.join()
+        input.interrupt()
         socket.closeQuietly()
     }
 }

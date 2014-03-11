@@ -27,8 +27,6 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     private val timer = Timer()
 
-    private var taskState: TaskState = TaskState.stopped
-
     val uploadStatistics = TrafficStatistics()
 
     val downloadStatistics = TrafficStatistics()
@@ -37,17 +35,29 @@ public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent)
 
     private val messages = createInitialQueue()
 
-    private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
+    val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
     val state: TorrentState = TorrentState(torrent.info)
+
+    // val requirements =
 
     private val peers = HashSet<Peer>()
 
     private val connections = HashSet<Connection>()
 
     public fun addBlock(index: FreeBlockIndex, block:ByteArray) {
-//        files.write(index, block)
-//        state.done(index)
+        val file = files.compositeRandomAccessFile
+        val blockIndex = state.freeIndexToBlockIndex(index.piece, index.begin, index.length)
+
+        if(blockIndex == null)
+            return
+
+        val globalIndex = state.blockIndexToGlobalIndex(blockIndex.piece, blockIndex.block)
+
+        file.seek(globalIndex.begin.toLong())
+        file.output.write(block)
+
+        state.done(blockIndex.piece, blockIndex.block)
     }
 
     private fun createInitialQueue():ArrayBlockingQueue<TaskMessage> {

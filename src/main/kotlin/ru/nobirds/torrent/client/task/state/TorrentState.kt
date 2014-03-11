@@ -58,7 +58,23 @@ public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16
 
     public fun blockIndexToGlobalIndex(piece:Int, block:Int):GlobalBlockIndex {
         val freeBlockIndex = blockIndexToFreeBlockIndex(piece, block)
-        return GlobalBlockIndex((freeBlockIndex.piece * pieceLength).toInt() + freeBlockIndex.begin, freeBlockIndex.length)
+        return freeIndexToGlobalIndex(freeBlockIndex.piece, freeBlockIndex.begin, freeBlockIndex.length)
+    }
+
+    public fun freeIndexToGlobalIndex(piece:Int, begin:Int, length:Int):GlobalBlockIndex {
+        return GlobalBlockIndex((piece * pieceLength).toInt() + begin, length)
+    }
+
+    public fun freeIndexToBlockIndex(piece:Int, begin:Int, length:Int):BlockIndex? {
+        if(blockLength != length.toLong())
+            return null
+
+        if(begin % blockLength.toInt() != 0)
+            return null
+
+        val block = begin / blockLength.toInt()
+
+        return BlockIndex(piece, block)
     }
 
     private fun blockLength(piece:Int, block:Int):Long {
