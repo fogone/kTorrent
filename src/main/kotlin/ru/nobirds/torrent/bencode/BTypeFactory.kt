@@ -17,6 +17,14 @@ public class BListBuilder(val blist:BList = BList()) {
         value(BNumber().set(number))
     }
 
+    public fun value(number:Long) {
+        value(BigInteger(number))
+    }
+
+    public fun value(number:Int) {
+        value(number.toLong())
+    }
+
     public fun value(value:BValueType<out Any>) {
         blist.add(value)
     }

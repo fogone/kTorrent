@@ -35,7 +35,7 @@ public class BencodeTest() {
 
         val infoHash = torrent.info.hash
 
-        val info = MapHelper(map).getBMap("info")!!
+        val info = BMapHelper(map).getBMap("info")!!
 
         val start = info.startPosition.toInt()
         val end = info.endPosition.toInt()
@@ -82,7 +82,7 @@ public class BencodeTest() {
     public fun test2() {
         val stream = ClassLoader.getSystemResourceAsStream("tmp.bencode")!!
         val result = Bencoder.decodeBMap(stream)
-        val helper = MapHelper(result)
+        val helper = BMapHelper(result)
 
         val warningMessage = helper.getString("warning message")
 
