@@ -202,3 +202,14 @@ public fun <T> Iterator<T>.forEachWithStatus(block:(IterationStatus<T>)->Unit) {
     }
 
 }
+
+public inline fun ByteArray.fillWith(factory:(Int)->Byte):ByteArray {
+    (0..size-1).forEach {
+        set(it, factory(it))
+    }
+
+    return this
+}
+
+public fun Byte.xor(byte:Byte):Byte = (toInt() xor byte.toInt()).toByte()
+
