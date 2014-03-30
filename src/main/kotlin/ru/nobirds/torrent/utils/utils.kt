@@ -1,4 +1,4 @@
-package ru.nobirds.torrent
+package ru.nobirds.torrent.utils
 
 import java.math.BigInteger
 import java.util.HashMap
@@ -9,6 +9,11 @@ import java.util.BitSet
 import java.util.Arrays
 import java.io.RandomAccessFile
 import java.io.File
+import java.net.InetAddress
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import ru.nobirds.torrent.client.Peer
+import java.net.InetSocketAddress
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -213,3 +218,30 @@ public inline fun ByteArray.fillWith(factory:(Int)->Byte):ByteArray {
 
 public fun Byte.xor(byte:Byte):Byte = (toInt() xor byte.toInt()).toByte()
 
+public fun ByteArray.toInetSocketAddresses():List<InetSocketAddress> {
+    val source = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN)
+
+    val ip = ByteArray(4)
+
+    return (0..size / 6 - 1).map {
+        source.get(ip)
+        val port = source.getShort().toInt() and 0xffff
+        InetSocketAddress(InetAddress.getByAddress(ip), port)
+    }
+}
+
+public fun <A:InetSocketAddress> List<A>.toCompact():ByteArray {
+    val result = ByteArray(size * 6)
+    val buffer = ByteBuffer.wrap(result)
+
+    for (address in this) {
+        buffer.put(address.getAddress()!!.getAddress()!!)
+        buffer.putShort(address.getPort().toShort()) // todo
+    }
+
+    return result
+}
+
+public fun InetSocketAddress.toCompact(bytes:ByteArray = ByteArray(6)):ByteArray {
+
+}

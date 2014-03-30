@@ -5,13 +5,27 @@ import java.net.InetAddress
 import java.net.DatagramPacket
 import java.io.ByteArrayInputStream
 import ru.nobirds.torrent.kademlia.message.Message
+import ru.nobirds.torrent.kademlia.message.DefaultRequestContainer
+import ru.nobirds.torrent.kademlia.message.ResponseMessage
+import ru.nobirds.torrent.kademlia.message.RequestMessage
+import ru.nobirds.torrent.kademlia.message.MessageSerializer
+import ru.nobirds.torrent.kademlia.message.BencodeMessageSerializer
+import java.util.ArrayList
+import ru.nobirds.torrent.kademlia.message.MessageType
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.ArrayBlockingQueue
+import ru.nobirds.torrent.kademlia.message.ErrorMessage
+import ru.nobirds.torrent.kademlia.message.bencode.BencodeMessageSerializer
 
 public class Server(val port:Int) : Thread("Kademlia Server") {
 
-    private val localNode = Node(Ids.random(), InetAddress.getByName("localhost")!!)
+    private val requestContainer = DefaultRequestContainer()
 
-//    private val outputMessages = ArrayBlockingQueue<Message>(50)
-//    private val inputMessages = ArrayBlockingQueue<Message>(50)
+    private val messageSerializer:MessageSerializer = BencodeMessageSerializer(requestContainer)
+
+    private val listeners = ArrayList<(Message)->Unit>()
+
+    private val localNode = Node(Ids.random(), InetAddress.getByName("localhost")!!)
 
     private val socket = DatagramSocket(port)
 
@@ -35,9 +49,26 @@ public class Server(val port:Int) : Thread("Kademlia Server") {
 
         val inputStream = ByteArrayInputStream(data, offset, length)
 
+        val message = messageSerializer.deserialize(inputStream)
+
+        listeners.forEach { it(message) }
     }
 
     public fun send(message: Message) {
+        val result = ByteArrayOutputStream()
 
+        if(message is RequestMessage)
+            requestContainer.storeWithTimeout(message)
+
+        messageSerializer.serialize(message, result)
+
+        val bytes = result.toByteArray()
+
+        socket.send(DatagramPacket(bytes, bytes.size))
     }
+
+    public fun registerListener(listener:(Message)->Unit) {
+        listeners.add(listener)
+    }
+
 }

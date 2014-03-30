@@ -18,7 +18,7 @@ public class BListBuilder(val blist:BList = BList()) {
     }
 
     public fun value(number:Long) {
-        value(BigInteger(number))
+        value(BigInteger(number.toString()))
     }
 
     public fun value(number:Int) {
@@ -49,7 +49,7 @@ public class BListBuilder(val blist:BList = BList()) {
 
 }
 
-public class BMapBuilder(val bmap:BMap= BMap()) {
+public class BMapBuilder(val bmap:BMap = BMap()) {
 
     public fun numberValue<T>(name:String, number:T?, cast:(T)->BNumber) {
         if(number != null)

@@ -4,6 +4,8 @@ public trait RequestContainer {
 
     fun findById(id:Long):RequestMessage?
 
-    fun storeWithTimeout(request:RequestMessage, timeout:Long)
+    fun removeById(id:Long)
+
+    fun storeWithTimeout(request:RequestMessage, timeout:Long = 100000L)
 
 }

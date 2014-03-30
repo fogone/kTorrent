@@ -4,7 +4,6 @@ import org.springframework.web.client.RestTemplate
 import java.net.URL
 import org.springframework.web.util.UriComponentsBuilder
 import ru.nobirds.torrent.client.task.TorrentTask
-import ru.nobirds.torrent.client.parser.MapHelper
 import ru.nobirds.torrent.toHexString
 import ru.nobirds.torrent.client.Peer
 import ru.nobirds.torrent.multiValueMapOf
@@ -26,6 +25,10 @@ import java.net.InetAddress
 import java.net.Inet4Address
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import ru.nobirds.torrent.bencode.BMapHelper
+import ru.nobirds.torrent.utils.toUrlString
+import ru.nobirds.torrent.utils.multiValueMapOf
+import ru.nobirds.torrent.utils.toInetSocketAddresses
 
 public class AnnounceService {
 
@@ -40,7 +43,7 @@ public class AnnounceService {
 
         val result = template.getForObject(uri, javaClass<BMap>())
 
-        val helper = MapHelper(result!!)
+        val helper = BMapHelper(result!!)
 
         val failureReason = helper.getString("failure reason")
 
@@ -89,24 +92,14 @@ public class AnnounceService {
     private fun fetchPeers(peers:BType):List<Peer> {
         return when(peers) {
             is BList -> parseFullPeersList(peers)
-            is BBytes -> parseCompactPeersList(peers.value)
+            is BBytes -> peers.value.toInetSocketAddresses().map { Peer(ByteArray(0), it) }
             else -> throw IllegalArgumentException()
         }
     }
 
     private fun parseFullPeersList(peers:BList):List<Peer> = peers.map {
-        val peer = MapHelper(it as BMap)
+        val peer = BMapHelper(it as BMap)
         Peer(peer.getBytes("id")!!, InetSocketAddress(peer.getString("ip")!!, peer.getLong("port")!!.toInt()))
     }
 
-    private fun parseCompactPeersList(bytes:ByteArray):List<Peer> {
-        val source = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
-
-        val ip = ByteArray(4)
-        return (0..bytes.size / 6 - 1).map {
-            source.get(ip)
-            val port = source.getShort().toInt() and 0xffff
-            Peer(ByteArray(0), InetSocketAddress(InetAddress.getByAddress(ip), port))
-        }
-    }
 }

@@ -8,6 +8,8 @@ import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.Torrents
 import ru.nobirds.torrent.nullOr
 import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.utils.nullOr
+import ru.nobirds.torrent.utils.asString
 
 public class TorrentParserImpl : TorrentParser {
 

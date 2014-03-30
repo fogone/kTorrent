@@ -5,8 +5,8 @@ import java.io.OutputStream
 
 public trait MessageSerializer {
 
-    fun serialize(source:InputStream):Message
+    fun deserialize(source:InputStream):Message
 
-    fun deserialize(message:Message, output:OutputStream)
+    fun serialize(message:Message, output:OutputStream)
 
 }

@@ -14,6 +14,8 @@ import ru.nobirds.torrent.nullOr
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.utils.nullOr
+import ru.nobirds.torrent.utils.asString
 
 deprecated("Use TorrentParserImpl")
 public class OldTorrentParserImpl : TorrentParser {
