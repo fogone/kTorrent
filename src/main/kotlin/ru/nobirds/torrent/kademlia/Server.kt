@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.ArrayBlockingQueue
 import ru.nobirds.torrent.kademlia.message.ErrorMessage
 import ru.nobirds.torrent.kademlia.message.bencode.BencodeMessageSerializer
+import ru.nobirds.torrent.kademlia.message.MessageFactory
 
 public class Server(val port:Int) : Thread("Kademlia Server") {
 
@@ -24,8 +25,6 @@ public class Server(val port:Int) : Thread("Kademlia Server") {
     private val messageSerializer:MessageSerializer = BencodeMessageSerializer(requestContainer)
 
     private val listeners = ArrayList<(Message)->Unit>()
-
-    private val localNode = Node(Ids.random(), InetAddress.getByName("localhost")!!)
 
     private val socket = DatagramSocket(port)
 

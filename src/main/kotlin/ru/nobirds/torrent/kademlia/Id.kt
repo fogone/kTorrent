@@ -4,7 +4,7 @@ import ru.nobirds.torrent.fillWith
 import ru.nobirds.torrent.xor
 import ru.nobirds.torrent.utils.fillWith
 import ru.nobirds.torrent.utils.xor
-
+import java.security.SecureRandom
 
 
 public data class Id(factory:(Int)->Byte) {
@@ -20,11 +20,17 @@ public data class Id(factory:(Int)->Byte) {
     class object {
         public val Zero:Id = Id { 0 }
 
+        private val random = SecureRandom()
+
+        public fun random():Id = Id { random.nextInt().toByte() }
+
         public fun fromBytes(bytes:ByteArray):Id {
             if(bytes.size != 20)
                 throw IllegalArgumentException("Id must have 20 bytes length")
 
             return Id { bytes[it] }
         }
+
+
     }
 }
