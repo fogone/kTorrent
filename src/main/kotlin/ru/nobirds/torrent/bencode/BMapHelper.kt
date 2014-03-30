@@ -4,6 +4,8 @@ import java.util.Date
 import ru.nobirds.torrent.nullOr
 import java.math.BigInteger
 import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.utils.nullOr
+import ru.nobirds.torrent.utils.asString
 
 public class BMapHelper(val map:BMap) {
 
@@ -12,6 +14,8 @@ public class BMapHelper(val map:BMap) {
         return if(value != null) cast(value)
         else null
     }
+
+    fun containsKey(key:String):Boolean = map.containsKey(key)
 
     fun getBMap(key:String):BMap? = get(key) {  it.value as BMap }
 
@@ -43,6 +47,8 @@ public class BMapHelper(val map:BMap) {
 }
 
 public class BListHelper(val list:BList) {
+
+    fun map<T:BType, R>(mapper:(T)->R):List<R> = list.map { mapper(it as T) }
 
     fun get(index:Int):BType = list[index]
 

@@ -230,18 +230,38 @@ public fun ByteArray.toInetSocketAddresses():List<InetSocketAddress> {
     }
 }
 
+public fun ByteArray.toInetSocketAddress():InetSocketAddress {
+    val source = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN)
+
+    val ip = ByteArray(4)
+
+    source.get(ip)
+    val port = source.getShort().toInt() and 0xffff
+
+    return InetSocketAddress(InetAddress.getByAddress(ip), port)
+}
+
 public fun <A:InetSocketAddress> List<A>.toCompact():ByteArray {
+    val addressBuffer = ByteArray(size * 6)
     val result = ByteArray(size * 6)
     val buffer = ByteBuffer.wrap(result)
 
-    for (address in this) {
-        buffer.put(address.getAddress()!!.getAddress()!!)
-        buffer.putShort(address.getPort().toShort()) // todo
-    }
+    for (address in this)
+        buffer.put(address.toCompact(addressBuffer))
 
     return result
 }
 
-public fun InetSocketAddress.toCompact(bytes:ByteArray = ByteArray(6)):ByteArray {
+public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = size) {
+    System.arraycopy(this, offset, target, position, length)
+}
 
+public fun InetSocketAddress.toCompact(bytes:ByteArray = ByteArray(6)):ByteArray {
+    getAddress()!!.getAddress()!!.copyTo(bytes)
+
+    val port = getPort()
+    bytes[4] = (port or 0xff).toByte()
+    bytes[5] = (port shl 2 or 0xff).toByte()
+
+    return bytes
 }

@@ -21,52 +21,53 @@ import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BListHelper
 import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.utils.toInetSocketAddress
+import ru.nobirds.torrent.utils.nullOr
+import ru.nobirds.torrent.kademlia.message.AnnouncePeerRequest
+import ru.nobirds.torrent.kademlia.message.AnnouncePeerResponse
 
-public class GetPeersBencodeMarshaller : BencodeMarshaller<GetPeersRequest, GetPeersResponse> {
+public class AnnouncePeerBencodeMarshaller : BencodeMarshaller<AnnouncePeerRequest, AnnouncePeerResponse> {
 
-    override fun marshallRequest(id:Long, map: BMap): GetPeersRequest {
+    override fun marshallRequest(id:Long, map: BMap): AnnouncePeerRequest {
         val helper = BMapHelper(map)
 
         val sender = helper.getBytes("id")!!
+        val impliedPortValue = helper.getString("implied_port")
+        val impliedPort = impliedPortValue != null && impliedPortValue == "1"
+
         val hash = helper.getBytes("info_hash")!!
+        val port = helper.getInt("port")
 
-        return GetPeersRequest(id, Id.fromBytes(sender), Id.fromBytes(hash))
-    }
-
-    override fun marshallResponse(id: Long, map: BMap): GetPeersResponse {
-        val helper = BMapHelper(map)
-
-        val sender = helper.getBytes("id")!!
         val token = helper.getString("token")!!
 
-        return if(helper.containsKey("nodes")) {
-            val nodes = helper.getBytes("nodes")!!
-            ClosestPeersResponse(id, Id.fromBytes(sender), token, nodes.toInetSocketAddresses())
-        } else {
-            val values = helper.getList("values")!!
-            PeersFoundResponse(id, Id.fromBytes(sender), token, parseValues(values))
-        }
+        return AnnouncePeerRequest(id, Id.fromBytes(sender), Id.fromBytes(hash), impliedPort, port, token)
+    }
+
+    override fun marshallResponse(id: Long, map: BMap): AnnouncePeerResponse {
+        val helper = BMapHelper(map)
+
+        val sender = helper.getBytes("id")!!
+
+        return AnnouncePeerResponse(id, Id.fromBytes(sender))
     }
 
     private fun parseValues(list:BListHelper):List<InetSocketAddress>
             = list.map<BBytes, InetSocketAddress>() { it.value.toInetSocketAddress() }
 
-    override fun unmarshallRequest(request: GetPeersRequest): BMap = BTypeFactory.createBMap {
+    override fun unmarshallRequest(request: AnnouncePeerRequest): BMap = BTypeFactory.createBMap {
         value("id", request.sender.toBytes())
         value("info_hash", request.hash.toBytes())
+
+        if(request.impliedPort)
+            value("implied_port", "1")
+
+        if(request.port != null)
+            value("port", request.port.toLong())
+
+        value("token", request.token)
     }
 
-    override fun unmarshallResponse(response: GetPeersResponse): BMap = BTypeFactory.createBMap {
+    override fun unmarshallResponse(response: AnnouncePeerResponse): BMap = BTypeFactory.createBMap {
         value("id", response.sender.toBytes())
-
-        if(response is ClosestPeersResponse)
-            value("nodes", response.nodes.toCompact())
-        else
-            list("values") {
-                for (addr in response.nodes) {
-                    value(addr.toCompact())
-                }
-            }
     }
 
 }

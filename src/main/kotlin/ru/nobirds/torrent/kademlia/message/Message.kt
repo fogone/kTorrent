@@ -31,7 +31,7 @@ public data class PingRequest(id:Long, sender:Id) : RequestMessage(id, sender)
 public data class PingResponse(id:Long, sender:Id) : ResponseMessage(id, sender)
 
 public data class AnnouncePeerRequest(id:Long, sender:Id, val hash:Id, val impliedPort:Boolean, val port:Int?, val token:String) : RequestMessage(id, sender)
-public data class AnnouncePeerResponse(id:Long, sender:Id, val hash:Id) : ResponseMessage(id, sender)
+public data class AnnouncePeerResponse(id:Long, sender:Id) : ResponseMessage(id, sender)
 
 public data class FindNodeRequest(id:Long, sender:Id, val target:Id) : RequestMessage(id, sender)
 public data class FindNodeResponse(id:Long, sender:Id, val nodes:List<InetSocketAddress>) : ResponseMessage(id, sender)
@@ -75,7 +75,7 @@ public class MessageFactory(val sender:Id, val idSequence:IdSequence = Increment
     public fun createAnnouncePeerRequest(hash:Id, token:String, node:Id = sender, id:Long = idSequence.next()):AnnouncePeerRequest
             = AnnouncePeerRequest(id, node, hash, true, null, token)
 
-    public fun createAnnouncePeerResponse(id:Long, hash:Id, node:Id = sender):AnnouncePeerResponse = AnnouncePeerResponse(id, sender, hash)
+    public fun createAnnouncePeerResponse(id:Long, node:Id = sender):AnnouncePeerResponse = AnnouncePeerResponse(id, node)
 
     public fun createErrorMessage(code:Int, message:String, id:Long = idSequence.next()):ErrorMessage = ErrorMessage(id, code, message)
 
