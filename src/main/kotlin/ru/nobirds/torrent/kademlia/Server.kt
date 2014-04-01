@@ -1,30 +1,21 @@
 package ru.nobirds.torrent.kademlia
 
 import java.net.DatagramSocket
-import java.net.InetAddress
 import java.net.DatagramPacket
 import java.io.ByteArrayInputStream
 import ru.nobirds.torrent.kademlia.message.Message
-import ru.nobirds.torrent.kademlia.message.DefaultRequestContainer
-import ru.nobirds.torrent.kademlia.message.ResponseMessage
-import ru.nobirds.torrent.kademlia.message.RequestMessage
 import ru.nobirds.torrent.kademlia.message.MessageSerializer
-import ru.nobirds.torrent.kademlia.message.BencodeMessageSerializer
 import java.util.ArrayList
-import ru.nobirds.torrent.kademlia.message.MessageType
 import java.io.ByteArrayOutputStream
-import java.util.concurrent.ArrayBlockingQueue
-import ru.nobirds.torrent.kademlia.message.ErrorMessage
-import ru.nobirds.torrent.kademlia.message.bencode.BencodeMessageSerializer
-import ru.nobirds.torrent.kademlia.message.MessageFactory
+import ru.nobirds.torrent.kademlia.message.RequestContainer
 
-public class Server(val port:Int) : Thread("Kademlia Server") {
+public class Server(
+        val port:Int,
+        val messageSerializer:MessageSerializer) : Thread("Kademlia Server") {
 
-    private val requestContainer = DefaultRequestContainer()
+    private val sendListeners = ArrayList<(Message)->Unit>()
 
-    private val messageSerializer:MessageSerializer = BencodeMessageSerializer(requestContainer)
-
-    private val listeners = ArrayList<(Message)->Unit>()
+    private val receiveListeners = ArrayList<(Message)->Unit>()
 
     private val socket = DatagramSocket(port)
 
@@ -50,14 +41,13 @@ public class Server(val port:Int) : Thread("Kademlia Server") {
 
         val message = messageSerializer.deserialize(inputStream)
 
-        listeners.forEach { it(message) }
+        receiveListeners.forEach { it(message) }
     }
 
     public fun send(message: Message) {
         val result = ByteArrayOutputStream()
 
-        if(message is RequestMessage)
-            requestContainer.storeWithTimeout(message)
+        sendListeners.forEach { it(message) }
 
         messageSerializer.serialize(message, result)
 
@@ -66,8 +56,14 @@ public class Server(val port:Int) : Thread("Kademlia Server") {
         socket.send(DatagramPacket(bytes, bytes.size))
     }
 
-    public fun registerListener(listener:(Message)->Unit) {
-        listeners.add(listener)
+    public fun registerSendListener(listener:(Message)->Unit):Server {
+        sendListeners.add(listener)
+        return this
+    }
+
+    public fun registerReceiveListener(listener:(Message)->Unit):Server {
+        receiveListeners.add(listener)
+        return this
     }
 
 }

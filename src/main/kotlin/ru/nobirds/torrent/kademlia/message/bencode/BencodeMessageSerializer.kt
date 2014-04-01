@@ -28,7 +28,7 @@ public class BencodeMessageSerializer(val requestContainer: RequestContainer) : 
     override fun deserialize(source: InputStream): Message {
         val map =  BMapHelper(Bencoder.decodeBMap(source))
 
-        val id = map.getLong("t")!!
+        val id = map.getString("t")!!
         val messageType = resolveMessageType(map.getString("y")!!)
 
         return when(messageType) {

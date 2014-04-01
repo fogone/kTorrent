@@ -12,8 +12,9 @@ import java.io.File
 import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import ru.nobirds.torrent.client.Peer
 import java.net.InetSocketAddress
+import java.util.Timer
+import java.util.TimerTask
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -264,4 +265,14 @@ public fun InetSocketAddress.toCompact(bytes:ByteArray = ByteArray(6)):ByteArray
     bytes[5] = (port shl 2 or 0xff).toByte()
 
     return bytes
+}
+
+public fun Timer.scheduleOnce(timeout:Long, callback:()->Unit):TimerTask {
+    val task = object : TimerTask() {
+        override fun run() { callback()}
+    }
+
+    schedule(task, timeout)
+
+    return task
 }
