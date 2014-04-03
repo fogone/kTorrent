@@ -3,7 +3,6 @@ package ru.nobirds.torrent.kademlia.message.bencode
 import java.io.OutputStream
 import java.io.InputStream
 import java.util.HashMap
-import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BMapHelper
 import ru.nobirds.torrent.client.parser.Bencoder
 import ru.nobirds.torrent.bencode.BTypeFactory
@@ -15,6 +14,7 @@ import ru.nobirds.torrent.kademlia.message.Message
 import ru.nobirds.torrent.kademlia.message.MessageType
 import ru.nobirds.torrent.kademlia.message.ErrorMessage
 import ru.nobirds.torrent.kademlia.message.LostResponse
+import java.net.InetSocketAddress
 
 public class BencodeMessageSerializer(val requestContainer: RequestContainer) : MessageSerializer {
 
@@ -25,7 +25,7 @@ public class BencodeMessageSerializer(val requestContainer: RequestContainer) : 
     private val marshallers = HashMap<Class<out RequestMessage>,
             BencodeMarshaller<out RequestMessage, out ResponseMessage>>()
 
-    override fun deserialize(source: InputStream): Message {
+    override fun deserialize(address:InetSocketAddress, source: InputStream): Message {
         val map =  BMapHelper(Bencoder.decodeBMap(source))
 
         val id = map.getString("t")!!
@@ -34,13 +34,13 @@ public class BencodeMessageSerializer(val requestContainer: RequestContainer) : 
         return when(messageType) {
             MessageType.error -> {
                 val list = map.getList("e")!!
-                ErrorMessage(id, list.getInt(0), list.getString(1))
+                ErrorMessage(id, address, list.getInt(0), list.getString(1))
             }
             MessageType.request -> {
                 val requestType = map.getString("q")!!
                 val marshaller = marshallers[resolveRequestTypeByCode(requestType)]!!
 
-                marshaller.marshallRequest(id, map.getBMap("a")!!)
+                marshaller.marshallRequest(id, address, map.getBMap("a")!!)
             }
             MessageType.response -> {
                 val request = requestContainer.findById(id)
@@ -48,8 +48,8 @@ public class BencodeMessageSerializer(val requestContainer: RequestContainer) : 
 
                     val marshaller = marshallers[request.javaClass]!!
 
-                    marshaller.marshallResponse(id, map.getBMap("r")!!)
-                } else LostResponse
+                    marshaller.marshallResponse(id, address, map.getBMap("r")!!)
+                } else LostResponse(address)
             }
         }
     }

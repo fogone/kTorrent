@@ -1,5 +1,5 @@
 package ru.nobirds.torrent.kademlia
 
-import java.net.InetAddress
+import java.net.InetSocketAddress
 
-public class Node(val id:Id, val address:InetAddress)
+public class Node(val id:Id, val address:InetSocketAddress)

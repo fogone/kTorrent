@@ -9,6 +9,10 @@ import ru.nobirds.torrent.kademlia.message.ResponseMessage
 import ru.nobirds.torrent.kademlia.message.Message
 import ru.nobirds.torrent.kademlia.message.ErrorMessage
 import ru.nobirds.torrent.kademlia.message.PingRequest
+import ru.nobirds.torrent.kademlia.message.AnnouncePeerRequest
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import ru.nobirds.torrent.kademlia.message.GetPeersRequest
 
 public open class DhtException(message:String) : RuntimeException(message)
 
@@ -20,16 +24,19 @@ public class Dht(val port:Int) {
 
     private val messageSerializer = BencodeMessageSerializer(requestContainer)
 
+    private val map = ConcurrentHashMap<Id, MutableMap<Id, Node>>()
+
     private val server:Server = Server(port, messageSerializer)
             .registerSendListener { onSendMessage(it)}
             .registerReceiveListener { onReceiveMessage(it)}
 
-    private val messageFactory = MessageFactory(Id.random())
+    private val peers = PeersContainer()
 
-    public fun findPeersForHash(hash:Id, callback:(List<InetSocketAddress>)->Unit) {
-        val request = messageFactory.createGetPeersRequest(hash)
+    private val messageFactory = MessageFactory(Node(Id.random(), InetSocketAddress.createUnresolved("localhost", 0)))
 
-        server.send(request)
+    public fun findPeersForHash(hash:Id, callback:(Node)->Unit) {
+        peers.registerPeerListener(hash, callback)
+        server.send(messageFactory.createGetPeersRequest(hash))
     }
 
     private fun onSendMessage(message:Message) {
@@ -58,18 +65,35 @@ public class Dht(val port:Int) {
                 val request = requestContainer.findById(message.id)
 
                 if(request != null)
-                    onError(request, message)
+                    onErrorReceive(request, message)
             }
             is RequestMessage -> {
-                onRequest(message)
+                onRequestReceive(message)
             }
         }
     }
 
-    private fun onRequest(request:RequestMessage) {
+    private fun onRequestReceive(request:RequestMessage) {
         when(request) {
             is PingRequest -> {
-                server.send(messageFactory.createPingResponse(request.id))
+                server.send(messageFactory.createPingResponse(request.id, request.sender))
+            }
+            is GetPeersRequest -> {
+                peers.find(request.hash)
+                server.send(messageFactory.createGetPeersRequest())
+            }
+            is AnnouncePeerRequest -> {
+                if(!peers.checkPeerToken(request.sender, request.token))
+                    server.send(messageFactory.errors.generic("Invalid token"))
+                else {
+                    val hash = request.hash
+
+                    val nodes = map.getOrPut(hash) { ConcurrentHashMap() }
+
+                    nodes[request.sender.id] = request.sender
+
+                    server.send(messageFactory.createAnnouncePeerResponse(request.id, request.sender))
+                }
             }
         }
     }
@@ -78,7 +102,7 @@ public class Dht(val port:Int) {
 
     }
 
-    private fun onError(request:RequestMessage, response:ErrorMessage) {
+    private fun onErrorReceive(request:RequestMessage, response:ErrorMessage) {
 
     }
 }

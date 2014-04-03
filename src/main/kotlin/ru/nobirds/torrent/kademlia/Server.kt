@@ -7,7 +7,8 @@ import ru.nobirds.torrent.kademlia.message.Message
 import ru.nobirds.torrent.kademlia.message.MessageSerializer
 import java.util.ArrayList
 import java.io.ByteArrayOutputStream
-import ru.nobirds.torrent.kademlia.message.RequestContainer
+import java.util.concurrent.ArrayBlockingQueue
+import java.net.InetSocketAddress
 
 public class Server(
         val port:Int,
@@ -17,9 +18,13 @@ public class Server(
 
     private val receiveListeners = ArrayList<(Message)->Unit>()
 
+    private val outputMessagesQueue = ArrayBlockingQueue<Message>(50)
+
     private val socket = DatagramSocket(port)
 
     override fun run() {
+        runSendingThread()
+
         val packet = DatagramPacket(ByteArray(1024), 1024)
 
         while(isInterrupted().not()) {
@@ -32,28 +37,44 @@ public class Server(
         }
     }
 
+    private fun runSendingThread() {
+        run {
+            while(!isInterrupted())
+                sendMessage(outputMessagesQueue.take()!!)
+        }
+    }
+
+    private fun sendMessage(message:Message) {
+        try {
+            val result = ByteArrayOutputStream()
+
+            sendListeners.forEach { it(message) }
+
+            messageSerializer.serialize(message, result)
+
+            val bytes = result.toByteArray()
+
+            socket.send(DatagramPacket(bytes, bytes.size))
+        } catch(e: Exception) {
+            e.printStackTrace() // todo
+        }
+    }
+
     private fun processPacket(packet:DatagramPacket) {
         val data = packet.getData()!!
         val offset = packet.getOffset()
         val length = packet.getLength()
+        val address = packet.getSocketAddress() as InetSocketAddress
 
         val inputStream = ByteArrayInputStream(data, offset, length)
 
-        val message = messageSerializer.deserialize(inputStream)
+        val message = messageSerializer.deserialize(address, inputStream)
 
         receiveListeners.forEach { it(message) }
     }
 
     public fun send(message: Message) {
-        val result = ByteArrayOutputStream()
-
-        sendListeners.forEach { it(message) }
-
-        messageSerializer.serialize(message, result)
-
-        val bytes = result.toByteArray()
-
-        socket.send(DatagramPacket(bytes, bytes.size))
+        outputMessagesQueue.put(message)
     }
 
     public fun registerSendListener(listener:(Message)->Unit):Server {
