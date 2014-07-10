@@ -1,8 +1,8 @@
 package ru.nobirds.torrent.config
 
 import java.util.HashMap
-import ru.nobirds.torrent.component1
-import ru.nobirds.torrent.component2
+import ru.nobirds.torrent.utils.component1
+import ru.nobirds.torrent.utils.component2
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files

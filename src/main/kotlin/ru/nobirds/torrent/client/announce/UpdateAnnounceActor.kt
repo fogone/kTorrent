@@ -3,41 +3,57 @@ package ru.nobirds.torrent.client.announce
 import org.springframework.web.client.RestTemplate
 import java.net.URL
 import org.springframework.web.util.UriComponentsBuilder
-import ru.nobirds.torrent.client.task.TorrentTask
-import ru.nobirds.torrent.toHexString
 import ru.nobirds.torrent.client.Peer
-import ru.nobirds.torrent.multiValueMapOf
 import org.springframework.util.MultiValueMap
-import java.util.Collections
 import java.net.InetSocketAddress
-import java.util.HashMap
-import java.util.Timer
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.client.parser.BEncodeHttpMessageConverter
-import ru.nobirds.torrent.asString
-import ru.nobirds.torrent.toUrlString
 import ru.nobirds.torrent.bencode.BType
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
-import java.io.ByteArrayInputStream
-import java.io.DataInputStream
-import java.net.InetAddress
-import java.net.Inet4Address
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import ru.nobirds.torrent.bencode.BMapHelper
-import ru.nobirds.torrent.utils.toUrlString
 import ru.nobirds.torrent.utils.multiValueMapOf
 import ru.nobirds.torrent.utils.toInetSocketAddresses
+import ru.nobirds.torrent.utils.toUrlString
+import akka.actor.UntypedActor
 
-public class AnnounceService {
+public data class UpdateAnnounceMessage(
+        val url:URL, val localPeer: Peer,
+        val torrentHash: ByteArray,
+        val size:Long, val uploaded:Long, val downloaded:Long)
+
+public data class TrackerInfoMessage(
+        val url:URL, val hash: ByteArray,
+        val interval:Long, val peers:List<Peer>,
+        val complete:Int, val incomplete:Int,
+        val trackerId:String?, val warning:String?)
+
+public data class TrackerUpdateFailedMessage(
+        val url: URL, val hash: ByteArray, val message:String?)
+
+public class UpdateAnnounceActor : UntypedActor() {
 
     private val template = RestTemplate(arrayListOf(BEncodeHttpMessageConverter()))
 
-    public fun getTrackerInfoByUrl(task:TorrentTask, url:URL): TrackerInfo {
-        val parameters = createUrlParameters(task)
+    override fun onReceive(message: Any?) {
+        when(message) {
+            is UpdateAnnounceMessage -> updateInfo(message)
+        }
+    }
 
-        val uri = UriComponentsBuilder.fromUri(url.toURI())
+    private fun updateInfo(message: UpdateAnnounceMessage) {
+        try {
+            sender()!!.tell(updateInfoImpl(message), self())
+        } catch(e: Exception) {
+            sender()!!.tell(TrackerUpdateFailedMessage(message.url, message.torrentHash, e.getMessage()), self())
+        }
+    }
+
+    private fun updateInfoImpl(message: UpdateAnnounceMessage): TrackerInfoMessage {
+
+        val parameters = createUrlParameters(message.localPeer, message.torrentHash, message.size, message.uploaded, message.downloaded)
+
+        val uri = UriComponentsBuilder.fromUri(message.url.toURI())
                 .queryParams(parameters)
                 .build(true).toUri()
 
@@ -65,27 +81,20 @@ public class AnnounceService {
 
         val trackerId = helper.getString("tracker id")
 
-        return TrackerInfo(interval * 1000L, peers, complete, incomplete, trackerId, warning)
+        val trackerInfo = TrackerInfoMessage(message.url, message.torrentHash, interval * 1000L, peers, complete, incomplete, trackerId, warning)
+
+        return trackerInfo
     }
 
-    private fun createUrlParameters(task:TorrentTask):MultiValueMap<String, String> {
-        val localPeer = task.peer
-
-        val torrent = task.torrent.info
-
-        val uploaded = task.uploadStatistics.totalInBytes
-        val downloaded = task.downloadStatistics.totalInBytes
-
-        val total = torrent.files.totalLength
-
+    private fun createUrlParameters(localPeer: Peer, torrentHash: ByteArray, size:Long, uploaded:Long, downloaded:Long):MultiValueMap<String, String> {
         return multiValueMapOf(
-                "info_hash" to torrent.hash!!.toUrlString(),
+                "info_hash" to torrentHash.toUrlString(),
                 "peer_id" to localPeer.id.toUrlString(),
                 //"ip" to localPeer.address.getAddress().toString(),
                 "port" to localPeer.address.getPort().toString(),
                 "uploaded" to uploaded.toString(),
                 "downloaded" to downloaded.toString(),
-                "left" to (total - downloaded).toString()
+                "left" to (size - downloaded).toString()
         )
     }
 

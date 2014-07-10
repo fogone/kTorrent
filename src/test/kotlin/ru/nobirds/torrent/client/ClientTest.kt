@@ -1,7 +1,7 @@
 package ru.nobirds.torrent.client
 
 import org.junit.Test
-import ru.nobirds.torrent.client.task.TorrentTaskManager
+import ru.nobirds.torrent.client.task.TorrentTaskManagerActor
 import ru.nobirds.torrent.config.Config
 import java.util.HashMap
 import java.util.Properties

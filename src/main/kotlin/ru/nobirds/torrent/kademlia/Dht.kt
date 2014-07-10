@@ -11,8 +11,8 @@ import ru.nobirds.torrent.kademlia.message.ErrorMessage
 import ru.nobirds.torrent.kademlia.message.PingRequest
 import ru.nobirds.torrent.kademlia.message.AnnouncePeerRequest
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
 import ru.nobirds.torrent.kademlia.message.GetPeersRequest
+import ru.nobirds.torrent.kademlia.message.FindNodeRequest
 
 public open class DhtException(message:String) : RuntimeException(message)
 
@@ -79,8 +79,18 @@ public class Dht(val port:Int) {
                 server.send(messageFactory.createPingResponse(request.id, request.sender))
             }
             is GetPeersRequest -> {
-                peers.find(request.hash)
-                server.send(messageFactory.createGetPeersRequest())
+                val token = peers.getPeerToken(request.sender.id)
+                val nodes = peers.find(request.hash)
+
+                val response = if(nodes.empty)
+                    messageFactory.createClosestPeersResponse(request.id, request.sender, token, peers.findClosest(request.hash).map { it.address })
+                else
+                    messageFactory.createPeersFoundResponse(request.id, request.sender, token, nodes.map { it.address })
+
+                server.send(response)
+            }
+            is FindNodeRequest -> {
+
             }
             is AnnouncePeerRequest -> {
                 if(!peers.checkPeerToken(request.sender, request.token))

@@ -6,7 +6,9 @@ import java.security.SecureRandom
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
-public object LocalPeerFactory {
+public class LocalPeerFactory(val digest: DigestProvider) {
+
+    private val random = SecureRandom()
 
     public fun createLocalPeer(portRange:LongRange):Peer {
         val port = findFreePort(portRange)
@@ -21,12 +23,14 @@ public object LocalPeerFactory {
 
     private fun createPeerId():ByteArray {
         val bytes = ByteArray(128)
-        SecureRandom().nextBytes(bytes)
-        return Sha1Provider.encode(bytes)
+
+        random.nextBytes(bytes)
+
+        return digest.encode(bytes)
     }
 
     private fun findFreePort(portRange:LongRange):Long? {
-        return portRange.find { it.toInt().isPortAvailable() }
+        return portRange.firstOrNull { it.toInt().isPortAvailable() }
     }
 
 }

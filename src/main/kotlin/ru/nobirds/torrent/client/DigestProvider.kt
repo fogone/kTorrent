@@ -2,23 +2,19 @@ package ru.nobirds.torrent.client
 
 
 import java.security.MessageDigest
-import ru.nobirds.torrent.toHexString
 import java.util.BitSet
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.DataInput
-import java.util.Arrays
 import java.util.ArrayList
-import ru.nobirds.torrent.equalsArray
+import ru.nobirds.torrent.utils.equalsArray
 
-public object Sha1Provider {
+public class DigestProvider(val digestFactory:()-> MessageDigest) {
 
     private val MAX_BUFFER_SIZE = 16 * 1024
 
     public fun encode(bytes:ByteArray):ByteArray {
-        return createDigest().digest(bytes)!!
+        return digestFactory().digest(bytes)!!
     }
-
-    public fun createDigest():MessageDigest = MessageDigest.getInstance("SHA-1")
 
     public fun checkHashes(pieceLength:Long, hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
         val result = BitSet(hashes.size)
@@ -59,7 +55,7 @@ public object Sha1Provider {
     }
 
     private fun readAndCalculateDigest(input:DataInput, buffer:ByteArray, length:Long):ByteArray {
-        val messageDigest = createDigest()
+        val messageDigest = digestFactory()
 
         val bufferSize = buffer.size.toLong()
 

@@ -4,13 +4,13 @@ import java.util.ArrayList
 import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
-import ru.nobirds.torrent.client.announce.AnnounceService
+import ru.nobirds.torrent.client.announce.UpdateAnnounceActor
 import ru.nobirds.torrent.client.task.TorrentTask
 import ru.nobirds.torrent.client.announce.InfoHashNotFoundException
 import org.springframework.web.client.HttpServerErrorException
 import ru.nobirds.torrent.client.Peer
 
-public class HttpUrlTracker(val timer:Timer, val announceService:AnnounceService, val task:TorrentTask, val url:URL) : Tracker {
+public class HttpUrlTracker(val timer:Timer, val announceService: UpdateAnnounceActor, val task:TorrentTask, val url:URL) : Tracker {
 
     private val exceptionMapper = ExceptionMapper()
 

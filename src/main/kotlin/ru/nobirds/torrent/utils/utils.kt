@@ -15,6 +15,15 @@ import java.nio.ByteOrder
 import java.net.InetSocketAddress
 import java.util.Timer
 import java.util.TimerTask
+import java.util.PriorityQueue
+import java.util.Queue
+import java.util.ArrayList
+import java.util.Collections
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.ActorContext
+import akka.actor.ActorRefFactory
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -276,3 +285,28 @@ public fun Timer.scheduleOnce(timeout:Long, callback:()->Unit):TimerTask {
 
     return task
 }
+
+public fun <T, R:Comparable<R>> List<T>.toPriorityQueue(order:(T)->R):PriorityQueue<T> {
+    val queue = PriorityQueue<T>(size, comparator<T> {(x: T, y: T) -> order(x).compareTo(order(y)) })
+    queue.addAll(this)
+    return queue
+}
+
+public fun <T> Queue<T>.top(count:Int):List<T> {
+    if(empty)
+        return Collections.emptyList()
+
+    val result = ArrayList<T>()
+
+    var copy = 1
+    var item = poll()
+
+    while(item != null) {
+        result.add(item!!)
+        item = if (copy++ < count) poll() else null
+    }
+
+    return result
+}
+
+public fun <T:Actor> ActorRefFactory.actorOf(name:String, factory:()->T):ActorRef = this.actorOf(Props.create(factory), name)!!

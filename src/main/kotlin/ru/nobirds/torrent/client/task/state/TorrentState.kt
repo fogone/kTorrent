@@ -3,10 +3,10 @@ package ru.nobirds.torrent.client.task.state
 import java.util.BitSet
 import ru.nobirds.torrent.client.model.TorrentInfo
 import java.util.ArrayList
-import ru.nobirds.torrent.isAllSet
-import ru.nobirds.torrent.setAll
-import ru.nobirds.torrent.eachSet
-import ru.nobirds.torrent.divToUp
+import ru.nobirds.torrent.utils.divToUp
+import ru.nobirds.torrent.utils.isAllSet
+import ru.nobirds.torrent.utils.setAll
+import ru.nobirds.torrent.utils.eachSet
 
 public class TorrentState(val torrentInfo:TorrentInfo, val blockLength:Long = 16L * 1024L) {
 

@@ -9,7 +9,7 @@ import ru.nobirds.torrent.client.parser.TorrentParserImpl
 import ru.nobirds.torrent.client.parser.Bencoder
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import ru.nobirds.torrent.client.Sha1Provider
+import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.parser.MapHelper
 import ru.nobirds.torrent.asString
 import java.net.ServerSocket
@@ -41,7 +41,7 @@ public class BencodeTest() {
         val end = info.endPosition.toInt()
 
         val infoBytes = source.copyOfRange(start, end)
-        val encoded = Sha1Provider.encode(infoBytes)
+        val encoded = DigestProvider.encode(infoBytes)
 
         Assert.assertArrayEquals(encoded, infoHash)
     }

@@ -5,7 +5,7 @@ import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.client.model.Announce
 import java.util.Collections
 import ru.nobirds.torrent.client.model.TorrentInfo
-import ru.nobirds.torrent.client.Sha1Provider
+import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.model.TorrentFiles
 import ru.nobirds.torrent.client.model.TorrentFile
 import java.util.ArrayList
@@ -57,7 +57,7 @@ public class OldTorrentParserImpl : TorrentParser {
     private fun parseTorrentInfo(map: BMapHelper):TorrentInfo {
         val infoBytes = Bencoder.encodeBType(map.map)
 
-        val hash = Sha1Provider.encode(infoBytes)
+        val hash = DigestProvider.encode(infoBytes)
 
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!

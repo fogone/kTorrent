@@ -2,20 +2,15 @@ package ru.nobirds.torrent.client
 
 import org.junit.Test
 import ru.nobirds.torrent.client.task.state.TorrentState
-import ru.nobirds.torrent.client.model.TorrentBuilder
 import ru.nobirds.torrent.client.model.Torrents
 import java.io.File
 import java.nio.file.Paths
-import java.net.URI
 import ru.nobirds.torrent.client.parser.TorrentSerializer
-import java.io.FileOutputStream
-import ru.nobirds.torrent.bencode.BTypeFormatter
-import java.io.OutputStreamWriter
 import org.junit.Assert
-import java.util.BitSet
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
-import ru.nobirds.torrent.randomAccess
-import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.utils.randomAccess
+import ru.nobirds.torrent.utils.asString
+import java.security.MessageDigest
 
 public class TorrentStateTest() {
 
@@ -23,15 +18,17 @@ public class TorrentStateTest() {
     public fun test1() {
         //val directory = File("D://Torrents//Vikings - Season 1 (AlexFilm) WEB-DL 1080p").toPath()
         val directory = File("D:\\Torrents\\4R6").toPath()
-        val torrent = Torrents.createTorrentForDirectory(directory, 1024L * 1024L)
+        val torrent = Torrents.createTorrentForDirectory(DigestProvider { MessageDigest.getInstance("SHA-1") }, directory, 1024L * 1024L)
 
         System.out.println(TorrentSerializer().torrentToBMap(torrent).toString())
     }
 
     Test
     public fun test2() {
+        val digestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
+
         val directory = Paths.get(ClassLoader.getSystemResource("torrent")!!.toURI())!!
-        val torrent = Torrents.createTorrentForDirectory(directory, 4)
+        val torrent = Torrents.createTorrentForDirectory(digestProvider, directory, 4)
 
         val compositeFile = CompositeRandomAccessFile(
                 arrayListOf(File(ClassLoader.getSystemResource("torrent/test.file")!!.toURI()).randomAccess("r"))
@@ -39,7 +36,7 @@ public class TorrentStateTest() {
 
         val state = TorrentState(torrent.info, 2)
 
-        val bitSet = Sha1Provider.checkHashes(torrent.info.pieceLength, torrent.info.hashes, compositeFile)
+        val bitSet = digestProvider.checkHashes(torrent.info.pieceLength, torrent.info.hashes, compositeFile)
 
         state.done(bitSet)
 

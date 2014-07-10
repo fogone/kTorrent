@@ -3,15 +3,13 @@ package ru.nobirds.torrent.client.model
 import java.util.Date
 import kotlin.properties.Delegates
 import java.util.ArrayList
-import ru.nobirds.torrent.toHexString
-import ru.nobirds.torrent.client.Sha1Provider
+import ru.nobirds.torrent.client.DigestProvider
 import java.nio.file.Path
 import ru.nobirds.torrent.client.parser.TorrentSerializer
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
-import java.io.RandomAccessFile
 import java.io.File
-import ru.nobirds.torrent.randomAccess
 import java.util.Collections
+import ru.nobirds.torrent.utils.randomAccess
 
 public class TorrentFilesBuilder(val name:String) {
 
@@ -37,7 +35,7 @@ public class TorrentFilesBuilder(val name:String) {
 
 }
 
-public class HashesBuilder {
+public class HashesBuilder(val digest: DigestProvider) {
 
     private val hashes:MutableList<ByteArray> = ArrayList()
 
@@ -46,13 +44,13 @@ public class HashesBuilder {
     }
 
     public fun hashOf(body:ByteArray) {
-        hashes.add(Sha1Provider.encode(body))
+        hashes.add(digest.encode(body))
     }
 
     public fun build():MutableList<ByteArray> = hashes
 }
 
-public class TorrentInfoBuilder(var pieceLength:Long) {
+public class TorrentInfoBuilder(val digest: DigestProvider, val pieceLength:Long) {
 
     private var hash:ByteArray? = null
 
@@ -60,7 +58,7 @@ public class TorrentInfoBuilder(var pieceLength:Long) {
     private var files:TorrentFiles by Delegates.notNull()
 
     public fun hashOf(bytes:ByteArray) {
-        hash = Sha1Provider.encode(bytes)
+        this.hash = digest.encode(bytes)
     }
 
     public fun hashes(hashes:List<ByteArray>) {
@@ -68,7 +66,7 @@ public class TorrentInfoBuilder(var pieceLength:Long) {
     }
 
     public fun hashes(block:HashesBuilder.()->Unit) {
-        val builder = HashesBuilder()
+        val builder = HashesBuilder(digest)
         builder.block()
         hashes.addAll(builder.build())
     }
@@ -83,7 +81,7 @@ public class TorrentInfoBuilder(var pieceLength:Long) {
         val info = TorrentInfo(pieceLength, hashes, files, hash)
 
         if(hash == null)
-            info.hash = Sha1Provider.encode(TorrentSerializer().serialize(info))
+            info.hash = digest.encode(TorrentSerializer().serialize(info))
 
         return info
     }
@@ -104,7 +102,7 @@ public class AnnounceBuilder(val url:String) {
 
 }
 
-public class TorrentBuilder {
+public class TorrentBuilder(val digest: DigestProvider) {
 
     private var info:TorrentInfo by Delegates.notNull()
     private var announce:Announce by Delegates.notNull()
@@ -113,7 +111,7 @@ public class TorrentBuilder {
     private var createdBy:String? = null
 
     public fun info(pieceLength:Long, block:TorrentInfoBuilder.()->Unit) {
-        val builder = TorrentInfoBuilder(pieceLength)
+        val builder = TorrentInfoBuilder(digest, pieceLength)
         builder.block()
         info = builder.build()
     }
@@ -144,13 +142,13 @@ public class TorrentBuilder {
 
 public object Torrents {
 
-    public fun createTorrent(block:TorrentBuilder.()->Unit):Torrent {
-        val builder = TorrentBuilder()
+    public fun createTorrent(digest: DigestProvider, block:TorrentBuilder.()->Unit):Torrent {
+        val builder = TorrentBuilder(digest)
         builder.block()
         return builder.build()
     }
 
-    public fun createTorrentForDirectory(directory:Path, pieceLength:Long = 16L * 1024L):Torrent = createTorrent {
+    public fun createTorrentForDirectory(digest: DigestProvider, directory:Path, pieceLength:Long = 16L * 1024L):Torrent = createTorrent(digest) {
 
         created(Date())
         createdBy("kTorrent client 0.1.alfa")
@@ -165,7 +163,7 @@ public object Torrents {
 
             val rndAccessFile = CompositeRandomAccessFile(files.map { it.randomAccess("r") })
 
-            val hashes = Sha1Provider.calculateHashes(rndAccessFile, pieceLength)
+            val hashes = digest.calculateHashes(rndAccessFile, pieceLength)
 
             hashes(hashes)
 

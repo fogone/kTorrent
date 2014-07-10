@@ -8,7 +8,6 @@ import java.io.InputStream
 import java.io.DataOutputStream
 import java.io.OutputStream
 import java.io.EOFException
-import ru.nobirds.torrent.closeQuietly
 import ru.nobirds.torrent.client.task.state.GlobalBlockIndex
 
 class InputImplementer(val file:CompositeRandomAccessFile) : InputStream() {

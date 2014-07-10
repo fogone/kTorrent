@@ -1,10 +1,9 @@
 package ru.nobirds.torrent.kademlia
 
-import ru.nobirds.torrent.fillWith
-import ru.nobirds.torrent.xor
 import ru.nobirds.torrent.utils.fillWith
 import ru.nobirds.torrent.utils.xor
 import java.security.SecureRandom
+import java.math.BigInteger
 
 
 public data class Id(factory:(Int)->Byte) {
@@ -16,6 +15,8 @@ public data class Id(factory:(Int)->Byte) {
     public fun xor(k:Id):Id = Id { bytes[it] xor k.bytes[it] }
 
     public fun toBytes():ByteArray = bytes.copyOf()
+
+    public fun toBigInteger():BigInteger = BigInteger(bytes)
 
     class object {
         public val Zero:Id = Id { 0 }
@@ -33,4 +34,5 @@ public data class Id(factory:(Int)->Byte) {
 
 
     }
+
 }

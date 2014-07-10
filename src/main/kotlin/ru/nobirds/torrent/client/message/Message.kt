@@ -10,6 +10,8 @@ trait Message {
 
 public open class SimpleMessage(override val messageType:MessageType) : Message
 
+public class HandshakeMessage(val piece:Int) : SimpleMessage(MessageType.handshake)
+
 public class HaveMessage(val piece:Int) : SimpleMessage(MessageType.have)
 
 public class BitFieldMessage(val pieces:BitSet) : SimpleMessage(MessageType.bitfield)

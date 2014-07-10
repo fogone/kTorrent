@@ -3,6 +3,9 @@ package ru.nobirds.torrent.kademlia
 import java.util.concurrent.ConcurrentHashMap
 import ru.nobirds.torrent.utils.TokenGenerator
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.Collections
+import ru.nobirds.torrent.utils.toPriorityQueue
+import ru.nobirds.torrent.utils.top
 
 data class TokenPair(val peer:Id, var myToken:String? = null, var peerToken:String = TokenGenerator.generate())
 
@@ -44,4 +47,10 @@ public class PeersContainer {
     public fun notifyPeerGone(hash:Id, node:Node) {
         peers[hash]?.remove(node)
     }
+
+    public fun find(hash:Id):List<Node> = peers.getOrElse(hash) { Collections.emptyList<Node>() }
+
+    public fun findClosest(hash:Id, count:Int = 8):List<Node>
+            = peers.values().flatMap { it }.toPriorityQueue { (it.id xor hash).toBigInteger() }.top(count)
+
 }

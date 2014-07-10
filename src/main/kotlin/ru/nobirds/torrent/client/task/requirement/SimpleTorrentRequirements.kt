@@ -3,9 +3,7 @@ package ru.nobirds.torrent.client.task.requirement
 import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.client.task.state.BlockIndex
 import ru.nobirds.torrent.client.task.state.StateListener
-import ru.nobirds.torrent.copy
 import java.util.HashSet
-import ru.nobirds.torrent.findIndex
 import java.util.concurrent.Semaphore
 
 public class SimpleTorrentRequirements(val state:TorrentState, val peerState:TorrentState) : TorrentRequirements {
