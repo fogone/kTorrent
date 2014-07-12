@@ -1,8 +1,8 @@
 package ru.nobirds.torrent.bencode
 
 import java.util.LinkedHashMap
-import ru.nobirds.torrent.nullOr
 import java.io.StringWriter
+import ru.nobirds.torrent.utils.nullOr
 
 
 public class BMap(

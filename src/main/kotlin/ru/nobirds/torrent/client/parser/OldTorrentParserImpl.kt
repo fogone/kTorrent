@@ -10,15 +10,13 @@ import ru.nobirds.torrent.client.model.TorrentFiles
 import ru.nobirds.torrent.client.model.TorrentFile
 import java.util.ArrayList
 import ru.nobirds.torrent.bencode.BMapHelper
-import ru.nobirds.torrent.nullOr
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
-import ru.nobirds.torrent.asString
 import ru.nobirds.torrent.utils.nullOr
 import ru.nobirds.torrent.utils.asString
 
 deprecated("Use TorrentParserImpl")
-public class OldTorrentParserImpl : TorrentParser {
+public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private val HASH_SIZE = 20
 
@@ -57,7 +55,7 @@ public class OldTorrentParserImpl : TorrentParser {
     private fun parseTorrentInfo(map: BMapHelper):TorrentInfo {
         val infoBytes = Bencoder.encodeBType(map.map)
 
-        val hash = DigestProvider.encode(infoBytes)
+        val hash = digest.encode(infoBytes)
 
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!

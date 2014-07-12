@@ -6,6 +6,7 @@ import java.util.HashMap
 import java.util.TimerTask
 import akka.actor.ActorRef
 import ru.nobirds.torrent.utils.toUrlString
+import ru.nobirds.torrent.utils.toHash
 
 public data object TimeToUpdateTrackerMessage
 
@@ -31,12 +32,12 @@ public class TrackersActor() : UntypedActor() {
 
     private fun sendUpdateMessage(message: UpdateAnnounceMessage) {
         context()!!
-                .actorSelection("/user/announces")!!
+                .actorSelection("/user/announces")
                 .tell(message, self())
     }
 
     private fun updateAnnounce(message: UpdateAnnounceMessage) {
-        val hash = message.torrentHash.toUrlString()
+        val hash = createCompositeKey(message.torrentHash.toUrlString(), message.url.toString().toHash())
 
         if (!timerTasks.containsKey(hash)) {
             val task = Task(hash, defaultInterval, sender()!!, self()!!)
@@ -56,8 +57,8 @@ public class TrackersActor() : UntypedActor() {
         }
 
         context()!!
-                .actorSelection("/user/tasks/task/${hash}")!!
-                .forward(message, context())
+                .actorSelection("/user/tasks/task/${hash}")
+                .forward(message, context()!!)
     }
 
     private fun renewTask(task: Task, interval: Long) {

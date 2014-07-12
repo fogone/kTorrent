@@ -1,10 +1,9 @@
 package ru.nobirds.torrent.bencode
 
 import java.io.Writer
-import ru.nobirds.torrent.asString
-import ru.nobirds.torrent.toHexString
-import ru.nobirds.torrent.containsNonPrintable
-import ru.nobirds.torrent.forEachWithStatus
+import ru.nobirds.torrent.utils.forEachWithStatus
+import ru.nobirds.torrent.utils.asString
+import ru.nobirds.torrent.utils.containsNonPrintable
 
 public class BTypeFormatter(val writer:Writer) {
 

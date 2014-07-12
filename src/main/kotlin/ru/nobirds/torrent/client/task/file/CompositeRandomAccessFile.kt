@@ -9,6 +9,7 @@ import java.io.DataOutputStream
 import java.io.OutputStream
 import java.io.EOFException
 import ru.nobirds.torrent.client.task.state.GlobalBlockIndex
+import ru.nobirds.torrent.utils.closeQuietly
 
 class InputImplementer(val file:CompositeRandomAccessFile) : InputStream() {
     override fun read(): Int = file.read()

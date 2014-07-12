@@ -6,16 +6,15 @@ import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.bencode.BMapHelper
 import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.Torrents
-import ru.nobirds.torrent.nullOr
-import ru.nobirds.torrent.asString
 import ru.nobirds.torrent.utils.nullOr
 import ru.nobirds.torrent.utils.asString
+import ru.nobirds.torrent.client.DigestProvider
 
-public class TorrentParserImpl : TorrentParser {
+public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private val HASH_SIZE = 20
 
-    public override fun parse(source:BMap):Torrent = Torrents.createTorrent {
+    public override fun parse(source:BMap):Torrent = Torrents.createTorrent(digest) {
 
         val map = BMapHelper(source)
 

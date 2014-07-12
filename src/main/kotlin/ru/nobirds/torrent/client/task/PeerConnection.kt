@@ -81,12 +81,12 @@ public class PeerConnection(val peer:Peer, val torrentInfo: TorrentInfo, val rec
                 when(message.message) {
                     is BitFieldMessage -> state.done(message.message.pieces)
                     is HaveMessage -> state.done(message.message.piece)
-                    else -> receiver.forward(message, context())
+                    else -> receiver.forward(message, context()!!)
                 }
             }
             is ConnectionClosedMessage -> {
                 socket.closeQuietly()
-                context()!!.stop(self())
+                context()!!.stop(self()!!)
             }
         }
     }

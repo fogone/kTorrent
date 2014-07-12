@@ -40,12 +40,12 @@ public configuration open class TorrentClientConfiguration() {
     /* beans */
     public bean open fun torrentTaskFactory(): TorrentTaskFactory =
             TorrentTaskFactoryImpl(
-                config()[ClientProperties.torrentsDirectory],
-                config()[ClientProperties.clientPortsRange],
-                localPeerFactory()
+                    config()[ClientProperties.torrentsDirectory],
+                    config()[ClientProperties.clientPortsRange],
+                    sha1Provider(), localPeerFactory()
             )
 
-    public bean open fun torrentParser(): TorrentParser = TorrentParserImpl()
+    public bean open fun torrentParser(): TorrentParser = TorrentParserImpl(sha1Provider())
 
     public bean open fun localPeerFactory(): LocalPeerFactory = LocalPeerFactory(sha1Provider())
 

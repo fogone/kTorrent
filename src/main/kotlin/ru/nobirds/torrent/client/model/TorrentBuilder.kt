@@ -169,7 +169,7 @@ public object Torrents {
 
             files(root.getName()) {
                 for (file in files) {
-                    file(file.length(), directory.relativize(file.toPath()).map { it.toString() })
+                    file(file.length(), directory.relativize(file.toPath()!!).map { it.toString() })
                 }
             }
 

@@ -108,6 +108,12 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <version>0.1-SNAPSHOT</version>
 
+                <configuration>
+                    <annotationPaths>
+                        <annotationPath>C:\Work\projects\ktorrent\annotations</annotationPath>
+                    </annotationPaths>
+                </configuration>
+
                 <executions>
                     <execution>
                         <id>compile</id>

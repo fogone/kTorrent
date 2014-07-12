@@ -58,7 +58,7 @@ public class TorrentTask(val localPeer:Peer, val directory:Path, val torrent:Tor
 
     private fun notifyAddBlock(index:Int) {
         context()!!
-                .actorSelection("peer/*")!!
+                .actorSelection("peer/*")
                 .tell(WriteMessageMessage(HaveMessage(index)), self())
     }
 
@@ -86,7 +86,7 @@ public class TorrentTask(val localPeer:Peer, val directory:Path, val torrent:Tor
             )
 
             getContext()!!
-                    .actorSelection("/user/trakers")!!
+                    .actorSelection("/user/trakers")
                     .tell(message, getSelf())
         }
     }

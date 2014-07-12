@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.bencode
 
-import ru.nobirds.torrent.asString
+import ru.nobirds.torrent.utils.asString
 
 public class BBytes() : AbstractBType(), BValueType<ByteArray> {
 

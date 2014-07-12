@@ -24,6 +24,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.ActorContext
 import akka.actor.ActorRefFactory
+import java.security.MessageDigest
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -179,6 +180,7 @@ public fun RandomAccessFile.closeQuietly() {
 public fun File.randomAccess(mode:String = "rw"):RandomAccessFile = RandomAccessFile(this, mode)
 
 public fun String.containsNonPrintable():Boolean = any { it.toInt() !in 32..127 }
+public fun String.toHash(): String = MessageDigest.getInstance("MD5").digest(toByteArray())!!.toHexString()
 
 public fun Int.divToUp(value:Int):Int = (this + value - 1) / value
 public fun Long.divToUp(value:Long):Long = (this + value - 1L) / value

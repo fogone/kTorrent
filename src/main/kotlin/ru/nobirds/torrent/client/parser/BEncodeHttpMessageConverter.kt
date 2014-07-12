@@ -6,7 +6,6 @@ import org.springframework.http.HttpOutputMessage
 import ru.nobirds.torrent.client.parser.Bencoder
 import org.springframework.http.MediaType
 import ru.nobirds.torrent.bencode.BMap
-import ru.nobirds.torrent.asString
 import java.io.ByteArrayInputStream
 import java.io.FileOutputStream
 
