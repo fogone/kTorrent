@@ -1,12 +1,13 @@
 package ru.nobirds.torrent.client.task
 
 import ru.nobirds.torrent.client.Peer
-import java.net.URL
-import ru.nobirds.torrent.client.model.Torrent
+import java.net.Socket
+import ru.nobirds.torrent.client.task.connection.Connection
 
-public data class RemoveConnectionMessage(val peer: Peer)
-public data class UpdatePeersMessage(val peers:List<Peer>)
-public data class RehashTorrentFilesMessage()
-public data class InitializeTrackersMessage()
+public trait TaskMessage
 
-public data class AddTorrentMessage(val torrent: Torrent)
+public class AddConnectionMessage(val socket:Socket) : TaskMessage
+public class RemoveConnectionMessage(val connection:Connection) : TaskMessage
+public class UpdatePeersMessage(val peers:List<Peer>) : TaskMessage
+public class RehashTorrentFilesMessage() : TaskMessage
+public class InitializeTrackersMessage() : TaskMessage

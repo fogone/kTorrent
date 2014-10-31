@@ -3,43 +3,45 @@ package ru.nobirds.torrent.client.task
 import ru.nobirds.torrent.client.model.Torrent
 import java.net.URL
 import ru.nobirds.torrent.client.Peer
+import java.util.HashSet
 import java.nio.file.Path
-import ru.nobirds.torrent.client.DigestProvider
+import ru.nobirds.torrent.client.Sha1Provider
+import java.net.Socket
+import ru.nobirds.torrent.client.task.connection.ConnectionListener
+import java.util.concurrent.ArrayBlockingQueue
+import ru.nobirds.torrent.client.task.tracker.Tracker
+import java.util.ArrayList
+import ru.nobirds.torrent.client.task.tracker.HttpUrlTracker
+import java.util.Timer
+import ru.nobirds.torrent.client.announce.AnnounceService
+import ru.nobirds.torrent.client.task.connection.Connection
 import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.TorrentState
-import akka.actor.UntypedActor
-import ru.nobirds.torrent.utils.toHexString
-import ru.nobirds.torrent.utils.actorOf
-import ru.nobirds.torrent.client.message.Message
-import ru.nobirds.torrent.client.message.PieceMessage
-import ru.nobirds.torrent.client.message.RequestMessage
-import ru.nobirds.torrent.client.message.HandshakeMessage
-import ru.nobirds.torrent.client.message.BitFieldMessage
-import ru.nobirds.torrent.client.message.HaveMessage
-import ru.nobirds.torrent.client.announce.UpdateAnnounceMessage
-import ru.nobirds.torrent.client.LocalPeerFactory
+import java.util.HashMap
 
-public class TorrentTask(val localPeer:Peer, val directory:Path, val torrent:Torrent, val digest: DigestProvider) : UntypedActor() {
+public class TorrentTask(val peer:Peer, val directory:Path, val torrent:Torrent) : ConnectionListener, Thread("Torrent task") {
 
-    private val uploadStatistics = TrafficStatistics()
+    private val announceService = AnnounceService()
 
-    private val downloadStatistics = TrafficStatistics()
+    private val timer = Timer()
 
-    private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
+    val uploadStatistics = TrafficStatistics()
 
-    private val state: TorrentState = TorrentState(torrent.info)
+    val downloadStatistics = TrafficStatistics()
 
-    private fun createFiles():List<FileDescriptor> {
-        val files = torrent.info.files
+    private val trackers = ArrayList<Tracker>()
 
-        val parent = directory.resolve(files.name)!!
+    private val messages = createInitialQueue()
 
-        // if(files exists) sendMessage(UpdateTorrentStateMessage())
+    val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-        return files.files.map { FileDescriptor(parent, it) }
-    }
+    val state: TorrentState = TorrentState(torrent.info)
 
-    private fun addBlock(index: FreeBlockIndex, block:ByteArray) {
+    private val peers = HashSet<Peer>()
+
+    private val connections = HashSet<Connection>()
+
+    public fun addBlock(index: FreeBlockIndex, block:ByteArray) {
         val file = files.compositeRandomAccessFile
         val blockIndex = state.freeIndexToBlockIndex(index.piece, index.begin, index.length)
 
@@ -52,73 +54,78 @@ public class TorrentTask(val localPeer:Peer, val directory:Path, val torrent:Tor
         file.output.write(block)
 
         state.done(blockIndex.piece, blockIndex.block)
-
-        notifyAddBlock(index.piece)
     }
 
-    private fun notifyAddBlock(index:Int) {
-        context()!!
-                .actorSelection("peer/*")
-                .tell(WriteMessageMessage(HaveMessage(index)), self())
+    private fun createInitialQueue():ArrayBlockingQueue<TaskMessage> {
+        val queue = ArrayBlockingQueue<TaskMessage>(300)
+        queue.add(InitializeTrackersMessage())
+        return queue
+    }
+
+    public fun sendMessage(message:TaskMessage) {
+        messages.put(message)
     }
 
     private fun rehashTorrentFiles() {
-        state.done(digest.checkHashes(torrent.info.pieceLength, torrent.info.hashes, files.compositeRandomAccessFile))
+        val bitSet = Sha1Provider.checkHashes(
+                torrent.info.pieceLength, torrent.info.hashes, files.compositeRandomAccessFile)
+
+        state.done(bitSet)
+    }
+
+    private fun createFiles():List<FileDescriptor> {
+        val files = torrent.info.files
+
+        val parent = directory.resolve(files.name)!!
+
+        // if(files exists) sendMessage(UpdateTorrentStateMessage())
+
+        return files.files.map { FileDescriptor(parent, it) }
     }
 
     private fun createConnections(peers:List<Peer>) {
-        for (peer in peers)
-            startConnection(peer)
+        peers.filter { it !in this.peers }.filter {
+            try {
+                onConnection(Socket(peer.address.getAddress(), peer.address.getPort()))
+                true
+            } catch(e:Exception) {
+                false
+            }
+        }.to(this.peers)
     }
 
-    private fun startConnection(peer: Peer) {
-        context()!!
-                .actorOf("peer/" + peer.id.toHexString()) { PeerConnection(peer, torrent.info, self()!!) }
+    public fun removeConnection(connection:Connection) {
+        connections.remove(connection)
+    }
+
+    override fun onConnection(socket: Socket) {
+        sendMessage(AddConnectionMessage(socket))
+    }
+
+    private fun createAndStartConnectionForSocket(socket:Socket) {
+        val connection = Connection(this, socket)
+        connections.add(connection)
+        connection.start()
     }
 
     private fun initializeTrackers() {
         for (url in torrent.announce.allUrls) {
-            val message = UpdateAnnounceMessage(
-                    URL(url), localPeer,
-                    torrent.info.hash!!, torrent.info.files.totalLength,
-                    uploadStatistics.totalInBytes,
-                    downloadStatistics.totalInBytes
-            )
-
-            getContext()!!
-                    .actorSelection("/user/trakers")
-                    .tell(message, getSelf())
+            val tracker = HttpUrlTracker(timer, announceService, this, URL(url))
+            trackers.add(tracker)
+            tracker.registerUpdateListener { sendMessage(UpdatePeersMessage(it)) }
         }
     }
 
-    private fun sendBlock(index:FreeBlockIndex) {
-        if(state.isDone(index.piece)) {
-            val globalIndex = state.freeIndexToGlobalIndex(index.piece, index.begin, index.length)
-            val byteArray = files.compositeRandomAccessFile.read(globalIndex)
-            sendMessage(PieceMessage(index.piece, index.begin, byteArray))
-        }
-    }
-
-    private fun sendMessage(message:Message) {
-        sender()!!
-                .tell(WriteMessageMessage(message), self())
-    }
-
-    private fun handleMessage(message:Message) {
-        when(message) {
-            is HandshakeMessage -> sendMessage(BitFieldMessage(state.toBitSet()))
-            is RequestMessage -> sendBlock(FreeBlockIndex(message.index, message.begin, message.length))
-            //is CancelMessage -> cancelBlock(FreeBlockIndex(message.index, message.begin, message.length))
-            is PieceMessage -> addBlock(FreeBlockIndex(message.index, message.begin, message.block.size), message.block)
-        }
-    }
-
-    override fun onReceive(message: Any?) {
-        when(message) {
-            is ReceiveMessageMessage -> handleMessage(message.message)
-            is RehashTorrentFilesMessage -> rehashTorrentFiles()
-            is UpdatePeersMessage -> createConnections(message.peers)
-            is InitializeTrackersMessage -> initializeTrackers()
+    override fun run() {
+        while(isInterrupted().not()) {
+            val message = messages.take()
+            when(message) {
+                is AddConnectionMessage -> createAndStartConnectionForSocket(message.socket)
+                is RemoveConnectionMessage -> connections.remove(message.connection)
+                is RehashTorrentFilesMessage -> rehashTorrentFiles()
+                is UpdatePeersMessage -> createConnections(message.peers)
+                is InitializeTrackersMessage -> initializeTrackers()
+            }
         }
     }
 }
