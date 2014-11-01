@@ -1,21 +1,21 @@
-package ru.nobirds.torrent.kademlia
+package ru.nobirds.torrent.dht
 
-import ru.nobirds.torrent.kademlia.message.MessageFactory
+import ru.nobirds.torrent.dht.message.MessageFactory
 import java.net.InetSocketAddress
-import ru.nobirds.torrent.kademlia.message.bencode.BencodeMessageSerializer
-import ru.nobirds.torrent.kademlia.message.DefaultRequestContainer
-import ru.nobirds.torrent.kademlia.message.RequestMessage
-import ru.nobirds.torrent.kademlia.message.ResponseMessage
-import ru.nobirds.torrent.kademlia.message.Message
-import ru.nobirds.torrent.kademlia.message.ErrorMessage
-import ru.nobirds.torrent.kademlia.message.PingRequest
-import ru.nobirds.torrent.kademlia.message.AnnouncePeerRequest
+import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
+import ru.nobirds.torrent.dht.message.DefaultRequestContainer
+import ru.nobirds.torrent.dht.message.RequestMessage
+import ru.nobirds.torrent.dht.message.ResponseMessage
+import ru.nobirds.torrent.dht.message.Message
+import ru.nobirds.torrent.dht.message.ErrorMessage
+import ru.nobirds.torrent.dht.message.PingRequest
+import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
 import java.util.concurrent.ConcurrentHashMap
-import ru.nobirds.torrent.kademlia.message.GetPeersRequest
-import ru.nobirds.torrent.kademlia.message.FindNodeRequest
+import ru.nobirds.torrent.dht.message.GetPeersRequest
+import ru.nobirds.torrent.dht.message.FindNodeRequest
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.kademlia.message.FindNodeResponse
+import ru.nobirds.torrent.dht.message.FindNodeResponse
 
 public open class DhtException(message:String) : RuntimeException(message)
 

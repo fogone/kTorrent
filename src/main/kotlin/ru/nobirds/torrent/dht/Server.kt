@@ -1,10 +1,10 @@
-package ru.nobirds.torrent.kademlia
+package ru.nobirds.torrent.dht
 
 import java.net.DatagramSocket
 import java.net.DatagramPacket
 import java.io.ByteArrayInputStream
-import ru.nobirds.torrent.kademlia.message.Message
-import ru.nobirds.torrent.kademlia.message.MessageSerializer
+import ru.nobirds.torrent.dht.message.Message
+import ru.nobirds.torrent.dht.message.MessageSerializer
 import java.util.ArrayList
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.ArrayBlockingQueue

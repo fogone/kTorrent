@@ -1,10 +1,10 @@
-package ru.nobirds.torrent.kademlia.message.bencode
+package ru.nobirds.torrent.dht.message.bencode
 
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.bencode.BTypeFactory
-import ru.nobirds.torrent.kademlia.message.FindNodeRequest
-import ru.nobirds.torrent.kademlia.message.FindNodeResponse
+import ru.nobirds.torrent.dht.message.FindNodeRequest
+import ru.nobirds.torrent.dht.message.FindNodeResponse
 import ru.nobirds.torrent.utils.toCompact
 import java.net.InetSocketAddress
 import ru.nobirds.torrent.peers.Peer

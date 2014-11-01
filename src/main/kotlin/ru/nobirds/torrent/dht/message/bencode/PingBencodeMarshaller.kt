@@ -1,7 +1,7 @@
-package ru.nobirds.torrent.kademlia.message.bencode
+package ru.nobirds.torrent.dht.message.bencode
 
-import ru.nobirds.torrent.kademlia.message.PingRequest
-import ru.nobirds.torrent.kademlia.message.PingResponse
+import ru.nobirds.torrent.dht.message.PingRequest
+import ru.nobirds.torrent.dht.message.PingResponse
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.bencode.BTypeFactory

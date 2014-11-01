@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.kademlia.message
+package ru.nobirds.torrent.dht.message
 
 public trait RequestContainer {
 

@@ -1,8 +1,8 @@
-package ru.nobirds.torrent.kademlia.message.bencode
+package ru.nobirds.torrent.dht.message.bencode
 
-import ru.nobirds.torrent.kademlia.message.RequestMessage
+import ru.nobirds.torrent.dht.message.RequestMessage
 import ru.nobirds.torrent.bencode.BMap
-import ru.nobirds.torrent.kademlia.message.ResponseMessage
+import ru.nobirds.torrent.dht.message.ResponseMessage
 import java.net.InetSocketAddress
 
 public trait BencodeMarshaller<RQ: RequestMessage, RS:ResponseMessage> {

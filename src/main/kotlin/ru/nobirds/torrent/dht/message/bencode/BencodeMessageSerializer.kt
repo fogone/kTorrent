@@ -1,18 +1,18 @@
-package ru.nobirds.torrent.kademlia.message.bencode
+package ru.nobirds.torrent.dht.message.bencode
 
 import java.io.OutputStream
 import java.io.InputStream
 import java.util.HashMap
 import ru.nobirds.torrent.parser.Bencoder
 import ru.nobirds.torrent.bencode.BTypeFactory
-import ru.nobirds.torrent.kademlia.message.RequestMessage
-import ru.nobirds.torrent.kademlia.message.RequestContainer
-import ru.nobirds.torrent.kademlia.message.MessageSerializer
-import ru.nobirds.torrent.kademlia.message.ResponseMessage
-import ru.nobirds.torrent.kademlia.message.Message
-import ru.nobirds.torrent.kademlia.message.MessageType
-import ru.nobirds.torrent.kademlia.message.ErrorMessage
-import ru.nobirds.torrent.kademlia.message.LostResponse
+import ru.nobirds.torrent.dht.message.RequestMessage
+import ru.nobirds.torrent.dht.message.RequestContainer
+import ru.nobirds.torrent.dht.message.MessageSerializer
+import ru.nobirds.torrent.dht.message.ResponseMessage
+import ru.nobirds.torrent.dht.message.Message
+import ru.nobirds.torrent.dht.message.MessageType
+import ru.nobirds.torrent.dht.message.ErrorMessage
+import ru.nobirds.torrent.dht.message.LostResponse
 import java.net.InetSocketAddress
 
 public class BencodeMessageSerializer(val requestContainer: RequestContainer) : MessageSerializer {

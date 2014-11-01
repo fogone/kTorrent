@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.kademlia
+package ru.nobirds.torrent.dht
 
 import java.util.concurrent.ConcurrentHashMap
 import ru.nobirds.torrent.utils.TokenGenerator

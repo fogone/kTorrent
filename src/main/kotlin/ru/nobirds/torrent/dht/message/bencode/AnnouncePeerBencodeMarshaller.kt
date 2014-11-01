@@ -1,11 +1,11 @@
-package ru.nobirds.torrent.kademlia.message.bencode
+package ru.nobirds.torrent.dht.message.bencode
 
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.bencode.BTypeFactory
 import java.net.InetSocketAddress
-import ru.nobirds.torrent.kademlia.message.AnnouncePeerRequest
-import ru.nobirds.torrent.kademlia.message.AnnouncePeerResponse
+import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
+import ru.nobirds.torrent.dht.message.AnnouncePeerResponse
 import ru.nobirds.torrent.peers.Peer
 
 public class AnnouncePeerBencodeMarshaller : BencodeMarshaller<AnnouncePeerRequest, AnnouncePeerResponse> {

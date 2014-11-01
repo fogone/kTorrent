@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.kademlia.message
+package ru.nobirds.torrent.dht.message
 
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.IncrementIdSequence
