@@ -3,8 +3,7 @@ package ru.nobirds.torrent.kademlia.message.bencode
 import java.io.OutputStream
 import java.io.InputStream
 import java.util.HashMap
-import ru.nobirds.torrent.bencode.BMapHelper
-import ru.nobirds.torrent.client.parser.Bencoder
+import ru.nobirds.torrent.parser.Bencoder
 import ru.nobirds.torrent.bencode.BTypeFactory
 import ru.nobirds.torrent.kademlia.message.RequestMessage
 import ru.nobirds.torrent.kademlia.message.RequestContainer
@@ -26,14 +25,14 @@ public class BencodeMessageSerializer(val requestContainer: RequestContainer) : 
             BencodeMarshaller<out RequestMessage, out ResponseMessage>>()
 
     override fun deserialize(address:InetSocketAddress, source: InputStream): Message {
-        val map =  BMapHelper(Bencoder.decodeBMap(source))
+        val map =  Bencoder.decodeBMap(source)
 
         val id = map.getString("t")!!
         val messageType = resolveMessageType(map.getString("y")!!)
 
         return when(messageType) {
             MessageType.error -> {
-                val list = map.getList("e")!!
+                val list = map.getBList("e")!!
                 ErrorMessage(id, address, list.getInt(0), list.getString(1))
             }
             MessageType.request -> {
@@ -81,14 +80,14 @@ public class BencodeMessageSerializer(val requestContainer: RequestContainer) : 
                     }
                 }
                 MessageType.request -> {
-                    val marshaller = marshallers[message.javaClass]!!
+                    val marshaller = marshallers[message.javaClass]
                         as BencodeMarshaller<RequestMessage, ResponseMessage>
 
                     map("a", marshaller.unmarshallRequest(message as RequestMessage))
                 }
                 MessageType.response -> {
 
-                    val marshaller = marshallers[message.javaClass]!!
+                    val marshaller = marshallers[message.javaClass]
                         as BencodeMarshaller<RequestMessage, ResponseMessage>
 
                     map("r", marshaller.unmarshallResponse(message as ResponseMessage))

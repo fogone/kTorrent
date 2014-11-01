@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.client.parser
+package ru.nobirds.torrent.parser
 
 import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.bencode.BMap
@@ -9,11 +9,10 @@ import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.model.TorrentFiles
 import ru.nobirds.torrent.client.model.TorrentFile
 import java.util.ArrayList
-import ru.nobirds.torrent.bencode.BMapHelper
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
-import ru.nobirds.torrent.utils.nullOr
 import ru.nobirds.torrent.utils.asString
+import ru.nobirds.torrent.utils.nullOr
 
 deprecated("Use TorrentParserImpl")
 public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
@@ -21,15 +20,13 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
     private val HASH_SIZE = 20
 
     public override fun parse(source:BMap):Torrent {
-        val map = BMapHelper(source)
+        val torrentInfo = parseTorrentInfo(source.getBMap("info")!!)
 
-        val torrentInfo = parseTorrentInfo(map.getMap("info")!!)
+        val announce = parseAnnounce(source)
 
-        val announce = parseAnnounce(map)
-
-        val creationDate = map.getDate("creation date")
-        val createdBy = map.getString("created by")
-        val comment = map.getString("comment")
+        val creationDate = source.getDate("creation date")
+        val createdBy = source.getString("created by")
+        val comment = source.getString("comment")
 
         return Torrent(
                 info = torrentInfo,
@@ -40,7 +37,7 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
         )
     }
 
-    private fun parseAnnounce(map: BMapHelper):Announce {
+    private fun parseAnnounce(map: BMap):Announce {
 
         val announces = map.getBList("announce-list").nullOr {
             map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
@@ -52,8 +49,8 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
         )
     }
 
-    private fun parseTorrentInfo(map: BMapHelper):TorrentInfo {
-        val infoBytes = Bencoder.encodeBType(map.map)
+    private fun parseTorrentInfo(map: BMap):TorrentInfo {
+        val infoBytes = Bencoder.encodeBType(map)
 
         val hash = digest.encode(infoBytes)
 
@@ -70,7 +67,7 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
         val files = TorrentFiles(
                 name = name,
                 length = length,
-                files = parseFiles(map.getListOfMaps("files"))
+                files = parseFiles(map.getBList("files")!!.map { it as BMap })
         )
 
         return TorrentInfo(
@@ -81,14 +78,14 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
         )
     }
 
-    private fun parseFiles(list:List<BMapHelper>?):List<TorrentFile> {
+    private fun parseFiles(list:List<BMap>?):List<TorrentFile> {
         if(list == null)
             return Collections.emptyList()
 
         return list.map { parseFile(it) }
     }
 
-    private fun parseFile(map: BMapHelper):TorrentFile {
+    private fun parseFile(map: BMap):TorrentFile {
         val length = map.getLong("length")!!
         val path = map.getStrings("path")!!
 

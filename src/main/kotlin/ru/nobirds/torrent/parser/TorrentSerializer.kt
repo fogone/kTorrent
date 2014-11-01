@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.client.parser
+package ru.nobirds.torrent.parser
 
 import ru.nobirds.torrent.client.model.Torrent
 import java.io.OutputStream

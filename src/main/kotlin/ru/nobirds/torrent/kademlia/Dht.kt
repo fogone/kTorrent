@@ -13,6 +13,9 @@ import ru.nobirds.torrent.kademlia.message.AnnouncePeerRequest
 import java.util.concurrent.ConcurrentHashMap
 import ru.nobirds.torrent.kademlia.message.GetPeersRequest
 import ru.nobirds.torrent.kademlia.message.FindNodeRequest
+import ru.nobirds.torrent.utils.Id
+import ru.nobirds.torrent.peers.Peer
+import ru.nobirds.torrent.kademlia.message.FindNodeResponse
 
 public open class DhtException(message:String) : RuntimeException(message)
 
@@ -24,7 +27,7 @@ public class Dht(val port:Int) {
 
     private val messageSerializer = BencodeMessageSerializer(requestContainer)
 
-    private val map = ConcurrentHashMap<Id, MutableMap<Id, Node>>()
+    private val peersByHash = ConcurrentHashMap<Id, MutableMap<Id, Peer>>()
 
     private val server:Server = Server(port, messageSerializer)
             .registerSendListener { onSendMessage(it)}
@@ -32,9 +35,9 @@ public class Dht(val port:Int) {
 
     private val peers = PeersContainer()
 
-    private val messageFactory = MessageFactory(Node(Id.random(), InetSocketAddress.createUnresolved("localhost", 0)))
+    private val messageFactory = MessageFactory(Peer(Id.random(), InetSocketAddress.createUnresolved("localhost", 0)))
 
-    public fun findPeersForHash(hash:Id, callback:(Node)->Unit) {
+    public fun findPeersForHash(hash: Id, callback:(Peer)->Unit) {
         peers.registerPeerListener(hash, callback)
         server.send(messageFactory.createGetPeersRequest(hash))
     }
@@ -90,7 +93,10 @@ public class Dht(val port:Int) {
                 server.send(response)
             }
             is FindNodeRequest -> {
+                val target = request.target
+                val peers = peers.find(target)
 
+                server.send(messageFactory.createFindNodeResponse(request.id, request.sender, peers.map { it.address }))
             }
             is AnnouncePeerRequest -> {
                 if(!peers.checkPeerToken(request.sender, request.token))
@@ -98,7 +104,7 @@ public class Dht(val port:Int) {
                 else {
                     val hash = request.hash
 
-                    val nodes = map.getOrPut(hash) { ConcurrentHashMap() }
+                    val nodes = peersByHash.getOrPut(hash) { ConcurrentHashMap() }
 
                     nodes[request.sender.id] = request.sender
 

@@ -1,6 +1,6 @@
-package ru.nobirds.torrent.client.announce
+package ru.nobirds.torrent.announce
 
-import ru.nobirds.torrent.client.Peer
+import ru.nobirds.torrent.peers.Peer
 
 public data class TrackerInfo(
         val interval:Long, val peers:List<Peer>,

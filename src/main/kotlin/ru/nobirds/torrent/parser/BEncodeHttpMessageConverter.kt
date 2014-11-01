@@ -1,9 +1,9 @@
-package ru.nobirds.torrent.client.parser
+package ru.nobirds.torrent.parser
 
 import org.springframework.http.converter.AbstractHttpMessageConverter
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpOutputMessage
-import ru.nobirds.torrent.client.parser.Bencoder
+import ru.nobirds.torrent.parser.Bencoder
 import org.springframework.http.MediaType
 import ru.nobirds.torrent.bencode.BMap
 import java.io.ByteArrayInputStream

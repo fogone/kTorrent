@@ -1,29 +1,25 @@
-package ru.nobirds.torrent.client.parser
+package ru.nobirds.torrent.parser
 
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
-import ru.nobirds.torrent.bencode.BMapHelper
 import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.Torrents
-import ru.nobirds.torrent.utils.nullOr
 import ru.nobirds.torrent.utils.asString
 import ru.nobirds.torrent.client.DigestProvider
+import ru.nobirds.torrent.utils.nullOr
 
 public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private val HASH_SIZE = 20
 
     public override fun parse(source:BMap):Torrent = Torrents.createTorrent(digest) {
+        created(source.getDate("creation date"))
+        createdBy(source.getString("created by"))
+        comment(source.getString("comment"))
 
-        val map = BMapHelper(source)
-
-        created(map.getDate("creation date"))
-        createdBy(map.getString("created by"))
-        comment(map.getString("comment"))
-
-        announce(map.getString("announce")!!) {
-            val announces = map.getBList("announce-list").nullOr {
+        announce(source.getString("announce")!!) {
+            val announces = source.getBList("announce-list").nullOr {
                 map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
             }
 
@@ -33,9 +29,9 @@ public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
                 }
         }
 
-        val info = map.getMap("info")!!
+        val info = source.getBMap("info")!!
         info(info.getLong("piece length")!!) {
-            hashOf(Bencoder.encodeBType(info.map))
+            hashOf(Bencoder.encodeBType(info))
 
             hashes {
                 val pieces = info.getBytes("pieces")!!
@@ -55,10 +51,10 @@ public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
             files(info.getString("name")!!) {
                 length(info.getLong("length"))
-                val files = info.getListOfMaps("files")
+                val files = info.getBList("files")
 
                 if(files != null)
-                for (file in files) {
+                for (file in files.map { it as  BMap }) {
                     file(file.getLong("length")!!, *file.getStrings("path")!!.copyToArray())
                 }
             }

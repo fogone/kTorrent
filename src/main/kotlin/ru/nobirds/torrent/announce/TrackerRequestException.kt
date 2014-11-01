@@ -1,4 +1,4 @@
-package ru.nobirds.torrent.client.announce
+package ru.nobirds.torrent.announce
 
 import ru.nobirds.torrent.client.model.Torrent
 

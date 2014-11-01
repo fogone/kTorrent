@@ -1,14 +1,9 @@
-package ru.nobirds.torrent.kademlia
+package ru.nobirds.torrent.utils
 
-import ru.nobirds.torrent.utils.fillWith
-import ru.nobirds.torrent.utils.xor
-import java.security.SecureRandom
 import java.math.BigInteger
+import java.security.SecureRandom
 
-
-public data class Id(factory:(Int)->Byte) {
-
-    public val size:Int = 20
+public data class Id(val size:Int = 20, factory:(Int)->Byte) {
 
     private val bytes = ByteArray(size).fillWith(factory)
 
@@ -16,14 +11,14 @@ public data class Id(factory:(Int)->Byte) {
 
     public fun toBytes():ByteArray = bytes.copyOf()
 
-    public fun toBigInteger():BigInteger = BigInteger(bytes)
+    public fun toBigInteger(): BigInteger = BigInteger(bytes)
 
     class object {
         public val Zero:Id = Id { 0 }
 
         private val random = SecureRandom()
 
-        public fun random():Id = Id { random.nextInt().toByte() }
+        public fun random(size:Int = 20):Id = Id(size) { random.nextInt().toByte() }
 
         public fun fromBytes(bytes:ByteArray):Id {
             if(bytes.size != 20)

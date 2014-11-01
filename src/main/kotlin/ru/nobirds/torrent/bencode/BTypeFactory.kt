@@ -6,7 +6,7 @@ import java.util.Date
 public class BListBuilder(val blist:BList = BList()) {
 
     public fun value(string:String) {
-        value(string.getBytes())
+        value(string.toByteArray())
     }
 
     public fun value(bytes:ByteArray) {

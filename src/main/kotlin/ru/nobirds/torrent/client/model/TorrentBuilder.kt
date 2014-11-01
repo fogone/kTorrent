@@ -5,7 +5,7 @@ import kotlin.properties.Delegates
 import java.util.ArrayList
 import ru.nobirds.torrent.client.DigestProvider
 import java.nio.file.Path
-import ru.nobirds.torrent.client.parser.TorrentSerializer
+import ru.nobirds.torrent.parser.TorrentSerializer
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.File
 import java.util.Collections

@@ -1,10 +1,10 @@
 package ru.nobirds.torrent.kademlia.message
 
-import ru.nobirds.torrent.kademlia.Node
-import ru.nobirds.torrent.kademlia.Id
+import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.IncrementIdSequence
 import ru.nobirds.torrent.utils.IdSequence
 import java.net.InetSocketAddress
+import ru.nobirds.torrent.peers.Peer
 
 public enum class MessageType(val code:String) {
 
@@ -14,36 +14,36 @@ public enum class MessageType(val code:String) {
 
 }
 
-public abstract class Message(val id:String, val mType:MessageType, val sender:Node)
+public abstract class Message(val id:String, val mType:MessageType, val sender: Peer)
 
-public data class ErrorMessage(id:String, source:InetSocketAddress, val error:Int, val message:String): Message(id, MessageType.error, Node(Id.Zero, source))
+public data class ErrorMessage(id:String, source:InetSocketAddress, val error:Int, val message:String): Message(id, MessageType.error, Peer(Id.Zero, source))
 
-public abstract class AbstractRoutingMessage(id:String, mType:MessageType, sender:Node) : Message(id, mType, sender)
+public abstract class AbstractRoutingMessage(id:String, mType:MessageType, sender: Peer) : Message(id, mType, sender)
 
-public abstract class RequestMessage(id:String, sender:Node) : AbstractRoutingMessage(id, MessageType.request, sender)
+public abstract class RequestMessage(id:String, sender: Peer) : AbstractRoutingMessage(id, MessageType.request, sender)
 
-public abstract class ResponseMessage(id:String, sender:Node) : AbstractRoutingMessage(id, MessageType.response, sender)
+public abstract class ResponseMessage(id:String, sender: Peer) : AbstractRoutingMessage(id, MessageType.response, sender)
 
-public data class PingRequest(id:String, sender:Node) : RequestMessage(id, sender)
-public data class PingResponse(id:String, sender:Node) : ResponseMessage(id, sender)
+public data class PingRequest(id:String, sender: Peer) : RequestMessage(id, sender)
+public data class PingResponse(id:String, sender: Peer) : ResponseMessage(id, sender)
 
 public data class AnnouncePeerRequest(
-        id:String, sender:Node,
-        val hash:Id, val impliedPort:Boolean,
+        id:String, sender: Peer,
+        val hash: Id, val impliedPort:Boolean,
         val port:Int?, val token:String) : RequestMessage(id, sender)
 
-public data class AnnouncePeerResponse(id:String, sender:Node) : ResponseMessage(id, sender)
+public data class AnnouncePeerResponse(id:String, sender: Peer) : ResponseMessage(id, sender)
 
-public data class FindNodeRequest(id:String, sender:Node, val target:Id) : RequestMessage(id, sender)
-public data class FindNodeResponse(id:String, sender:Node, val nodes:List<InetSocketAddress>) : ResponseMessage(id, sender)
+public data class FindNodeRequest(id:String, sender: Peer, val target: Id) : RequestMessage(id, sender)
+public data class FindNodeResponse(id:String, sender: Peer, val nodes:List<InetSocketAddress>) : ResponseMessage(id, sender)
 
-public data class GetPeersRequest(id:String, sender:Node, val hash:Id) : RequestMessage(id, sender)
-public abstract class GetPeersResponse(id:String, sender:Node, val token:String, val nodes:List<InetSocketAddress>) : ResponseMessage(id, sender)
+public data class GetPeersRequest(id:String, sender: Peer, val hash: Id) : RequestMessage(id, sender)
+public abstract class GetPeersResponse(id:String, sender: Peer, val token:String, val nodes:List<InetSocketAddress>) : ResponseMessage(id, sender)
 
-public data class PeersFoundResponse(id:String, sender:Node, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
-public data class ClosestPeersResponse(id:String, sender:Node, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
+public data class PeersFoundResponse(id:String, sender: Peer, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
+public data class ClosestPeersResponse(id:String, sender: Peer, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
 
-public data class LostResponse(source:InetSocketAddress) : ResponseMessage("0", Node(Id.Zero, source))
+public data class LostResponse(source:InetSocketAddress) : ResponseMessage("0", Peer(Id.Zero, source))
 
 class DefaultErrors(val factory:MessageFactory) {
 
@@ -54,7 +54,7 @@ class DefaultErrors(val factory:MessageFactory) {
 
 }
 
-public class MessageFactory(val sender:Node, val idSequence:IdSequence = IncrementIdSequence()) {
+public class MessageFactory(val sender: Peer, val idSequence:IdSequence = IncrementIdSequence()) {
 
     private val lostResponse = LostResponse(sender.address)
 
@@ -62,27 +62,27 @@ public class MessageFactory(val sender:Node, val idSequence:IdSequence = Increme
 
     public fun createLostResponse():LostResponse = lostResponse
 
-    public fun createPingRequest(node:Node = sender, id:String = idSequence.next()):PingRequest = PingRequest(id, node)
+    public fun createPingRequest(node: Peer = sender, id:String = idSequence.next()):PingRequest = PingRequest(id, node)
 
-    public fun createPingResponse(id:String, node:Node = sender):PingResponse = PingResponse(id, node)
+    public fun createPingResponse(id:String, node: Peer = sender):PingResponse = PingResponse(id, node)
 
-    public fun createFindNodeRequest(target:Id, node:Node = sender, id:String = idSequence.next()):FindNodeRequest = FindNodeRequest(id, node, target)
+    public fun createFindNodeRequest(target: Id, node: Peer = sender, id:String = idSequence.next()):FindNodeRequest = FindNodeRequest(id, node, target)
 
-    public fun createFindNodeResponse(id:String, node:Node, nodes:List<InetSocketAddress>):FindNodeResponse = FindNodeResponse(id, node, nodes)
+    public fun createFindNodeResponse(id:String, node: Peer, nodes:List<InetSocketAddress>):FindNodeResponse = FindNodeResponse(id, node, nodes)
 
-    public fun createGetPeersRequest(hash:Id, node:Node = sender, id:String = idSequence.next()):GetPeersRequest
+    public fun createGetPeersRequest(hash: Id, node: Peer = sender, id:String = idSequence.next()):GetPeersRequest
             = GetPeersRequest(id, node, hash)
 
-    public fun createPeersFoundResponse(id:String, node:Node, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
+    public fun createPeersFoundResponse(id:String, node: Peer, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
             = PeersFoundResponse(id, node, token, nodes)
 
-    public fun createClosestPeersResponse(id:String, node:Node, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
+    public fun createClosestPeersResponse(id:String, node: Peer, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
             = ClosestPeersResponse(id, node, token, nodes)
 
-    public fun createAnnouncePeerRequest(hash:Id, token:String, node:Node = sender, id:String = idSequence.next()):AnnouncePeerRequest
+    public fun createAnnouncePeerRequest(hash: Id, token:String, node: Peer = sender, id:String = idSequence.next()):AnnouncePeerRequest
             = AnnouncePeerRequest(id, node, hash, true, null, token)
 
-    public fun createAnnouncePeerResponse(id:String, node:Node):AnnouncePeerResponse = AnnouncePeerResponse(id, node)
+    public fun createAnnouncePeerResponse(id:String, node: Peer):AnnouncePeerResponse = AnnouncePeerResponse(id, node)
 
     public fun createErrorMessage(code:Int, message:String, id:String = idSequence.next()):ErrorMessage = ErrorMessage(id, sender.address, code, message)
 

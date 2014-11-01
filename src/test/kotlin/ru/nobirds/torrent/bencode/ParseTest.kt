@@ -5,8 +5,8 @@ import java.io.FileInputStream
 import java.math.BigInteger
 import java.io.FileOutputStream
 import org.junit.Assert
-import ru.nobirds.torrent.client.parser.TorrentParserImpl
-import ru.nobirds.torrent.client.parser.Bencoder
+import ru.nobirds.torrent.parser.TorrentParserImpl
+import ru.nobirds.torrent.parser.Bencoder
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import ru.nobirds.torrent.client.DigestProvider
@@ -14,8 +14,8 @@ import java.net.ServerSocket
 import java.io.File
 import java.net.URLEncoder
 import java.net.URLDecoder
-import ru.nobirds.torrent.client.parser.TorrentSerializer
-import ru.nobirds.torrent.client.parser.OldTorrentParserImpl
+import ru.nobirds.torrent.parser.TorrentSerializer
+import ru.nobirds.torrent.parser.OldTorrentParserImpl
 import java.security.MessageDigest
 
 
@@ -35,7 +35,7 @@ public class BencodeTest() {
 
         val infoHash = torrent.info.hash
 
-        val info = BMapHelper(map).getBMap("info")!!
+        val info = map.getBMap("info")!!
 
         val start = info.startPosition.toInt()
         val end = info.endPosition.toInt()
@@ -82,9 +82,8 @@ public class BencodeTest() {
     public fun test2() {
         val stream = ClassLoader.getSystemResourceAsStream("tmp.bencode")!!
         val result = Bencoder.decodeBMap(stream)
-        val helper = BMapHelper(result)
 
-        val warningMessage = helper.getString("warning message")
+        val warningMessage = result.getString("warning message")
 
         Assert.assertEquals("Invalid info_hash", warningMessage)
     }

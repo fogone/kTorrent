@@ -5,7 +5,7 @@ import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.client.model.Torrents
 import java.io.File
 import java.nio.file.Paths
-import ru.nobirds.torrent.client.parser.TorrentSerializer
+import ru.nobirds.torrent.parser.TorrentSerializer
 import org.junit.Assert
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import ru.nobirds.torrent.utils.randomAccess
