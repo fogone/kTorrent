@@ -82,7 +82,7 @@ public class TrackerPeerProvider(localPeer: Peer) : AbstractPeerProvider(localPe
         val trackerInfo = announceProvider.getTrackerInfoByUrl(tracker.uri, localPeer, hash)
 
         if (trackerInfo.peers.notEmpty)
-            notifyPeerEvent(PeerEvent(hash, trackerInfo.peers.toSet()))
+            notifyPeerEvent(PeerEvent(hash, trackerInfo.peers.map { it.address }.toSet()))
 
         tracker.status = TrackerStatus.working
     }

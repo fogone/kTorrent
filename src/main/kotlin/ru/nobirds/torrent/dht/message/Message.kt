@@ -41,7 +41,7 @@ public data class GetPeersRequest(id:String, sender: Peer, val hash: Id) : Reque
 public abstract class GetPeersResponse(id:String, sender: Peer, val token:String, val nodes:List<InetSocketAddress>) : ResponseMessage(id, sender)
 
 public data class PeersFoundResponse(id:String, sender: Peer, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
-public data class ClosestPeersResponse(id:String, sender: Peer, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
+public data class ClosestNodesResponse(id:String, sender: Peer, token:String, nodes:List<InetSocketAddress>) : GetPeersResponse(id, sender, token, nodes)
 
 public data class LostResponse(source:InetSocketAddress) : ResponseMessage("0", Peer(Id.Zero, source))
 
@@ -68,21 +68,21 @@ public class MessageFactory(val sender: Peer, val idSequence:IdSequence = Increm
 
     public fun createFindNodeRequest(target: Id, node: Peer = sender, id:String = idSequence.next()):FindNodeRequest = FindNodeRequest(id, node, target)
 
-    public fun createFindNodeResponse(id:String, node: Peer, nodes:List<InetSocketAddress>):FindNodeResponse = FindNodeResponse(id, node, nodes)
+    public fun createFindNodeResponse(id:String, node: Peer = sender, nodes:List<InetSocketAddress>):FindNodeResponse = FindNodeResponse(id, node, nodes)
 
     public fun createGetPeersRequest(hash: Id, node: Peer = sender, id:String = idSequence.next()):GetPeersRequest
             = GetPeersRequest(id, node, hash)
 
-    public fun createPeersFoundResponse(id:String, node: Peer, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
+    public fun createPeersFoundResponse(id:String, node: Peer = sender, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
             = PeersFoundResponse(id, node, token, nodes)
 
-    public fun createClosestPeersResponse(id:String, node: Peer, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
-            = ClosestPeersResponse(id, node, token, nodes)
+    public fun createClosestNodesResponse(id:String, node: Peer = sender, token:String, nodes:List<InetSocketAddress>):GetPeersResponse
+            = ClosestNodesResponse(id, node, token, nodes)
 
     public fun createAnnouncePeerRequest(hash: Id, token:String, node: Peer = sender, id:String = idSequence.next()):AnnouncePeerRequest
             = AnnouncePeerRequest(id, node, hash, true, null, token)
 
-    public fun createAnnouncePeerResponse(id:String, node: Peer):AnnouncePeerResponse = AnnouncePeerResponse(id, node)
+    public fun createAnnouncePeerResponse(id:String, node: Peer = sender):AnnouncePeerResponse = AnnouncePeerResponse(id, node)
 
     public fun createErrorMessage(code:Int, message:String, id:String = idSequence.next()):ErrorMessage = ErrorMessage(id, sender.address, code, message)
 

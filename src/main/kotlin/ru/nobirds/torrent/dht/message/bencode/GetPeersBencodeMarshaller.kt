@@ -6,7 +6,7 @@ import ru.nobirds.torrent.bencode.BTypeFactory
 import ru.nobirds.torrent.utils.toCompact
 import ru.nobirds.torrent.dht.message.GetPeersRequest
 import ru.nobirds.torrent.dht.message.GetPeersResponse
-import ru.nobirds.torrent.dht.message.ClosestPeersResponse
+import ru.nobirds.torrent.dht.message.ClosestNodesResponse
 import ru.nobirds.torrent.dht.message.PeersFoundResponse
 import java.net.InetSocketAddress
 import ru.nobirds.torrent.peers.Peer
@@ -30,7 +30,7 @@ public class GetPeersBencodeMarshaller : BencodeMarshaller<GetPeersRequest, GetP
 
         return if(map.containsKey("nodes")) {
             val nodes = map.getBytes("nodes")!!
-            ClosestPeersResponse(id, Peer(Id.fromBytes(sender), address), token, nodes.toInetSocketAddresses())
+            ClosestNodesResponse(id, Peer(Id.fromBytes(sender), address), token, nodes.toInetSocketAddresses())
         } else {
             val values = map.getBList("values")!!
             PeersFoundResponse(id, Peer(Id.fromBytes(sender), address), token, parseValues(values))
@@ -48,7 +48,7 @@ public class GetPeersBencodeMarshaller : BencodeMarshaller<GetPeersRequest, GetP
     override fun unmarshallResponse(response: GetPeersResponse): BMap = BTypeFactory.createBMap {
         value("id", response.sender.id.toBytes())
 
-        if(response is ClosestPeersResponse)
+        if(response is ClosestNodesResponse)
             value("nodes", response.nodes.toCompact())
         else
             list("values") {

@@ -286,7 +286,7 @@ public fun Timer.scheduleOnce(timeout:Long, callback:()->Unit):TimerTask {
     return task
 }
 
-public fun <T, R:Comparable<R>> List<T>.toPriorityQueue(order:(T)->R):PriorityQueue<T> {
+public fun <T, R:Comparable<R>> Collection<T>.toPriorityQueue(order:(T)->R):PriorityQueue<T> {
     val queue = PriorityQueue(size, comparator {(x: T, y: T) -> order(x).compareTo(order(y)) })
     queue.addAll(this)
     return queue
@@ -316,4 +316,22 @@ public fun Int.isPortAvailable():Boolean {
     } catch(e: SocketException) {
         return false
     }
+}
+
+public fun byteArray(size:Int, factory:(Int)-> Byte): ByteArray {
+    val data = ByteArray(size)
+    for (i in 0..size - 1) {
+        data[i] = factory(i)
+    }
+    return data
+}
+
+public fun String.hexToByteArray(): ByteArray {
+    val data = ByteArray(length / 2)
+
+    for (i in (0..length-1).step(2)) {
+        data[i / 2] = ((Character.digit(charAt(i), 16) shl 4) + Character.digit(charAt(i + 1), 16)).toByte()
+    }
+
+    return data
 }

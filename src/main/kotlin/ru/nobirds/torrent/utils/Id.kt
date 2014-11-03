@@ -27,6 +27,7 @@ public data class Id(val size:Int = 20, factory:(Int)->Byte) {
             return Id { bytes[it] }
         }
 
+        public fun fromHexString(hexString: String): Id = hexString.hexToByteArray().toId()
 
     }
 

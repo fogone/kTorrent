@@ -16,10 +16,13 @@ import ru.nobirds.torrent.dht.message.FindNodeRequest
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.dht.message.FindNodeResponse
-
-public open class DhtException(message:String) : RuntimeException(message)
-
-public class ErrorAnswerException(code:Int, message:String) : DhtException("error [$code] $message")
+import ru.nobirds.torrent.dht.message.bencode.AnnouncePeerBencodeMarshaller
+import ru.nobirds.torrent.dht.message.bencode.FindNodeBencodeMarshaller
+import ru.nobirds.torrent.dht.message.bencode.PingBencodeMarshaller
+import ru.nobirds.torrent.dht.message.bencode.GetPeersBencodeMarshaller
+import ru.nobirds.torrent.dht.message.ClosestNodesResponse
+import ru.nobirds.torrent.dht.message.PeersFoundResponse
+import java.util.ArrayList
 
 public class Dht(val port:Int) {
 
@@ -29,31 +32,55 @@ public class Dht(val port:Int) {
 
     private val peersByHash = ConcurrentHashMap<Id, MutableMap<Id, Peer>>()
 
-    private val server:Server = Server(port, messageSerializer)
+    public val server: DhtServer = DhtServer(port, messageSerializer)
             .registerSendListener { onSendMessage(it)}
             .registerReceiveListener { onReceiveMessage(it)}
 
-    private val peers = PeersContainer()
+    private val tokens = TokenContainer()
 
-    private val messageFactory = MessageFactory(Peer(Id.random(), InetSocketAddress.createUnresolved("localhost", 0)))
+    private val peers = DistributedMap()
 
-    public fun findPeersForHash(hash: Id, callback:(Peer)->Unit) {
-        peers.registerPeerListener(hash, callback)
-        server.send(messageFactory.createGetPeersRequest(hash))
+    private val localId = Id.random()
+    private val localPeer = Peer(localId, InetSocketAddress.createUnresolved("localhost", port))
+    private val token = tokens.generateToken()
+
+    private val messageFactory = MessageFactory(localPeer)
+
+    private val listeners = ConcurrentHashMap<Id, MutableList<(InetSocketAddress)->Unit>>()
+
+    public fun initialize() {
+        server.start {
+            sendTo(messageFactory.createFindNodeRequest(localId), *Bootstrap.addresses)
+        }
     }
 
-    private fun onSendMessage(message:Message) {
+    public fun findPeersForHash(hash: Id, callback:(InetSocketAddress)->Unit) {
+        if (peers.contains(hash)) {
+            val peers = peers.get(hash)
+            if (peers.notEmpty) {
+                peers.forEach { callback(it) }
+                return
+            }
+        }
+
+        listeners.getOrPut(hash) { ArrayList() }.add(callback)
+
+        server.send(peers.findClosest(hash), messageFactory.createGetPeersRequest(hash))
+    }
+
+    private fun onSendMessage(addressAndMessage: AddressAndMessage) {
+        val message = addressAndMessage.message
         if(message is RequestMessage)
             requestContainer.storeWithTimeout(message) {
-                tryResend(message)
+                tryResend(addressAndMessage)
             }
     }
 
-    private fun tryResend(request:RequestMessage) {
-        server.send(request) // todo
+    private fun tryResend(addressAndMessage: AddressAndMessage) {
+        server.sendTo(addressAndMessage.message, addressAndMessage.address) // todo
     }
 
-    private fun onReceiveMessage(message:Message) {
+    private fun onReceiveMessage(message: Message) {
         when(message) {
             is ResponseMessage -> {
 
@@ -61,7 +88,6 @@ public class Dht(val port:Int) {
 
                 if (request != null)
                     onAnswer(request, message)
-
             }
             is ErrorMessage -> {
 
@@ -79,28 +105,28 @@ public class Dht(val port:Int) {
     private fun onRequestReceive(request:RequestMessage) {
         when(request) {
             is PingRequest -> {
-                server.send(messageFactory.createPingResponse(request.id, request.sender))
+                server.sendTo(messageFactory.createPingResponse(request.id), request.sender.address)
             }
             is GetPeersRequest -> {
-                val token = peers.getPeerToken(request.sender.id)
-                val nodes = peers.find(request.hash)
+                val token = tokens.getPeerToken(request.sender.id)
+                val nodes = peers.get(request.hash)
 
                 val response = if(nodes.empty)
-                    messageFactory.createClosestPeersResponse(request.id, request.sender, token, peers.findClosest(request.hash).map { it.address })
+                    messageFactory.createClosestNodesResponse(request.id, token = token, nodes = peers.findClosest(request.hash).map { it.address })
                 else
-                    messageFactory.createPeersFoundResponse(request.id, request.sender, token, nodes.map { it.address })
+                    messageFactory.createPeersFoundResponse(request.id, token = token, nodes = nodes.map { it })
 
-                server.send(response)
+                server.sendTo(response, request.sender.address)
             }
             is FindNodeRequest -> {
                 val target = request.target
-                val peers = peers.find(target)
+                val peers = peers.get(target)
 
-                server.send(messageFactory.createFindNodeResponse(request.id, request.sender, peers.map { it.address }))
+                server.sendTo(messageFactory.createFindNodeResponse(request.id, nodes = peers.map { it }), request.sender.address)
             }
             is AnnouncePeerRequest -> {
-                if(!peers.checkPeerToken(request.sender, request.token))
-                    server.send(messageFactory.errors.generic("Invalid token"))
+                if(!tokens.checkPeerToken(request.sender, request.token))
+                    server.sendTo(messageFactory.errors.generic("Invalid token"), request.sender.address)
                 else {
                     val hash = request.hash
 
@@ -108,17 +134,36 @@ public class Dht(val port:Int) {
 
                     nodes[request.sender.id] = request.sender
 
-                    server.send(messageFactory.createAnnouncePeerResponse(request.id, request.sender))
+                    server.sendTo(messageFactory.createAnnouncePeerResponse(request.id, request.sender), request.sender.address)
                 }
             }
         }
     }
 
     private fun onAnswer(request:RequestMessage, response:ResponseMessage) {
-
+        when (request) {
+            is PingRequest -> {
+                peers.addNode(response.sender)
+            }
+            is GetPeersRequest -> {
+                when (response) {
+                    is ClosestNodesResponse -> {
+                        server.sendTo(messageFactory.createGetPeersRequest(request.hash), response.nodes)
+                    }
+                    is PeersFoundResponse -> {
+                        peers.put(request.hash, response.nodes)
+                    }
+                }
+            }
+        }
     }
 
     private fun onErrorReceive(request:RequestMessage, response:ErrorMessage) {
-
+        when (request) {
+            is PingRequest -> {
+                peers.removeNode(response.sender.id)
+            }
+        }
     }
+
 }

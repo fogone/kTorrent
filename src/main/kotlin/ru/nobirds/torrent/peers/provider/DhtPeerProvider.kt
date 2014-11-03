@@ -11,7 +11,7 @@ public class DhtPeerProvider(localPeer: Peer) : AbstractPeerProvider(localPeer) 
 
     override fun onHashRequired(hash: Id) {
         dht.findPeersForHash(hash) { node ->
-            notifyPeerEvent(PeerEvent(hash, hashSetOf(Peer(node.id, node.address))))
+            notifyPeerEvent(PeerEvent(hash, hashSetOf(node)))
         }
     }
 
