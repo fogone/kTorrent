@@ -11,14 +11,22 @@ import ru.nobirds.torrent.peers.Peer
 import java.net.InetSocketAddress
 import java.util.TreeMap
 import java.util.Comparator
+import java.math.BigInteger
 
-public class KBucket(localPeer: ru.nobirds.torrent.peers.Peer) {
+public class KBucket(val localId: Id, val k:Int = 100) {
 
     private val values = ConcurrentHashMap<Id, MutableList<InetSocketAddress>>()
 
     private val peers = ConcurrentHashMap<Id, Peer>()
 
     public fun addNode(peer: Peer) {
+        if(peers.size >= k) {
+            val furthestNodes = peers.find(localId, peers.size - k) { it }
+            for (node in furthestNodes) {
+                peers.remove(node.id)
+            }
+        }
+
         peers.put(peer.id, peer)
     }
 
@@ -45,9 +53,13 @@ public class KBucket(localPeer: ru.nobirds.torrent.peers.Peer) {
     public fun contains(key: Id): Boolean = values.containsKey(key)
 
     public fun findClosest(key: Id, count:Int = 8):List<Peer> = when {
+        peers.containsKey(key) -> Collections.singletonList(peers.get(key))
         peers.size == 0 -> Collections.emptyList()
         peers.size == 1 -> Collections.singletonList(peers.values().first())
-        else -> peers.entrySet().toPriorityQueue { (it.key xor key).toBigInteger() }.top(count).map { it.value }
+        else -> peers.find(key, count) { it.negate() }
     }
 
 }
+
+fun Map<Id, Peer>.find(key:Id, count:Int, distanceTransformer:(BigInteger)->BigInteger): List<Peer> =
+        values().toPriorityQueue { distanceTransformer((it.id xor key).toBigInteger()) }.top(count)
