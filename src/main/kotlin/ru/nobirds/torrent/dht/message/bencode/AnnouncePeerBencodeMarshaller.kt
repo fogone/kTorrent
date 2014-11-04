@@ -8,9 +8,11 @@ import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
 import ru.nobirds.torrent.dht.message.AnnouncePeerResponse
 import ru.nobirds.torrent.peers.Peer
 
-public class AnnouncePeerBencodeMarshaller : BencodeMarshaller<AnnouncePeerRequest, AnnouncePeerResponse> {
+public class AnnouncePeerBencodeMarshaller() :
+        RequestMarshaller<AnnouncePeerRequest>, RequestUnmarshaller<AnnouncePeerRequest>,
+        ResponseMarshaller<AnnouncePeerRequest, AnnouncePeerResponse>, ResponseUnmarshaller<AnnouncePeerResponse> {
 
-    override fun marshallRequest(id:String, address: InetSocketAddress, map: BMap): AnnouncePeerRequest {
+    override fun marshallRequest(id: String, address: InetSocketAddress, map: BMap): AnnouncePeerRequest {
         val sender = map.getBytes("id")!!
         val impliedPortValue = map.getString("implied_port")
         val impliedPort = impliedPortValue != null && impliedPortValue == "1"
@@ -21,12 +23,6 @@ public class AnnouncePeerBencodeMarshaller : BencodeMarshaller<AnnouncePeerReque
         val token = map.getString("token")!!
 
         return AnnouncePeerRequest(id, Peer(Id.fromBytes(sender), address), Id.fromBytes(hash), impliedPort, port, token)
-    }
-
-    override fun marshallResponse(id: String, address: InetSocketAddress, map: BMap): AnnouncePeerResponse {
-        val sender = map.getBytes("id")!!
-
-        return AnnouncePeerResponse(id, Peer(Id.fromBytes(sender), address))
     }
 
     override fun unmarshallRequest(request: AnnouncePeerRequest): BMap = BTypeFactory.createBMap {
@@ -42,8 +38,17 @@ public class AnnouncePeerBencodeMarshaller : BencodeMarshaller<AnnouncePeerReque
         value("token", request.token)
     }
 
+
+    override fun marshallResponse(address: InetSocketAddress, map: BMap, request: AnnouncePeerRequest): AnnouncePeerResponse {
+        val sender = map.getBytes("id")!!
+
+        return AnnouncePeerResponse(Peer(Id.fromBytes(sender), address), request)
+    }
+
     override fun unmarshallResponse(response: AnnouncePeerResponse): BMap = BTypeFactory.createBMap {
         value("id", response.sender.id.toBytes())
     }
 
 }
+
+

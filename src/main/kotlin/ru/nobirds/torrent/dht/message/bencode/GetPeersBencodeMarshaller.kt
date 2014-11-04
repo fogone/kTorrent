@@ -14,8 +14,11 @@ import ru.nobirds.torrent.utils.toInetSocketAddresses
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.utils.toInetSocketAddress
+import ru.nobirds.torrent.utils.parse26BytesPeers
 
-public class GetPeersBencodeMarshaller : BencodeMarshaller<GetPeersRequest, GetPeersResponse> {
+public class GetPeersBencodeMarshaller :
+        RequestMarshaller<GetPeersRequest>, RequestUnmarshaller<GetPeersRequest>,
+        ResponseMarshaller<GetPeersRequest, GetPeersResponse>, ResponseUnmarshaller<GetPeersResponse> {
 
     override fun marshallRequest(id:String, address:InetSocketAddress, map: BMap): GetPeersRequest {
         val sender = map.getBytes("id")!!
@@ -24,16 +27,17 @@ public class GetPeersBencodeMarshaller : BencodeMarshaller<GetPeersRequest, GetP
         return GetPeersRequest(id, Peer(Id.fromBytes(sender), address), Id.fromBytes(hash))
     }
 
-    override fun marshallResponse(id: String, address:InetSocketAddress, map: BMap): GetPeersResponse {
+    override fun marshallResponse(address: InetSocketAddress, map: BMap, request: GetPeersRequest): GetPeersResponse {
         val sender = map.getBytes("id")!!
-        val token = map.getString("token")!!
+        val token = map.getString("token")
 
-        return if(map.containsKey("nodes")) {
-            val nodes = map.getBytes("nodes")!!
-            ClosestNodesResponse(id, Peer(Id.fromBytes(sender), address), token, nodes.toInetSocketAddresses())
+        return if(map.containsKey("nodes") || map.containsKey("value")) {
+            val nodes = map.getBytes("nodes") ?: map.getBytes("value")
+            ClosestNodesResponse(Peer(Id.fromBytes(sender), address), request, token, nodes!!.parse26BytesPeers())
         } else {
-            val values = map.getBList("values")!!
-            PeersFoundResponse(id, Peer(Id.fromBytes(sender), address), token, parseValues(values))
+            var values = map.getBList("values")
+
+            PeersFoundResponse(Peer(Id.fromBytes(sender), address), request,  token, parseValues(values!!))
         }
     }
 
@@ -48,14 +52,18 @@ public class GetPeersBencodeMarshaller : BencodeMarshaller<GetPeersRequest, GetP
     override fun unmarshallResponse(response: GetPeersResponse): BMap = BTypeFactory.createBMap {
         value("id", response.sender.id.toBytes())
 
-        if(response is ClosestNodesResponse)
-            value("nodes", response.nodes.toCompact())
-        else
-            list("values") {
-                for (addr in response.nodes) {
-                    value(addr.toCompact())
+        when (response) {
+            is ClosestNodesResponse -> {
+                value("nodes", response.nodes.toCompact())
+            }
+            is PeersFoundResponse -> {
+                list("values") {
+                    for (addr in response.nodes) {
+                        value(addr.toCompact())
+                    }
                 }
             }
+        }
     }
 
 }

@@ -23,14 +23,13 @@ public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
 
     private val receiveListeners = ArrayList<(Message)->Unit>()
 
-    private val outputMessagesQueue = ArrayBlockingQueue<AddressAndMessage>(50)
+    private val sendMessagesQueue = ArrayBlockingQueue<AddressAndMessage>(50)
 
     private val socket = DatagramSocket(port)
 
-    public fun start(initial: DhtServer.()-> Unit) {
+    public fun start() {
         runSendingThread()
         runReceivingThread()
-        this.initial()
     }
 
     fun join() {
@@ -53,7 +52,7 @@ public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
     private fun runSendingThread() {
         this.sendingThread = thread(name = "dht server sending thread", start = true) {
             while (true) {
-                sendMessage(outputMessagesQueue.take())
+                sendMessage(sendMessagesQueue.take())
             }
         }
     }
@@ -75,30 +74,34 @@ public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
     }
 
     private fun processPacket(packet:DatagramPacket) {
-        val data = packet.getData()!!
-        val offset = packet.getOffset()
-        val length = packet.getLength()
-        val address = packet.getSocketAddress() as InetSocketAddress
+        try {
+            val data = packet.getData()
+            val offset = packet.getOffset()
+            val length = packet.getLength()
+            val address = packet.getSocketAddress() as InetSocketAddress
 
-        val inputStream = ByteArrayInputStream(data, offset, length)
+            val inputStream = ByteArrayInputStream(data, offset, length)
 
-        val message = messageSerializer.deserialize(address, inputStream)
+            val message = messageSerializer.deserialize(address, inputStream)
 
-        receiveListeners.forEach { it(message) }
-    }
-
-    public fun sendTo(message: Message, addresses: Iterable<InetSocketAddress>) {
-        for (address in addresses) {
-            outputMessagesQueue.put(AddressAndMessage(address, message))
+            receiveListeners.forEach { it(message) }
+        } catch(e: Exception) {
+            e.printStackTrace() // todo
         }
     }
 
-    public fun sendTo(message: Message, vararg addresses: InetSocketAddress) {
-        sendTo(message, addresses.toList())
+    public fun sendTo(addresses: Iterable<InetSocketAddress>, message: ()->Message) {
+        for (address in addresses) {
+            sendMessagesQueue.put(AddressAndMessage(address, message()))
+        }
     }
 
-    public fun send(peers: Iterable<Peer>, message: Message) {
-        sendTo(message, peers.map { it.address })
+    public fun sendTo(vararg addresses: InetSocketAddress, message: ()->Message) {
+        sendTo(addresses.toList(), message)
+    }
+
+    public fun send(peers: Iterable<Peer>, message: ()->Message) {
+        sendTo(peers.map { it.address }, message)
     }
 
     public fun registerSendListener(listener:(AddressAndMessage)->Unit): DhtServer {

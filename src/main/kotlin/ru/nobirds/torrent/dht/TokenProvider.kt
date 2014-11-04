@@ -7,9 +7,11 @@ import ru.nobirds.torrent.utils.TokenGenerator
 import java.util.Random
 import java.util.UUID
 
-public class TokenContainer {
+public class TokenProvider {
 
     private val tokens = ConcurrentHashMap<Id, TokenPair>()
+
+    private val localToken: String = generateToken()
 
     public fun checkPeerToken(sender: Peer, token:String):Boolean {
         val tokenPair = tokens[sender.id]?.peerToken
@@ -26,6 +28,8 @@ public class TokenContainer {
     }
 
     public fun getPeerToken(peer: Id):String = tokens.getOrPut(peer) { TokenPair(peer) }.peerToken
+
+    public fun getLocalToken(): String = localToken // todo: regenerate me
 
     public fun generateToken():String = UUID.randomUUID().toString()
 

@@ -22,6 +22,7 @@ import java.util.Collections
 import java.security.MessageDigest
 import java.net.ServerSocket
 import java.net.SocketException
+import ru.nobirds.torrent.peers.Peer
 
 fun <P, R> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -228,6 +229,22 @@ public inline fun ByteArray.fillWith(factory:(Int)->Byte):ByteArray {
 
 public fun Byte.xor(byte:Byte):Byte = (toInt() xor byte.toInt()).toByte()
 
+public fun ByteArray.parse26BytesPeers():List<Peer> {
+    val source = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN)
+
+    val id = ByteArray(20)
+    val ip = ByteArray(4)
+
+    return (0..size / 26 - 1).map {
+        source.get(id)
+        source.get(ip)
+        val port = source.getShort().toInt() and 0xffff
+        val address = InetSocketAddress(InetAddress.getByAddress(ip), port)
+
+        Peer(Id.fromBytes(id), address)
+    }
+}
+
 public fun ByteArray.toInetSocketAddresses():List<InetSocketAddress> {
     val source = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN)
 
@@ -251,15 +268,30 @@ public fun ByteArray.toInetSocketAddress():InetSocketAddress {
     return InetSocketAddress(InetAddress.getByAddress(ip), port)
 }
 
-public fun <A:InetSocketAddress> List<A>.toCompact():ByteArray {
-    val addressBuffer = ByteArray(size * 6)
-    val result = ByteArray(size * 6)
+public fun List<Peer>.toCompact():ByteArray {
+    val peerIdBuffer = ByteArray(20)
+    val addressBuffer = ByteArray(6)
+
+    val result = ByteArray(size * 26)
     val buffer = ByteBuffer.wrap(result)
 
-    for (address in this)
-        buffer.put(address.toCompact(addressBuffer))
+    for (peer in this) {
+        buffer.put(peer.id.toBytes(peerIdBuffer))
+        buffer.put(peer.address.toCompact(addressBuffer))
+    }
 
     return result
+}
+
+public fun Peer.toCompact(): ByteArray {
+    val compact = ByteArray(26)
+
+    val buffer = ByteBuffer.wrap(compact)
+
+    buffer.put(this.id.toBytes())
+    buffer.put(this.address.toCompact())
+
+    return compact
 }
 
 public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = size) {

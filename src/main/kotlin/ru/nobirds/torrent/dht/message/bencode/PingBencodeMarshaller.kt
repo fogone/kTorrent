@@ -8,7 +8,9 @@ import ru.nobirds.torrent.bencode.BTypeFactory
 import java.net.InetSocketAddress
 import ru.nobirds.torrent.peers.Peer
 
-public class PingBencodeMarshaller : BencodeMarshaller<PingRequest, PingResponse> {
+public class PingBencodeMarshaller :
+        RequestMarshaller<PingRequest>, RequestUnmarshaller<PingRequest>,
+        ResponseMarshaller<PingRequest, PingResponse>, ResponseUnmarshaller<PingResponse> {
 
     override fun marshallRequest(id:String, address:InetSocketAddress, map: BMap): PingRequest {
         val sender = map.getBytes("id")!!
@@ -16,10 +18,10 @@ public class PingBencodeMarshaller : BencodeMarshaller<PingRequest, PingResponse
         return PingRequest(id, Peer(Id.fromBytes(sender), address))
     }
 
-    override fun marshallResponse(id: String, address:InetSocketAddress, map: BMap): PingResponse {
+    override fun marshallResponse(address: InetSocketAddress, map: BMap, request: PingRequest): PingResponse {
         val sender = map.getBytes("id")!!
 
-        return PingResponse(id, Peer(Id.fromBytes(sender), address))
+        return PingResponse(Peer(Id.fromBytes(sender), address), request)
     }
 
     override fun unmarshallRequest(request: PingRequest): BMap = BTypeFactory.createBMap {

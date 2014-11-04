@@ -11,6 +11,8 @@ public class BTokenInputStream(val stream:InputStream) {
 
     private var position:Long = -1L
 
+    private val emptyBytes = ByteArray(0)
+
     public fun next():Int {
         this.current = this.next
         this.next = stream.read()
@@ -19,6 +21,9 @@ public class BTokenInputStream(val stream:InputStream) {
     }
 
     public fun nextBytes(count:Int):ByteArray {
+        if(count == 0)
+            return emptyBytes
+
         val result = ByteArray(count)
         result[0] = next.toByte()
         val read = stream.read(result, 1, count - 1)

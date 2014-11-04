@@ -74,7 +74,7 @@ public class BMapBuilder(val bmap:BMap = BMap()) {
     }
 
     public fun value(name:String, string:String?) {
-        bytesValue(name, string) { BBytes().set(it.getBytes()) }
+        bytesValue(name, string) { BBytes().set(it.toByteArray()) }
     }
 
     public fun value(name:String, bytes:ByteArray?) {

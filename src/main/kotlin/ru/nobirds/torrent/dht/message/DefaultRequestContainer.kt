@@ -16,11 +16,15 @@ public class DefaultRequestContainer() : RequestContainer {
 
     override fun findById(id: String): RequestMessage? = storage[id].nullOr { request }
 
-    override fun removeById(id: String) {
+    override fun removeById(id: String):RequestMessage? {
         val slot = storage.remove(id)
 
-        if(slot != null)
+        if(slot != null) {
             slot.task.cancel()
+            return slot.request
+        }
+
+        return null
     }
 
     override fun storeWithTimeout(request: RequestMessage, timeout: Long, timeoutListener:(RequestMessage)->Unit) {

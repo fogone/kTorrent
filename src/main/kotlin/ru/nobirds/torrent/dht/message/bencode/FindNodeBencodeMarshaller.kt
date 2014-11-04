@@ -9,8 +9,11 @@ import ru.nobirds.torrent.utils.toCompact
 import java.net.InetSocketAddress
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.toInetSocketAddresses
+import ru.nobirds.torrent.utils.parse26BytesPeers
 
-public class FindNodeBencodeMarshaller : BencodeMarshaller<FindNodeRequest, FindNodeResponse> {
+public class FindNodeBencodeMarshaller :
+        RequestMarshaller<FindNodeRequest>, RequestUnmarshaller<FindNodeRequest>,
+        ResponseMarshaller<FindNodeRequest, FindNodeResponse>, ResponseUnmarshaller<FindNodeResponse> {
 
     override fun marshallRequest(id:String, address:InetSocketAddress, map: BMap): FindNodeRequest {
         val sender = map.getBytes("id")!!
@@ -19,11 +22,11 @@ public class FindNodeBencodeMarshaller : BencodeMarshaller<FindNodeRequest, Find
         return FindNodeRequest(id, Peer(Id.fromBytes(sender), address), Id.fromBytes(target))
     }
 
-    override fun marshallResponse(id: String, address:InetSocketAddress, map: BMap): FindNodeResponse {
+    override fun marshallResponse(address: InetSocketAddress, map: BMap, request: FindNodeRequest): FindNodeResponse {
         val sender = map.getBytes("id")!!
         val nodes = map.getBytes("nodes")!!
 
-        return FindNodeResponse(id, Peer(Id.fromBytes(sender), address), nodes.toInetSocketAddresses())
+        return FindNodeResponse(Peer(Id.fromBytes(sender), address), request, nodes.parse26BytesPeers())
     }
 
     override fun unmarshallRequest(request: FindNodeRequest): BMap = BTypeFactory.createBMap {

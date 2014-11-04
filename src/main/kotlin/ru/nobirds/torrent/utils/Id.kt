@@ -2,8 +2,9 @@ package ru.nobirds.torrent.utils
 
 import java.math.BigInteger
 import java.security.SecureRandom
+import java.util.Arrays
 
-public data class Id(val size:Int = 20, factory:(Int)->Byte) {
+public class Id(val size:Int = 20, factory:(Int)->Byte) {
 
     private val bytes = ByteArray(size).fillWith(factory)
 
@@ -11,7 +12,27 @@ public data class Id(val size:Int = 20, factory:(Int)->Byte) {
 
     public fun toBytes():ByteArray = bytes.copyOf()
 
+    public fun toBytes(buffer: ByteArray):ByteArray {
+        bytes.copyTo(buffer)
+        return buffer
+    }
+
     public fun toBigInteger(): BigInteger = BigInteger(bytes)
+
+    override fun equals(other: Any?): Boolean {
+        if(other !is Id) return false
+        if(other.size != size) return false
+
+        return Arrays.equals(other.bytes, bytes)
+    }
+
+    override fun hashCode(): Int {
+        return Arrays.hashCode(bytes)
+    }
+
+    override fun toString(): String {
+        return bytes.toHexString()
+    }
 
     class object {
         public val Zero:Id = Id { 0 }

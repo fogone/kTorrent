@@ -12,7 +12,7 @@ import java.net.InetSocketAddress
 import java.util.TreeMap
 import java.util.Comparator
 
-public class DistributedMap {
+public class KBucket(localPeer: ru.nobirds.torrent.peers.Peer) {
 
     private val values = ConcurrentHashMap<Id, MutableList<InetSocketAddress>>()
 
@@ -36,7 +36,11 @@ public class DistributedMap {
         this.values.getOrPut(key) { CopyOnWriteArrayList() }.addAll(values)
     }
 
+    public fun getNode(key: Id): Peer = peers.get(key)
+
     public fun get(key: Id):List<InetSocketAddress> = values.getOrElse(key) { Collections.emptyList<InetSocketAddress>() }
+
+    public fun containsNode(id: Id): Boolean = peers.containsKey(id)
 
     public fun contains(key: Id): Boolean = values.containsKey(key)
 
