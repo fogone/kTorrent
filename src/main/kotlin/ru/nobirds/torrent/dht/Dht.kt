@@ -39,7 +39,7 @@ public class Dht(val port:Int) {
 
     private val localPeer = Peer(Id.random(), InetSocketAddress.createUnresolved("localhost", port))
 
-    private val peers = KBucket(localPeer.id)
+    private val peers = SimpleKBucket(localPeer.id)
 
     private val messageFactory = MessageFactory(localPeer)
 
@@ -64,8 +64,8 @@ public class Dht(val port:Int) {
 
     public fun findPeersForHash(hash: Id, callback:(InetSocketAddress)->Unit) {
         processAction {
-            if (peers.contains(hash)) {
-                peers.get(hash).forEach { callback(it) }
+            if (peers.containsValue(hash)) {
+                peers.getValue(hash).forEach { callback(it) }
             }
 
             listeners.getOrPut(hash) { ArrayList() }.add(callback)
@@ -115,8 +115,8 @@ public class Dht(val port:Int) {
             is GetPeersRequest -> {
                 val token = tokens.getPeerToken(request.sender.id)
 
-                val response = if (peers.contains(request.hash)) {
-                    val nodes = peers.get(request.hash)
+                val response = if (peers.containsValue(request.hash)) {
+                    val nodes = peers.getValue(request.hash)
                     messageFactory.createPeersFoundResponse(request, token, nodes)
                 } else {
                     val closest = peers.findClosest(request.hash)
@@ -166,7 +166,7 @@ public class Dht(val port:Int) {
                         server.sendTo(response.nodes.map { it.address }) { messageFactory.createGetPeersRequest(request.hash) }
                     }
                     is PeersFoundResponse -> {
-                        peers.put(request.hash, response.nodes)
+                        peers.putValue(request.hash, response.nodes)
                         for (listener in listeners.getOrDefault(request.hash, Collections.emptyList())) {
                             response.nodes.forEach {
                                 listener(it)
