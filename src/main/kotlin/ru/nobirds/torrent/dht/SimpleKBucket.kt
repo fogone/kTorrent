@@ -72,8 +72,8 @@ public class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
 
     public override fun containsValue(key: Id): Boolean = values.containsKey(key)
 
-    public override fun findClosest(key: Id, count:Int = 8):List<Peer> = when {
-        peers.containsKey(key) -> Collections.singletonList(peers.get(key))
+    public override fun findClosest(key: Id, count:Int):List<Peer> = when {
+        //peers.containsKey(key) -> Collections.singletonList(peers.get(key))
         peers.size == 0 -> Collections.emptyList()
         peers.size == 1 -> Collections.singletonList(peers.values().first())
         else -> peers.find(key, count) { it.negate() }

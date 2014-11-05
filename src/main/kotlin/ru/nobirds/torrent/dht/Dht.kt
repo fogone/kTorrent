@@ -7,7 +7,6 @@ import ru.nobirds.torrent.dht.message.DefaultRequestContainer
 import ru.nobirds.torrent.dht.message.RequestMessage
 import ru.nobirds.torrent.dht.message.ResponseMessage
 import ru.nobirds.torrent.dht.message.Message
-import ru.nobirds.torrent.dht.message.ErrorMessage
 import ru.nobirds.torrent.dht.message.PingRequest
 import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
 import java.util.concurrent.ConcurrentHashMap
@@ -16,10 +15,6 @@ import ru.nobirds.torrent.dht.message.FindNodeRequest
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.dht.message.FindNodeResponse
-import ru.nobirds.torrent.dht.message.bencode.AnnouncePeerBencodeMarshaller
-import ru.nobirds.torrent.dht.message.bencode.FindNodeBencodeMarshaller
-import ru.nobirds.torrent.dht.message.bencode.PingBencodeMarshaller
-import ru.nobirds.torrent.dht.message.bencode.GetPeersBencodeMarshaller
 import ru.nobirds.torrent.dht.message.ClosestNodesResponse
 import ru.nobirds.torrent.dht.message.PeersFoundResponse
 import java.util.ArrayList
@@ -32,8 +27,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 public class Dht(val port:Int) {
 
     private val requestContainer = DefaultRequestContainer()
-
-    private val peersByHash = ConcurrentHashMap<Id, MutableMap<Id, Peer>>()
 
     private val tokens = TokenProvider()
 
@@ -71,6 +64,12 @@ public class Dht(val port:Int) {
             listeners.getOrPut(hash) { ArrayList() }.add(callback)
 
             server.send(peers.findClosest(hash)) { messageFactory.createGetPeersRequest(hash) }
+        }
+    }
+
+    public fun announce(hash: Id) {
+        processAction {
+            server.send(peers.findClosest(hash)) { messageFactory.createAnnouncePeerRequest(hash, tokens.getLocalToken()) }
         }
     }
 
@@ -140,12 +139,7 @@ public class Dht(val port:Int) {
                 if(!tokens.checkPeerToken(request.sender, request.token))
                     server.sendTo(request.sender.address) { messageFactory.errors.generic("Invalid token") }
                 else {
-                    val hash = request.hash
-
-                    val nodes = peersByHash.getOrPut(hash) { ConcurrentHashMap() }
-
-                    nodes[request.sender.id] = request.sender
-
+                    peers.putValue(request.hash, Collections.singleton(request.sender.address))
                     server.sendTo(request.sender.address) { messageFactory.createAnnouncePeerResponse(request) }
                 }
             }

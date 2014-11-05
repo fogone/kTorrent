@@ -6,9 +6,10 @@ import java.util.Timer
 import ru.nobirds.torrent.utils.scheduleOnce
 import java.util.TimerTask
 
-data class ContainerSlot(val request:RequestMessage, val task:TimerTask)
 
 public class DefaultRequestContainer() : RequestContainer {
+
+    private data class ContainerSlot(val request:RequestMessage, val task:TimerTask)
 
     private val timer = Timer("Request container timer")
 

@@ -53,9 +53,9 @@ public class BTokenInputStream(val stream:InputStream) {
 
     private fun createBType(char:Char): BType {
         return when(char) {
-            'i' -> BNumber()
-            'l' -> BList()
-            'd' -> BMap()
+            'i', 'I' -> BNumber()
+            'l', 'L' -> BList()
+            'd', 'D' -> BMap()
             in '0'..'9' -> BBytes()
             else -> throw IllegalArgumentException("Illegal character [${char}] ${char.toInt()}")
         }

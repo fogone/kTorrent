@@ -22,14 +22,5 @@ fun main(args: Array<String>) {
         }
     }
 
-    dht.findPeersForHash(Id.fromHexString("944D2E1C1443008DDFA34A89AEC282393AC8D883")) { address ->
-        val addressString = address.toString()
-
-        if(!peers.containsKey(addressString)) {
-            peers.put(addressString, true)
-            println(addressString)
-        }
-    }
-
     dht.server.join()
 }

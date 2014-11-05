@@ -10,11 +10,11 @@ import ru.nobirds.torrent.dht.message.ClosestNodesResponse
 import ru.nobirds.torrent.dht.message.PeersFoundResponse
 import java.net.InetSocketAddress
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.utils.toInetSocketAddresses
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.utils.toInetSocketAddress
 import ru.nobirds.torrent.utils.parse26BytesPeers
+import java.util.Collections
 
 public class GetPeersBencodeMarshaller :
         RequestMarshaller<GetPeersRequest>, RequestUnmarshaller<GetPeersRequest>,
@@ -31,13 +31,11 @@ public class GetPeersBencodeMarshaller :
         val sender = map.getBytes("id")!!
         val token = map.getString("token")
 
-        return if(map.containsKey("nodes") || map.containsKey("value")) {
-            val nodes = map.getBytes("nodes") ?: map.getBytes("value")
-            ClosestNodesResponse(Peer(Id.fromBytes(sender), address), request, token, nodes!!.parse26BytesPeers())
+        return if(map.containsKey("values")) {
+            PeersFoundResponse(Peer(Id.fromBytes(sender), address), request,  token, parseValues(map.getBList("values")!!))
         } else {
-            var values = map.getBList("values")
-
-            PeersFoundResponse(Peer(Id.fromBytes(sender), address), request,  token, parseValues(values!!))
+            val nodes = map.getBytes("nodes") ?: map.getBytes("value")
+            ClosestNodesResponse(Peer(Id.fromBytes(sender), address), request, token, if(nodes!=null) nodes.parse26BytesPeers() else Collections.emptyList())
         }
     }
 
