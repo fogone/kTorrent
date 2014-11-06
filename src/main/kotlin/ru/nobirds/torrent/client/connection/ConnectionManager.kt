@@ -14,35 +14,18 @@ import java.util.concurrent.Callable
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.net.SocketAddress
+import java.nio.channels.SelectableChannel
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.Queue
+import java.util.LinkedList
 
-public open class ConnectionMessage(val channel: SocketChannel)
-public class ReadMessage(channel: SocketChannel, val bytes: ByteArray) : ConnectionMessage(channel)
-public class WriteMessage(channel: SocketChannel, val bytes: ByteArray) : ConnectionMessage(channel)
-
-
-class Bucket() {
-
-    val channels = ConcurrentHashMap<SocketAddress, SocketChannel>()
-
-    fun add(channel: SocketChannel) {
-        val address = channel.getRemoteAddress()
-
-        channels.remove(address)?.close()
-
-        channels.put(address, channel)
-    }
-
-    fun contains(address: SocketAddress): Boolean {
-        val socketChannel = channels[address]
-        return socketChannel != null && socketChannel.isOpen()
-    }
-
-}
+public data class ReadMessage(val channel: SocketChannel, val bytes: ByteArray)
 
 public class ConnectionManager(val port:Int, val executor: ExecutorService, val threadCount:Int = 1) {
 
     private val selectedKeysQueue: BlockingQueue<SelectionKey> = ArrayBlockingQueue(1000)
-    private val messageQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(1000)
+    private val readMessageQueue: BlockingQueue<ReadMessage> = ArrayBlockingQueue(1000)
+    private val writeMessages: ConcurrentHashMap<SocketAddress, Queue<ByteArray>> = ConcurrentHashMap()
 
     private val serverSocketChannel = ServerSocketChannel.open()
 
@@ -61,34 +44,58 @@ public class ConnectionManager(val port:Int, val executor: ExecutorService, val 
         val bucket = buckets.getOrPut(hash) { Bucket() }
 
         if(address !in bucket) {
-            val channel = SocketChannel
-                    .open(address)
-                    .configureBlocking(false)
+            val channel = SocketChannel.open(address)
+            channel.configureBlocking(false)
 
-            bucket.add(channel as SocketChannel)
-
-            channel.register(selector, SelectionKey.OP_READ)
+            registerInBucket(channel, bucket)
         }
     }
 
-    fun initialize() {
+    public fun write(hash:Id, bytes: ByteArray) {
+        val bucket = buckets.get(hash)
+        if (bucket != null && bucket.notEmpty()) {
+            val channel = bucket.get()
+            writeMessages.getOrPut(channel.getRemoteAddress()) { LinkedList() }.offer(bytes)
+            channel.register(selector, SelectionKey.OP_WRITE)
+        }
+    }
+
+    public fun close(hash: Id) {
+        buckets.remove(hash)?.close()
+    }
+
+    public fun read(): ReadMessage = readMessageQueue.take()
+
+    private fun registerInBucket(channel: SocketChannel, bucket: Bucket) {
+        channel.register(selector, SelectionKey.OP_READ)
+        bucket.add(channel)
+    }
+
+    private fun initialize() {
         executor.execute {
-            serverSocketChannel.configureBlocking(false)
-            serverSocketChannel.bind(InetSocketAddress.createUnresolved("localhost", port))
-            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT)
+            initializeServer()
 
             while(true)
                 selectKeys()
         }
     }
 
+    private fun initializeServer() {
+        serverSocketChannel.configureBlocking(false)
+        serverSocketChannel.bind(InetSocketAddress.createUnresolved("localhost", port))
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT)
+    }
+
     private fun selectKeys() {
         selector.select()
+
         val selectedKeys = selector.selectedKeys()
+
         for (key in selectedKeys) {
             if (key.isValid())
                 selectedKeysQueue.put(key)
         }
+
         selectedKeys.clear()
     }
 
@@ -102,19 +109,40 @@ public class ConnectionManager(val port:Int, val executor: ExecutorService, val 
             if (selectionKey.isAcceptable()) {
                 val serverSocketChannel = selectionKey.channel() as ServerSocketChannel
                 val socketChannel = serverSocketChannel.accept()
+
+                registerInBucket(socketChannel, incomingBucket)
             }
 
-            val channel = selectionKey.channel() as SocketChannel
+            if (selectionKey.isReadable()) {
+                val channel = selectionKey.channel() as SocketChannel
 
-            buffer.clear()
+                buffer.clear()
 
-            val read = channel.read(buffer)
+                val read = channel.read(buffer)
 
-            val message = ByteArray(read)
+                val message = ByteArray(read)
 
-            buffer.get(message)
+                buffer.get(message)
 
-            messageQueue.put(message)
+                readMessageQueue.put(ReadMessage(channel, message))
+            }
+
+            if (selectionKey.isWritable()) {
+                val channel = selectionKey.channel() as SocketChannel
+
+                val messages = writeMessages.get(channel.getRemoteAddress())
+
+                if(messages != null) {
+                    while (messages.notEmpty) {
+                        val message = messages.poll()
+                        buffer.clear()
+                        buffer.put(message)
+                        channel.write(buffer)
+                    }
+                }
+
+                // todo: unregister
+            }
         }
     }
 
