@@ -33,7 +33,7 @@ public class Dht(val port:Int) {
 
     private val localPeer = Peer(Id.random(), InetSocketAddress.createUnresolved("localhost", port))
 
-    private val peers = SimpleKBucket(localPeer.id)
+    private val peers: KBucket = SimpleKBucket(localPeer.id)
 
     private val messageFactory = MessageFactory(localPeer)
 

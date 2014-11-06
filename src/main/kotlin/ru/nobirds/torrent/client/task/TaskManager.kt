@@ -10,11 +10,12 @@ import ru.nobirds.torrent.client.DigestProvider
 import java.nio.file.Path
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.peers.provider.PeerProvider
-import ru.nobirds.torrent.utils.Id
+import ru.nobirds.torrent.client.connection.ConnectionManager
 
 public class TaskManager(val directory: Path,
                                 val localPeer:Peer,
                                 val peerManager: PeerProvider,
+                                val connectionManager: ConnectionManager,
                                 val digestProvider: DigestProvider) {
 
     private val parserService: TorrentParserImpl = TorrentParserImpl(digestProvider)
@@ -26,7 +27,7 @@ public class TaskManager(val directory: Path,
     }
 
     public fun add(torrent:Torrent, target:Path = directory) {
-        tasks.add(TorrentTask(target, torrent.info, peerManager, digestProvider))
+        tasks.add(TorrentTask(target, torrent.info, peerManager, connectionManager, digestProvider))
     }
 
 }

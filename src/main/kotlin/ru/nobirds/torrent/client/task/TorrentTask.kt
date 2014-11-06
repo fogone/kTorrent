@@ -9,14 +9,18 @@ import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.model.TorrentInfo
-import ru.nobirds.torrent.peers.PeerManager
 import ru.nobirds.torrent.utils.Id
 import java.net.InetSocketAddress
+import ru.nobirds.torrent.client.connection.ConnectionManager
+import ru.nobirds.torrent.peers.provider.PeerProvider
 
 public class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
-                         val peerManager: PeerManager,
+                         val peerManager: PeerProvider,
+                         val connectionManager: ConnectionManager,
                          val digestProvider: DigestProvider) {
+
+    private val torrentHash = Id.fromBytes(torrent.hash!!)
 
     private val timer = Timer()
 
@@ -29,8 +33,6 @@ public class TorrentTask(val directory:Path,
     val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
     val state: TorrentState = TorrentState(torrent)
-
-    val connections = ConnectionContainer()
 
     private val peers = HashSet<Peer>()
 
@@ -89,6 +91,6 @@ public class TorrentTask(val directory:Path,
     }
 
     fun addConnection(address: InetSocketAddress) {
-
+        connectionManager.add(torrentHash, address)
     }
 }
