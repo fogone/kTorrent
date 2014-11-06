@@ -57,7 +57,7 @@ public class BTokenInputStream(val stream:InputStream) {
             'l', 'L' -> BList()
             'd', 'D' -> BMap()
             in '0'..'9' -> BBytes()
-            else -> throw IllegalArgumentException("Illegal character [${char}] ${char.toInt()}")
+            else -> throw IllegalCharacterException(char)
         }
     }
 }

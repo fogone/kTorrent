@@ -15,7 +15,7 @@ public class DefaultRequestContainer() : RequestContainer {
 
     private val storage = ConcurrentHashMap<String, ContainerSlot>()
 
-    override fun findById(id: String): RequestMessage? = storage[id].nullOr { request }
+    override fun findById(id: String): RequestMessage? = storage[id]?.request
 
     override fun removeById(id: String):RequestMessage? {
         val slot = storage.remove(id)
@@ -37,6 +37,12 @@ public class DefaultRequestContainer() : RequestContainer {
         }
 
         storage[request.id] = ContainerSlot(request, task)
+    }
+
+    override fun cancelById(id: String) {
+        val slot = storage.get(id)
+        if(slot != null)
+            slot.task.cancel()
     }
 
 }

@@ -8,4 +8,6 @@ public trait RequestContainer {
 
     fun storeWithTimeout(request:RequestMessage, timeout:Long = 100000L, timeoutListener:(RequestMessage)->Unit)
 
+    fun cancelById(id: String)
+
 }

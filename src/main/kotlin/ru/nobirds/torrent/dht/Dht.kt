@@ -23,6 +23,7 @@ import ru.nobirds.torrent.dht.message.AbstractErrorMessage
 import ru.nobirds.torrent.dht.message.ErrorMessageResponse
 import ru.nobirds.torrent.dht.message.BootstrapFindNodeRequest
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.concurrent.thread
 
 public class Dht(val port:Int) {
 
@@ -53,6 +54,11 @@ public class Dht(val port:Int) {
     private fun initialize() {
         server.start()
         server.sendTo(*Bootstrap.addresses) { messageFactory.createBootstrapFindNodeRequest(localPeer.id) }
+
+        thread(name = "dht process messages thread", start = true) {
+            while(true)
+                handleMessage(server.receive())
+        }
     }
 
     public fun findPeersForHash(hash: Id, callback:(InetSocketAddress)->Unit) {
@@ -93,6 +99,11 @@ public class Dht(val port:Int) {
     }
 
     private fun onReceiveMessage(message: Message) {
+        if(message is ResponseMessage)
+            requestContainer.cancelById(message.id)
+    }
+
+    private fun handleMessage(message: Message) {
         when(message) {
             is ResponseMessage -> {
                 onAnswer(message)

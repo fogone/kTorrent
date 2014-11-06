@@ -12,6 +12,7 @@ import java.net.InetSocketAddress
 import kotlin.concurrent.thread
 import ru.nobirds.torrent.peers.Peer
 import kotlin.properties.Delegates
+import ru.nobirds.torrent.bencode.BencodeParseException
 
 public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
 
@@ -23,7 +24,8 @@ public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
 
     private val receiveListeners = ArrayList<(Message)->Unit>()
 
-    private val sendMessagesQueue = ArrayBlockingQueue<AddressAndMessage>(50)
+    private val sendMessagesQueue = ArrayBlockingQueue<AddressAndMessage>(500)
+    private val receiveMessagesQueue = ArrayBlockingQueue<Message>(500)
 
     private val socket = DatagramSocket(port)
 
@@ -85,6 +87,10 @@ public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
             val message = messageSerializer.deserialize(address, inputStream)
 
             receiveListeners.forEach { it(message) }
+
+            receiveMessagesQueue.put(message)
+        } catch(e: BencodeParseException) {
+            println(e.getMessage()) // todo
         } catch(e: Exception) {
             e.printStackTrace() // todo
         }
@@ -103,6 +109,8 @@ public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
     public fun send(peers: Iterable<Peer>, message: ()->Message) {
         sendTo(peers.map { it.address }, message)
     }
+
+    public fun receive():Message = receiveMessagesQueue.take()
 
     public fun registerSendListener(listener:(AddressAndMessage)->Unit): DhtServer {
         sendListeners.add(listener)

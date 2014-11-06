@@ -14,6 +14,7 @@ import ru.nobirds.torrent.peers.provider.TrackerPeerProvider
 import ru.nobirds.torrent.peers.provider.DhtPeerProvider
 import ru.nobirds.torrent.peers.provider.PeerProvider
 import ru.nobirds.torrent.peers.LocalPeerFactory
+import ru.nobirds.torrent.peers.Peer
 
 public configuration open class TorrentClientConfiguration() {
 
@@ -21,25 +22,23 @@ public configuration open class TorrentClientConfiguration() {
 
     public bean open fun torrentParser(): TorrentParser = TorrentParserImpl(sha1Provider())
 
-    public bean open fun taskManager(
-            config: Config, localPeerFactory: LocalPeerFactory, peerManager:PeerProvider): TaskManager =
+    public bean open fun taskManager(config: Config, localPeer: Peer, peerManager:PeerProvider): TaskManager
+            = TaskManager(config.get(ClientProperties.torrentsDirectory), localPeer, peerManager, sha1Provider())
 
-            TaskManager(config.get(ClientProperties.torrentsDirectory),
-                    localPeerFactory.createLocalPeer(),
-                    peerManager,
-                    sha1Provider())
+    public bean open fun localPeerFactory(config: Config): LocalPeerFactory
+            = LocalPeerFactory(config.get(ClientProperties.clientPortsRange))
 
-    public bean open fun localPeerFactory(config: Config): LocalPeerFactory = LocalPeerFactory(
-            config.get(ClientProperties.clientPortsRange)
-    )
-
-    public bean open fun peerManager(localPeerFactory: LocalPeerFactory): PeerManager {
+    public bean open fun peerManager(localPeer: Peer): PeerManager {
         val peerManager = PeerManager()
-        peerManager.registerProvider(TrackerPeerProvider(localPeerFactory.createLocalPeer()))
-        peerManager.registerProvider(DhtPeerProvider(localPeerFactory.createLocalPeer()))
+        peerManager.registerProvider(TrackerPeerProvider(localPeer))
+        peerManager.registerProvider(DhtPeerProvider(localPeer))
         return peerManager
     }
 
+    public bean open fun localPeer(localPeerFactory: LocalPeerFactory): Peer = localPeerFactory.createLocalPeer()
+
     public bean open fun sha1Provider(): DigestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
+
+    public bean open fun clientRunner(taskManage: TaskManager): ClientCommandLineRunner = ClientCommandLineRunner(taskManage)
 
 }

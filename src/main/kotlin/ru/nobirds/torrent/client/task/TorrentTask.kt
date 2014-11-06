@@ -1,6 +1,5 @@
 package ru.nobirds.torrent.client.task
 
-import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.peers.Peer
 import java.util.HashSet
 import java.nio.file.Path
@@ -10,9 +9,13 @@ import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.model.TorrentInfo
+import ru.nobirds.torrent.peers.PeerManager
+import ru.nobirds.torrent.utils.Id
+import java.net.InetSocketAddress
 
 public class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
+                         val peerManager: PeerManager,
                          val digestProvider: DigestProvider) {
 
     private val timer = Timer()
@@ -27,7 +30,17 @@ public class TorrentTask(val directory:Path,
 
     val state: TorrentState = TorrentState(torrent)
 
+    val connections = ConnectionContainer()
+
     private val peers = HashSet<Peer>()
+
+    ;{
+        peerManager.require(Id.fromBytes(torrent.hash!!)) {
+            for (peer in it.peers) {
+                addConnection(peer)
+            }
+        }
+    }
 
     public fun addBlock(index: FreeBlockIndex, block:ByteArray) {
         val file = files.compositeRandomAccessFile
@@ -69,10 +82,13 @@ public class TorrentTask(val directory:Path,
         return files.files.map { FileDescriptor(parent, it) }
     }
 
-
     private fun handleMessage(message: TaskMessage) {
         when(message) {
             is RehashTorrentFilesMessage -> rehashTorrentFiles()
         }
+    }
+
+    fun addConnection(address: InetSocketAddress) {
+
     }
 }
