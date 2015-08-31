@@ -7,7 +7,7 @@ public abstract class AbstractBlockBType(val start:Char, val end:Char = 'e') : A
     override var startPosition = -1L
     override var endPosition = -1L
 
-    override fun processChar(stream: BTokenInputStream): Boolean {
+    override fun processChar(stream: BTokenStream): Boolean {
         when(stream.currentChar()) {
             start -> {
                 if(!started) {
@@ -32,12 +32,12 @@ public abstract class AbstractBlockBType(val start:Char, val end:Char = 'e') : A
         }
     }
 
-    public open fun onStart(stream: BTokenInputStream) {
+    public open fun onStart(stream: BTokenStream) {
     }
 
-    public open fun onEnd(stream: BTokenInputStream) {
+    public open fun onEnd(stream: BTokenStream) {
     }
 
-    public abstract fun onChar(stream: BTokenInputStream)
+    public abstract fun onChar(stream: BTokenStream)
 
 }

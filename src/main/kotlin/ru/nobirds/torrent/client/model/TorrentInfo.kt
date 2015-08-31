@@ -11,7 +11,7 @@ public data class TorrentInfo(
         var hash:ByteArray? = null) {
 
     val pieceCount:Int
-        get() = hashes.size
+        get() = hashes.size()
 
     public fun equals(info:TorrentInfo):Boolean {
         if(!info.pieceLength.equals(pieceLength)) return false

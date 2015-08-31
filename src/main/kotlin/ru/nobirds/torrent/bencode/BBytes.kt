@@ -20,7 +20,7 @@ public class BBytes() : AbstractBType(), BValueType<ByteArray> {
 
     public override fun toString():String = value.asString()
 
-    override fun processChar(stream: BTokenInputStream): Boolean {
+    override fun processChar(stream: BTokenStream): Boolean {
         when(stream.currentChar()) {
             ':' -> {
                 val count = builder.toString().toInt()

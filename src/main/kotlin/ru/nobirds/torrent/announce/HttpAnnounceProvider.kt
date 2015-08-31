@@ -28,7 +28,7 @@ public class HttpAnnounceProvider : AnnounceProvider {
                 .queryParams(parameters)
                 .build(true).toUri()
 
-        val result = template.getForObject(queryUri, javaClass<BMap>())
+        val result = template.getForObject(queryUri, BMap::class.java)
 
         val failureReason = result.getString("failure reason")
 
@@ -57,7 +57,7 @@ public class HttpAnnounceProvider : AnnounceProvider {
     }
 
     private fun processWarning(warning: String?) {
-        if (warning != null && warning.equalsIgnoreCase("Invalid info_hash"))
+        if (warning != null && warning.equals("Invalid info_hash", ignoreCase = true))
             throw InfoHashNotFoundException()
     }
 

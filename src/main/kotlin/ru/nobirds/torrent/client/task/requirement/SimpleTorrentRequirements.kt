@@ -14,7 +14,7 @@ public class SimpleTorrentRequirements(val state:TorrentState, val peerState:Tor
 
     private val lock = Semaphore(1)
 
-    ;{ registerListeners() }
+    init { registerListeners() }
 
     private fun registerListeners() {
         state.registerListener(object : StateListener {

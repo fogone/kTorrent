@@ -13,7 +13,7 @@ import java.util.TreeMap
 import java.util.Comparator
 import java.math.BigInteger
 
-public trait KBucket {
+public interface KBucket {
 
     fun addNode(peer: Peer)
 
@@ -25,7 +25,7 @@ public trait KBucket {
 
     fun removeNode(key: Id)
 
-    fun getNode(key: Id): Peer
+    fun getNode(key: Id): Peer?
 
     fun containsNode(id: Id): Boolean
 
@@ -46,8 +46,8 @@ public class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
     private val peers = ConcurrentHashMap<Id, Peer>()
 
     public override fun addNode(peer: Peer) {
-        if(peers.size >= k) {
-            val furthestNodes = peers.find(localId, peers.size - k) { it }
+        if(peers.size() >= k) {
+            val furthestNodes = peers.find(localId, peers.size() - k) { it }
             for (node in furthestNodes) {
                 peers.remove(node.id)
             }
@@ -61,10 +61,10 @@ public class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
     }
 
     public override fun putValue(key: Id, values: Iterable<InetSocketAddress>) {
-        this.values.getOrPut(key) { CopyOnWriteArrayList() }.addAll(values)
+        this.values.concurrentGetOrPut(key) { CopyOnWriteArrayList() }.addAll(values)
     }
 
-    public override fun getNode(key: Id): Peer = peers.get(key)
+    public override fun getNode(key: Id): Peer? = peers.get(key)
 
     public override fun getValue(key: Id):List<InetSocketAddress> = values.getOrElse(key) { Collections.emptyList<InetSocketAddress>() }
 
@@ -74,8 +74,8 @@ public class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
 
     public override fun findClosest(key: Id, count:Int):List<Peer> = when {
         //peers.containsKey(key) -> Collections.singletonList(peers.get(key))
-        peers.size == 0 -> Collections.emptyList()
-        peers.size == 1 -> Collections.singletonList(peers.values().first())
+        peers.size() == 0 -> Collections.emptyList()
+        peers.size() == 1 -> Collections.singletonList(peers.values().first())
         else -> peers.find(key, count) { it.negate() }
     }
 

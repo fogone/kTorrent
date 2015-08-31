@@ -1,0 +1,4 @@
+client:
+  threads: 10
+  ports: 6881..6889
+  directory: d:\tmp

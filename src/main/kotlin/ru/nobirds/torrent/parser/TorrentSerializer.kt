@@ -33,7 +33,7 @@ public class TorrentSerializer {
 
         value("announce", torrent.announce.url)
 
-        if(!torrent.announce.additional.empty)
+        if(!torrent.announce.additional.isEmpty())
         list("announce-list") {
             list {
                 for (url in torrent.announce.additional) {
@@ -60,7 +60,7 @@ public class TorrentSerializer {
         value("name", files.name)
         value("length", files.length)
 
-        if(!files.files.empty)
+        if(!files.files.isEmpty())
             list("files") {
                 for (file in files.files) {
                     map {

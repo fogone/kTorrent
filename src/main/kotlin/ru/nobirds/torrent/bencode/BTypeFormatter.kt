@@ -54,7 +54,7 @@ public class BTypeFormatter(val writer:Writer) {
     }
 
     private fun writeTabs() {
-        (level*2).times { writer.write(' '.toInt()) }
+        repeat(level*2) { writer.write(' '.toInt()) }
     }
 
     public fun formatBNumber(bnumber:BNumber) {

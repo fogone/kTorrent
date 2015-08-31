@@ -8,7 +8,7 @@ import java.util.Date
 public class BList(private val children:MutableList<BType> = ArrayList())
     : AbstractBlockBType('l'), MutableList<BType> by children {
 
-    override fun onChar(stream: BTokenInputStream) {
+    override fun onChar(stream: BTokenStream) {
         children.add(stream.processBType())
     }
 

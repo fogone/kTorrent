@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.dht.message
 
-public trait RequestContainer {
+public interface RequestContainer {
 
     fun findById(id:String):RequestMessage?
 

@@ -2,17 +2,17 @@ package ru.nobirds.torrent.client.message
 
 public enum class MessageType(val value:Int) {
 
-    handshake:MessageType('B'.toInt())
-    choke:MessageType(0)
-    unchoke:MessageType(1)
-    interested:MessageType(2)
-    notInterested:MessageType(3)
-    have:MessageType(4)
-    bitfield:MessageType(5)
-    request:MessageType(6)
-    piece:MessageType(7)
-    cancel:MessageType(8)
-    port:MessageType(9)
+    handshake('B'.toInt()),
+    choke(0),
+    unchoke(1),
+    interested(2),
+    notInterested(3),
+    have(4),
+    bitfield(5),
+    request(6),
+    piece(7),
+    cancel(8),
+    port(9)
 
 }
 

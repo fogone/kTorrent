@@ -11,7 +11,7 @@ public class BKeyValuePair() : BType {
         return this
     }
 
-    override fun process(stream: BTokenInputStream) {
+    override fun process(stream: BTokenStream) {
         startPosition = stream.position()
 
         val name = stream.processBType() as BBytes

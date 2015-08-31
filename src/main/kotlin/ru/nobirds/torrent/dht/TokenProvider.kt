@@ -24,10 +24,10 @@ public class TokenProvider {
     public fun getToken(peer: Id):String? = tokens[peer]?.myToken
 
     public fun setToken(peer: Id, token:String) {
-        tokens.getOrPut(peer) { TokenPair(peer) }.myToken = token
+        tokens.concurrentGetOrPut(peer) { TokenPair(peer) }.myToken = token
     }
 
-    public fun getPeerToken(peer: Id):String = tokens.getOrPut(peer) { TokenPair(peer) }.peerToken
+    public fun getPeerToken(peer: Id):String = tokens.concurrentGetOrPut(peer) { TokenPair(peer) }.peerToken
 
     public fun getLocalToken(): String = localToken // todo: regenerate me
 

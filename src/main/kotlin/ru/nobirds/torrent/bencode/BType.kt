@@ -5,9 +5,9 @@ import java.io.Writer
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 
-public trait BType {
+public interface BType {
 
-    fun process(stream: BTokenInputStream)
+    fun process(stream: BTokenStream)
 
     val startPosition:Long
 

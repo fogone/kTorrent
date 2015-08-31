@@ -2,9 +2,9 @@ package ru.nobirds.torrent.bencode
 
 public abstract class AbstractBType : BType {
 
-    public abstract fun processChar(stream: BTokenInputStream):Boolean
+    public abstract fun processChar(stream: BTokenStream):Boolean
 
-    public override fun process(stream: BTokenInputStream) {
+    public override fun process(stream: BTokenStream) {
         if(processByte(stream))
             return
 
@@ -15,7 +15,7 @@ public abstract class AbstractBType : BType {
         }
     }
 
-    private fun processByte(stream: BTokenInputStream):Boolean {
+    private fun processByte(stream: BTokenStream):Boolean {
         if(stream.current() < 0)
             throw IllegalStateException()
 

@@ -20,16 +20,15 @@ public class BMap(private val children:MutableMap<String, BKeyValuePair> = Linke
     public fun getOrPutValue(name:String, defaultValue:()->BType):BType
             = getOrPut(name) { BKeyValuePair().set(name, defaultValue()) }.value
 
-    override fun onChar(stream: BTokenInputStream) {
+    override fun onChar(stream: BTokenStream) {
         val bpair = BKeyValuePair()
         bpair.process(stream)
         children.put(bpair.name, bpair)
     }
 
-    fun get<T>(key:String, cast:(BKeyValuePair)->T):T? {
+    fun get<T:Any>(key:String, cast:(BKeyValuePair)->T):T? {
         val value = get(key)
-        return if(value != null) cast(value)
-        else null
+        return if(value != null) cast(value) else null
     }
 
     fun getBMap(key:String):BMap? = get(key) {  it.value as BMap }

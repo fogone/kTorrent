@@ -23,8 +23,9 @@ import java.security.MessageDigest
 import java.net.ServerSocket
 import java.net.SocketException
 import ru.nobirds.torrent.peers.Peer
+import kotlin.concurrent.thread
 
-fun <P, R> P?.nullOr(body:P.()->R):R?
+fun <P:Any, R:Any> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
 
 fun ByteArray.asString():String = this.toString("UTF-8")
@@ -72,9 +73,9 @@ public object UrlUtils {
             ('a'..'z').map { it.toByte() } +
             ('A'..'Z').map { it.toByte() } +
             ('0'..'9').map { it.toByte() } +
-            array('-', '_', '.', '!').map { it.toByte() }
+            arrayOf('-', '_', '.', '!').map { it.toByte() }
 
-    private val hex = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
+    private val hex = arrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F')
 
     private fun isAllowedSymbol(byte:Byte):Boolean = byte in allowedSymbols
 
@@ -94,7 +95,7 @@ public object UrlUtils {
 
     public fun encode(bytes: ByteArray) : String {
 
-        val result = StringBuffer(bytes.size * 2)
+        val result = StringBuffer(bytes.size() * 2)
 
         for (byte in bytes) {
             if(isAllowedSymbol(byte))
@@ -141,7 +142,7 @@ public fun BitSet.eachClear(size:Int, block:(Boolean, Int)->Boolean) {
 
 public fun BitSet.copy():BitSet = this.clone() as BitSet
 
-public fun <T> T?.equalsNullable(other:T?):Boolean {
+public fun <T:Any> T?.equalsNullable(other:T?):Boolean {
     if(this == null && other == null)
         return true
 
@@ -151,16 +152,16 @@ public fun <T> T?.equalsNullable(other:T?):Boolean {
     if(this != null && other == null)
         return false
 
-    return this.equals(other)
+    return this!!.equals(other)
 }
 
 public fun ByteArray.equalsArray(other:ByteArray):Boolean = Arrays.equals(this, other)
 public fun ByteArray.toId():Id = Id.fromBytes(this)
 
 public fun List<ByteArray>.equalsList(other:List<ByteArray>):Boolean {
-    if(this.size != other.size) return false
+    if(this.size() != other.size()) return false
 
-    for (i in 0..size-1) {
+    for (i in 0..size() -1) {
         if(!get(i).equalsArray(other.get(i)))
             return false
     }
@@ -220,7 +221,7 @@ public fun <T> Iterator<T>.forEachWithStatus(block:(IterationStatus<T>)->Unit) {
 }
 
 public inline fun ByteArray.fillWith(factory:(Int)->Byte):ByteArray {
-    (0..size-1).forEach {
+    (0..size() -1).forEach {
         set(it, factory(it))
     }
 
@@ -235,7 +236,7 @@ public fun ByteArray.parse26BytesPeers():List<Peer> {
     val id = ByteArray(20)
     val ip = ByteArray(4)
 
-    return (0..size / 26 - 1).map {
+    return (0..size() / 26 - 1).map {
         source.get(id)
         source.get(ip)
         val port = source.getShort().toInt() and 0xffff
@@ -250,7 +251,7 @@ public fun ByteArray.toInetSocketAddresses():List<InetSocketAddress> {
 
     val ip = ByteArray(4)
 
-    return (0..size / 6 - 1).map {
+    return (0..size() / 6 - 1).map {
         source.get(ip)
         val port = source.getShort().toInt() and 0xffff
         InetSocketAddress(InetAddress.getByAddress(ip), port)
@@ -272,7 +273,7 @@ public fun List<Peer>.toCompact():ByteArray {
     val peerIdBuffer = ByteArray(20)
     val addressBuffer = ByteArray(6)
 
-    val result = ByteArray(size * 26)
+    val result = ByteArray(size() * 26)
     val buffer = ByteBuffer.wrap(result)
 
     for (peer in this) {
@@ -294,8 +295,9 @@ public fun Peer.toCompact(): ByteArray {
     return compact
 }
 
-public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = size) {
+public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = size()):ByteArray {
     System.arraycopy(this, offset, target, position, length)
+    return target
 }
 
 public fun InetSocketAddress.toCompact(bytes:ByteArray = ByteArray(6)):ByteArray {
@@ -319,13 +321,13 @@ public fun Timer.scheduleOnce(timeout:Long, callback:()->Unit):TimerTask {
 }
 
 public fun <T, R:Comparable<R>> Collection<T>.toPriorityQueue(order:(T)->R):PriorityQueue<T> {
-    val queue = PriorityQueue(size, comparator {(x: T, y: T) -> order(x).compareTo(order(y)) })
+    val queue = PriorityQueue(size(), comparator {(x: T, y: T) -> order(x).compareTo(order(y)) })
     queue.addAll(this)
     return queue
 }
 
 public fun <T> Queue<T>.top(count:Int):List<T> {
-    if(empty)
+    if(isEmpty())
         return Collections.emptyList()
 
     val result = ArrayList<T>()
@@ -366,4 +368,19 @@ public fun String.hexToByteArray(): ByteArray {
     }
 
     return data
+}
+
+public inline fun infiniteLoop(block: () -> Unit) {
+    try {
+        while (Thread.currentThread().isInterrupted.not()) {
+            block()
+        }
+    } catch(e: InterruptedException) {
+        // do nothing
+    }
+}
+
+public inline fun infiniteLoopThread(
+        inlineOptions(InlineOption.ONLY_LOCAL_RETURN) block: () -> Unit):Thread = thread {
+    infiniteLoop(block)
 }

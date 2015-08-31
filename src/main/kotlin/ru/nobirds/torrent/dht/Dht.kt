@@ -39,9 +39,7 @@ public class Dht(val port:Int) {
 
     private val messageSerializer = BencodeMessageSerializer(localPeer, requestContainer)
 
-    public val server: DhtServer = DhtServer(port, messageSerializer)
-            .registerSendListener { onSendMessage(it)}
-            .registerReceiveListener { onReceiveMessage(it)}
+    private  val server = NettyDht(port)
 
     private val listeners = ConcurrentHashMap<Id, MutableList<(InetSocketAddress)->Unit>>()
 
@@ -49,11 +47,11 @@ public class Dht(val port:Int) {
 
     private var initialized: Boolean = false
 
-    ;{ initialize() }
+    init { initialize() }
 
     private fun initialize() {
         server.start()
-        server.sendTo(*Bootstrap.addresses) { messageFactory.createBootstrapFindNodeRequest(localPeer.id) }
+        server.sendTo(*BootstrapHosts.addresses) { messageFactory.createBootstrapFindNodeRequest(localPeer.id) }
 
         thread(name = "dht process messages thread", start = true) {
             while(true)
@@ -67,7 +65,7 @@ public class Dht(val port:Int) {
                 peers.getValue(hash).forEach { callback(it) }
             }
 
-            listeners.getOrPut(hash) { ArrayList() }.add(callback)
+            listeners.concurrentGetOrPut(hash) { ArrayList() }.add(callback)
 
             server.send(peers.findClosest(hash)) { messageFactory.createGetPeersRequest(hash) }
         }
@@ -139,7 +137,7 @@ public class Dht(val port:Int) {
                 val target = request.target
 
                 val responsePeers = if (peers.containsNode(target)) {
-                    Collections.singletonList(peers.getNode(target))
+                    Collections.singletonList(peers.getNode(target)!!)
                 } else {
                     peers.findClosest(target)
                 }

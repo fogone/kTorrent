@@ -57,7 +57,7 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!
 
-        val piecesCount = pieces.size / HASH_SIZE
+        val piecesCount = pieces.size() / HASH_SIZE
 
         val hashes = splitHashes(pieces, piecesCount)
 

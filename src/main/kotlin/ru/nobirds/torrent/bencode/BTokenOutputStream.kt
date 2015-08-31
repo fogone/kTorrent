@@ -1,25 +1,26 @@
 package ru.nobirds.torrent.bencode
 
+import io.netty.buffer.ByteBuf
 import java.io.OutputStream
 import java.math.BigInteger
 
-public class BTokenOutputStream(val stream:OutputStream) {
+public interface BTokenWriter {
 
     public fun write(start:Char, end:Char, body:()->Unit) {
-        stream.write(start.toInt())
+        writeImpl(start.toInt())
         body()
-        stream.write(end.toInt())
+        writeImpl(end.toInt())
     }
 
     public fun write(bytes:ByteArray) {
-        stream.write(bytes.size.toString().getBytes())
-        stream.write(':'.toInt())
-        stream.write(bytes)
+        writeImpl(bytes.size().toString().toByteArray())
+        writeImpl(':'.toInt())
+        writeImpl(bytes)
     }
 
     public fun write(value:BigInteger) {
         write('i', 'e') {
-            stream.write(value.toString().getBytes())
+            writeImpl(value.toString().toByteArray())
         }
     }
 
@@ -68,4 +69,32 @@ public class BTokenOutputStream(val stream:OutputStream) {
             is BBytes -> write(value)
         }
     }
+
+    fun writeImpl(byte:Int)
+    fun writeImpl(bytes:ByteArray)
+
+}
+
+public class BTokenOutputStream(val stream:OutputStream) : BTokenWriter {
+
+    override fun writeImpl(byte: Int) {
+        stream.write(byte)
+    }
+
+    override fun writeImpl(bytes: ByteArray) {
+        stream.write(bytes)
+    }
+
+}
+
+public class BTokenBufferWriter(val buffer:ByteBuf) : BTokenWriter {
+
+    override fun writeImpl(byte: Int) {
+        buffer.writeByte(byte)
+    }
+
+    override fun writeImpl(bytes: ByteArray) {
+        buffer.writeBytes(bytes)
+    }
+
 }

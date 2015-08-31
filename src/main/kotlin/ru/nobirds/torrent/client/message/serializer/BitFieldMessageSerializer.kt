@@ -15,7 +15,7 @@ public object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {
     override fun write(stream: DataOutputStream, message: BitFieldMessage) {
         val bytes = message.pieces.toByteArray()
 
-        stream.writeInt(bytes.size + 1)
+        stream.writeInt(bytes.size() + 1)
         stream.writeByte(message.messageType.value)
         stream.write(bytes)
     }

@@ -1,5 +1,6 @@
 package ru.nobirds.torrent.bencode
 
+import io.netty.buffer.Unpooled
 import org.junit.Test
 import java.io.FileInputStream
 import java.math.BigInteger
@@ -24,7 +25,7 @@ public class BencodeTest() {
     val digestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
     val parserService = TorrentParserImpl(digestProvider)
 
-    Test
+    @Test
     public fun infoHashTest() {
 
         val source = ClassLoader.getSystemResourceAsStream("test2.torrent")!!.readBytes()
@@ -46,6 +47,7 @@ public class BencodeTest() {
         Assert.assertArrayEquals(encoded, infoHash)
     }
 
+    @Test
     public fun test3() {
         val source = ClassLoader.getSystemResourceAsStream("test2.torrent")!!.readBytes()
 
@@ -61,13 +63,47 @@ public class BencodeTest() {
         Bencoder.encodeBType(FileOutputStream("tmp.torrent"), map)
     }
 
+    @Test
+    public fun encodeDecodeTest() {
+        //val source = ClassLoader.getSystemResourceAsStream("tmp2.bencode")!!.readBytes()
+
+        val bMap = BTypeFactory.createBMap {
+            value("hello", "world")
+            value("text", 10)
+        }
+
+        val source = Unpooled.buffer(500)
+        val writer = BTokenBufferWriter(source)
+        writer.write(bMap)
+        writer.write(bMap)
+
+        val buffer = source
+
+        val stream = BTokenStreamImpl(BufferByteReader(buffer))
+
+        stream.next()
+
+        val bType = stream.processBType()
+
+        println(bType)
+
+        // val stream2 = BTokenStreamImpl(BufferByteReader(buffer))
+
+        stream.next()
+
+        val bType2 = stream.processBType()
+
+        println(bType2)
+    }
+
+    @Test
     public fun test5() {
         val map = Bencoder.decodeBMap(FileInputStream("tmp.torrent"))
         val torrent = TorrentParserImpl(digestProvider).parse(map)
         println(torrent)
     }
 
-    Test
+    @Test
     public fun test4() {
         val source = ClassLoader.getSystemResourceAsStream("test1.torrent")!!.readBytes()
 
@@ -78,7 +114,7 @@ public class BencodeTest() {
         Assert.assertArrayEquals(source, target)
     }
 
-    Test
+    @Test
     public fun test2() {
         val stream = ClassLoader.getSystemResourceAsStream("tmp.bencode")!!
         val result = Bencoder.decodeBMap(stream)
@@ -88,7 +124,7 @@ public class BencodeTest() {
         Assert.assertEquals("Invalid info_hash", warningMessage)
     }
 
-    Test
+    @Test
     public fun test6() {
         val parser = TorrentParserImpl(digestProvider)
         val serializer = TorrentSerializer()
@@ -104,7 +140,7 @@ public class BencodeTest() {
         Assert.assertTrue(torrent.equals(torrent2))
     }
 
-    Test
+    @Test
     public fun test7() {
         val parser = OldTorrentParserImpl(digestProvider)
         val parser2 = TorrentParserImpl(digestProvider)

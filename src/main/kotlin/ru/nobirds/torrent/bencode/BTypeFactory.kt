@@ -51,7 +51,7 @@ public class BListBuilder(val blist:BList = BList()) {
 
 public class BMapBuilder(val bmap:BMap = BMap()) {
 
-    public fun numberValue<T>(name:String, number:T?, cast:(T)->BNumber) {
+    public fun numberValue<T:Any>(name:String, number:T?, cast:(T)->BNumber) {
         if(number != null)
             value(name, cast(number))
     }
@@ -68,7 +68,7 @@ public class BMapBuilder(val bmap:BMap = BMap()) {
         numberValue(name, number) { BNumber().set(it) }
     }
 
-    public fun bytesValue<T>(name:String, bytes:T?, cast:(T)->BBytes) {
+    public fun bytesValue<T:Any>(name:String, bytes:T?, cast:(T)->BBytes) {
         if(bytes != null)
             value(name, cast(bytes))
     }

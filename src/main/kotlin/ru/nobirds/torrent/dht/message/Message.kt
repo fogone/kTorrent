@@ -8,19 +8,20 @@ import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.dht.message.MessageType.values
 
 public enum class MessageType(val code:String) {
-    request:MessageType("q")
-    response:MessageType("r")
-    error:MessageType("e")
+    request("q"),
+    response("r"),
+    error("e")
 }
+
 private val messageTypeIndex = values().toMap { it.code }
 public fun findMessageTypeByCode(code: String): MessageType = messageTypeIndex[code]!!
 
 public enum class RequestType(val code: String) {
-    ping : RequestType("ping")
-    findNode : RequestType("find_node")
-    findPeer : RequestType("get_peers")
-    announcePeer : RequestType("announce_peer")
-    unknown : RequestType("unknown")
+    ping("ping"),
+    findNode("find_node"),
+    findPeer("get_peers"),
+    announcePeer("announce_peer"),
+    unknown("unknown")
 }
 private val requestTypeIndex = RequestType.values().toMap { it.code }
 public fun findRequestTypeByCode(code: String): RequestType = requestTypeIndex[code]!!

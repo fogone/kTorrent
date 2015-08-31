@@ -19,7 +19,7 @@ public class ClientTest {
 
         val url = "http://comoros.ti.ru/announce?info_hash=${torrent.info.hash!!.toUrlString()}&peer_id=&port=6881"
 
-        val result = restTemplate.getForObject(url, javaClass<BMap>())!!
+        val result = restTemplate.getForObject(url, BMap::class.java)!!
 //        val result = restTemplate.getForObject(url, javaClass<BMap>(), hashMapOf("hash" to URLEncoder.encode(torrent.info.hash.toString(), "UTF-8")))!!
 
         val map = result

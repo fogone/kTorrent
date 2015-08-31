@@ -15,7 +15,7 @@ public object PieceMessageSerializer : MessageSerializer<PieceMessage> {
     }
 
     override fun write(stream: DataOutputStream, message: PieceMessage) {
-        stream.writeInt(message.block.size + 9)
+        stream.writeInt(message.block.size() + 9)
         stream.writeByte(message.messageType.value)
         stream.writeInt(message.index)
         stream.writeInt(message.begin)

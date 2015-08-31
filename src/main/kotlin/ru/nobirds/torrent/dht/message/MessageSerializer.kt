@@ -4,7 +4,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetSocketAddress
 
-public trait MessageSerializer {
+public interface MessageSerializer {
 
     fun deserialize(address:InetSocketAddress, source:InputStream):Message
 

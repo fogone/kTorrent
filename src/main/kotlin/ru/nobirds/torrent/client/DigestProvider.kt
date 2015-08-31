@@ -17,11 +17,11 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
     }
 
     public fun checkHashes(pieceLength:Long, hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
-        val result = BitSet(hashes.size)
+        val result = BitSet(hashes.size())
 
         val fileHashes = calculateHashes(files, pieceLength)
 
-        for (i in 0..hashes.size - 1) {
+        for (i in 0..hashes.size() - 1) {
             result.set(i, hashes[i].equalsArray(fileHashes[i]))
         }
 
@@ -57,7 +57,7 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
     private fun readAndCalculateDigest(input:DataInput, buffer:ByteArray, length:Long):ByteArray {
         val messageDigest = digestFactory()
 
-        val bufferSize = buffer.size.toLong()
+        val bufferSize = buffer.size().toLong()
 
         var position = 0L
         for (index in 0..(length/ bufferSize)-1) {

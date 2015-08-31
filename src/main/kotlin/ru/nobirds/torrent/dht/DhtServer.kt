@@ -1,125 +1,59 @@
 package ru.nobirds.torrent.dht
 
-import java.net.DatagramSocket
-import java.net.DatagramPacket
-import java.io.ByteArrayInputStream
-import ru.nobirds.torrent.dht.message.Message
-import ru.nobirds.torrent.dht.message.MessageSerializer
-import java.util.ArrayList
+import io.netty.bootstrap.Bootstrap
+import io.netty.channel.ChannelOption
+import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.nio.NioDatagramChannel
+import ru.nobirds.torrent.bencode.*
+import ru.nobirds.torrent.utils.channelInitializerHandler
+import ru.nobirds.torrent.utils.infiniteLoopThread
 import java.io.ByteArrayOutputStream
-import java.util.concurrent.ArrayBlockingQueue
+import java.io.Closeable
+import java.net.DatagramPacket
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
-import ru.nobirds.torrent.peers.Peer
-import kotlin.properties.Delegates
-import ru.nobirds.torrent.bencode.BencodeParseException
+import java.util.concurrent.ArrayBlockingQueue
 
-public class DhtServer(val port:Int, val messageSerializer:MessageSerializer) {
+public class NettyDht(val port:Int) : Closeable {
 
-    private var sendingThread: Thread by Delegates.notNull()
+    private val localhost = InetSocketAddress(port)
+    private val broadcastAddress = InetSocketAddress("255.255.255.255", port)
 
-    private var receivingThread: Thread by Delegates.notNull()
+    private val workerGroup = NioEventLoopGroup()
 
-    private val sendListeners = ArrayList<(AddressAndMessage)->Unit>()
+    private val incoming = ArrayBlockingQueue<BMessage>(1000)
+    private val outgoing = ArrayBlockingQueue<BMessage>(1000)
 
-    private val receiveListeners = ArrayList<(Message)->Unit>()
-
-    private val sendMessagesQueue = ArrayBlockingQueue<AddressAndMessage>(500)
-    private val receiveMessagesQueue = ArrayBlockingQueue<Message>(500)
-
-    private val socket = DatagramSocket(port)
-
-    public fun start() {
-        runSendingThread()
-        runReceivingThread()
-    }
-
-    fun join() {
-        receivingThread.join()
-        sendingThread.join()
-    }
-
-    private fun runReceivingThread() {
-        this.receivingThread = thread(name = "dht server sending thread", start = true) {
-
-            val packet = DatagramPacket(ByteArray(1024), 1024)
-
-            while (true) {
-                socket.receive(packet)
-                processPacket(packet)
+    private val server = Bootstrap()
+            .group(workerGroup)
+            .channel(NioDatagramChannel::class.java)
+            .option(ChannelOption.SO_BROADCAST, true)
+            .channelInitializerHandler {
+                it.pipeline()
+                        .addLast(BencodeCodec())
+                        .addLast(BencodeRequestQueueStorage(incoming))
             }
-        }
+            .bind(port)
+
+    private val sender = infiniteLoopThread {
+        val message = outgoing.take()
+
+        val outputStream = ByteArrayOutputStream()
+        BTokenOutputStream(outputStream).writeBObject(message.value)
+        val byteArray = outputStream.toByteArray()
+
+        server.channel().writeAndFlush(DatagramPacket(
+                byteArray, byteArray.size(), broadcastAddress))
     }
 
-    private fun runSendingThread() {
-        this.sendingThread = thread(name = "dht server sending thread", start = true) {
-            while (true) {
-                sendMessage(sendMessagesQueue.take())
-            }
-        }
+    public fun read():BMessage = incoming.take()
+
+    public fun send(address:InetSocketAddress, body:BMap) {
+        outgoing.put(BMessage(address, body))
     }
 
-    private fun sendMessage(addressAndMessage: AddressAndMessage) {
-        try {
-            val result = ByteArrayOutputStream()
-
-            sendListeners.forEach { it(addressAndMessage) }
-
-            messageSerializer.serialize(addressAndMessage.message, result)
-
-            val bytes = result.toByteArray()
-
-            socket.send(DatagramPacket(bytes, bytes.size, addressAndMessage.address))
-        } catch(e: Exception) {
-            e.printStackTrace() // todo
-        }
+    override fun close() {
+        sender.interrupt()
+        workerGroup.shutdownGracefully()
+        server.channel().closeFuture().sync()
     }
-
-    private fun processPacket(packet:DatagramPacket) {
-        try {
-            val data = packet.getData()
-            val offset = packet.getOffset()
-            val length = packet.getLength()
-            val address = packet.getSocketAddress() as InetSocketAddress
-
-            val inputStream = ByteArrayInputStream(data, offset, length)
-
-            val message = messageSerializer.deserialize(address, inputStream)
-
-            receiveListeners.forEach { it(message) }
-
-            receiveMessagesQueue.put(message)
-        } catch(e: BencodeParseException) {
-            println(e.getMessage()) // todo
-        } catch(e: Exception) {
-            e.printStackTrace() // todo
-        }
-    }
-
-    public fun sendTo(addresses: Iterable<InetSocketAddress>, message: ()->Message) {
-        for (address in addresses) {
-            sendMessagesQueue.put(AddressAndMessage(address, message()))
-        }
-    }
-
-    public fun sendTo(vararg addresses: InetSocketAddress, message: ()->Message) {
-        sendTo(addresses.toList(), message)
-    }
-
-    public fun send(peers: Iterable<Peer>, message: ()->Message) {
-        sendTo(peers.map { it.address }, message)
-    }
-
-    public fun receive():Message = receiveMessagesQueue.take()
-
-    public fun registerSendListener(listener:(AddressAndMessage)->Unit): DhtServer {
-        sendListeners.add(listener)
-        return this
-    }
-
-    public fun registerReceiveListener(listener:(Message)->Unit): DhtServer {
-        receiveListeners.add(listener)
-        return this
-    }
-
 }

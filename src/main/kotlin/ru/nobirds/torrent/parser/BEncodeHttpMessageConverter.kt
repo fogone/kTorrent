@@ -12,7 +12,7 @@ import java.io.FileOutputStream
 public class BEncodeHttpMessageConverter() : AbstractHttpMessageConverter<BMap>(MediaType.ALL) {
 
     override fun supports(clazz: Class<out Any?>?): Boolean {
-        return clazz != null && javaClass<BMap>().isAssignableFrom(clazz)
+        return clazz != null && BMap::class.java.isAssignableFrom(clazz)
     }
 
     override fun readInternal(clazz: Class<out BMap>?, inputMessage: HttpInputMessage): BMap {

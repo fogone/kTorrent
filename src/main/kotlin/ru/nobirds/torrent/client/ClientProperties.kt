@@ -1,15 +1,12 @@
 package ru.nobirds.torrent.client
 
-import ru.nobirds.torrent.config.ConfigProperty
-import ru.nobirds.torrent.config.Properties
-import java.nio.file.Paths
+import org.springframework.boot.context.properties.ConfigurationProperties
 import java.nio.file.Path
+import java.nio.file.Paths
 
-public object ClientProperties {
-
-    public val peerId:ConfigProperty<String> = Properties.string("client.peer.id")
-    public val clientPortsRange:ConfigProperty<LongRange> = Properties.longRange("client.ports", 6881L..6889L)
-
-    public val torrentsDirectory:ConfigProperty<Path> = Properties.directory("client.torrents.directory", Paths.get("d:\\tmp")!!)
-
-}
+@ConfigurationProperties("client")
+public class ClientProperties(
+        val threads:Int = 10,
+        val ports:LongRange = 6881L..6889L,
+        val directory:Path = Paths.get("")
+)

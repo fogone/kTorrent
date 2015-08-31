@@ -35,7 +35,7 @@ public class BencodeMessageSerializer(val localPeer: Peer, val requestContainer:
 
     private val marshallers = MarshallerContainer()
 
-    ;{
+    init {
         val pingMarshaller = PingBencodeMarshaller()
         val findNodeMarshaller = FindNodeBencodeMarshaller()
         val getPeersMarshaller = GetPeersBencodeMarshaller()

@@ -36,7 +36,7 @@ public class TorrentTask(val directory:Path,
 
     private val peers = HashSet<Peer>()
 
-    ;{
+    init {
         peerManager.require(Id.fromBytes(torrent.hash!!)) {
             for (peer in it.peers) {
                 addConnection(peer)
@@ -46,11 +46,7 @@ public class TorrentTask(val directory:Path,
 
     public fun addBlock(index: FreeBlockIndex, block:ByteArray) {
         val file = files.compositeRandomAccessFile
-        val blockIndex = state.freeIndexToBlockIndex(index.piece, index.begin, index.length)
-
-        if(blockIndex == null)
-            return
-
+        val blockIndex = state.freeIndexToBlockIndex(index.piece, index.begin, index.length) ?: return
         val globalIndex = state.blockIndexToGlobalIndex(blockIndex.piece, blockIndex.block)
 
         file.seek(globalIndex.begin.toLong())
@@ -91,6 +87,6 @@ public class TorrentTask(val directory:Path,
     }
 
     fun addConnection(address: InetSocketAddress) {
-        connectionManager.add(torrentHash, address)
+        // connectionManager.add(torrentHash, address)
     }
 }

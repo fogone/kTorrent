@@ -7,6 +7,7 @@ import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.Torrents
 import ru.nobirds.torrent.utils.asString
 import ru.nobirds.torrent.client.DigestProvider
+import ru.nobirds.torrent.utils.copyTo
 import ru.nobirds.torrent.utils.nullOr
 
 public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
@@ -35,16 +36,12 @@ public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
             hashes {
                 val pieces = info.getBytes("pieces")!!
-                val piecesCount = pieces.size / HASH_SIZE
+                val piecesCount = pieces.size() / HASH_SIZE
 
                 var position = 0
 
-                piecesCount.times {
-                    val hash = ByteArray(HASH_SIZE)
-                    System.arraycopy(pieces, position, hash, 0, HASH_SIZE)
-
-                    hash(hash)
-
+                repeat(piecesCount) {
+                    hash(pieces.copyTo(ByteArray(HASH_SIZE), position))
                     position += HASH_SIZE
                 }
             }

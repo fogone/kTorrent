@@ -12,7 +12,7 @@ public object HandshakeMessageSerializer : MessageSerializer<SimpleMessage> {
 
     override fun write(stream: DataOutputStream, message: SimpleMessage) {
         stream.writeInt(19)
-        stream.write("BitTorrent protocol".getBytes("UTF-8"))
+        stream.write("BitTorrent protocol".toByteArray("UTF-8"))
     }
 
 }

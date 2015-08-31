@@ -5,7 +5,7 @@ import ru.nobirds.torrent.peers.PeerListener
 import ru.nobirds.torrent.peers.PeerEvent
 import ru.nobirds.torrent.peers.PeerListenerWrapper
 
-public trait PeerProvider {
+public interface PeerProvider {
 
     fun require(hash: Id, listener: PeerListener)
 

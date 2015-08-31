@@ -2,7 +2,7 @@ package ru.nobirds.torrent.client.message
 
 import java.util.BitSet
 
-trait Message {
+interface Message {
 
     val messageType:MessageType
 

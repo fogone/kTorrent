@@ -1,18 +1,15 @@
 package ru.nobirds.torrent.parser
 
+import ru.nobirds.torrent.bencode.*
 import java.io.InputStream
 import java.io.OutputStream
 
-import ru.nobirds.torrent.bencode.BTokenInputStream
-import ru.nobirds.torrent.bencode.BMap
-import ru.nobirds.torrent.bencode.BTokenOutputStream
 import java.io.ByteArrayOutputStream
-import ru.nobirds.torrent.bencode.BType
 
 public object Bencoder {
 
     public fun decodeBMap(stream:InputStream):BMap {
-        val tokenInputStream = BTokenInputStream(stream)
+        val tokenInputStream = BTokenStreamImpl(StreamByteReader(stream))
 
         tokenInputStream.next()
 

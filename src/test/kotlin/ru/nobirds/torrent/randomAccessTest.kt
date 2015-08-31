@@ -12,7 +12,7 @@ public class RandomAccessTest {
     Test
     public fun test1() {
         val file = CompositeRandomAccessFile(
-                array("file1.txt", "file2.txt").map {
+                arrayOf("file1.txt", "file2.txt").map {
                     RandomAccessFile(Paths.get(ClassLoader.getSystemResource(it)!!.toURI())!!.toFile(), "rw")
                 }
         )

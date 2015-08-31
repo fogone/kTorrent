@@ -1,6 +1,7 @@
 package ru.nobirds.torrent.client.connection
 
 import java.net.SocketAddress
+import java.nio.channels.SelectionKey
 import java.nio.channels.SocketChannel
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Random
@@ -22,42 +23,46 @@ class Bucket() {
         }
 
         override fun distribute(): SocketChannel {
-            val index = random.nextInt(channels.size - 1)
+            if(channels.size() == 1) return channels.first()
+
+            val index = random.nextInt(channels.size() - 1)
+
             return channels[index]
         }
 
     }
 
-    private val channels = ConcurrentHashMap<SocketAddress, SocketChannel>()
+    private val keys = ConcurrentHashMap<SocketAddress, SelectionKey>()
 
     fun get(): SocketChannel = distributionStrategy.distribute()
 
-    fun add(channel: SocketChannel) {
+    fun add(key:SelectionKey) {
+        val channel = key.channel() as SocketChannel
         val address = channel.getRemoteAddress()
 
-        channels.remove(address)?.close()
+        keys.remove(address)?.channel()?.close()
 
-        channels.put(address, channel)
+        keys.put(address, key)
         distributionStrategy.add(channel)
     }
 
     fun remove(channel: SocketChannel) {
         val address = channel.getLocalAddress()
-        channels.remove(address)?.close()
+        keys.remove(address)?.channel()?.close()
         distributionStrategy.remove(channel)
     }
 
     fun contains(address: SocketAddress): Boolean {
-        val socketChannel = channels[address]
-        return socketChannel != null && socketChannel.isOpen()
+        val key = keys[address]
+        return key != null && key.isValid()
     }
 
     fun close() {
-        for (channel in channels.values()) {
-            channel.close()
+        for (key in keys.values()) {
+            key.channel()?.close()
         }
     }
 
-    fun notEmpty(): Boolean = !channels.empty
+    fun notEmpty(): Boolean = keys.isNotEmpty()
 
 }

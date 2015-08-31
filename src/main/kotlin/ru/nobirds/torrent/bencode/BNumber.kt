@@ -15,7 +15,7 @@ public class BNumber() : AbstractBlockBType('i'), BValueType<BigInteger> {
         return this
     }
 
-    override fun onChar(stream: BTokenInputStream) {
+    override fun onChar(stream: BTokenStream) {
         val value = stream.currentChar().toString().toInt()
         builder.append(value)
     }

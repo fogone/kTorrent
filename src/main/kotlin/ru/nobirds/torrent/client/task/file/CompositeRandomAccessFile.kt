@@ -77,7 +77,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
 
     public fun write(b:Int) {
         if(current.getFilePointer() == current.length()) {
-            if(index == files.size-1)
+            if(index == files.size() -1)
                 throw EOFException()
             else
                 next()
@@ -107,7 +107,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         var value = current.read()
 
         if(value == -1) {
-            if(index == files.size-1)
+            if(index == files.size() -1)
                 return -1
             else {
                 next()

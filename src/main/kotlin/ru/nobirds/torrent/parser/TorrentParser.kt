@@ -4,7 +4,7 @@ import java.io.InputStream
 import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.bencode.BMap
 
-public trait TorrentParser {
+public interface TorrentParser {
 
     fun parse(source:InputStream):Torrent = parse(Bencoder.decodeBMap(source))
 
