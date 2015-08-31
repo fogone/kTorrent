@@ -1,11 +1,13 @@
 package ru.nobirds.torrent.bencode
 
 import io.netty.buffer.ByteBuf
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.codec.ByteToMessageCodec
 import java.net.SocketAddress
 import java.util.concurrent.BlockingQueue
+import kotlin.reflect.KClass
 
 public data class BMessage(val address: SocketAddress, val value:BType)
 
@@ -28,11 +30,13 @@ public class BencodeCodec() : ByteToMessageCodec<BType>(BType::class.java) {
 
 }
 
-class BencodeRequestQueueStorage(val incoming: BlockingQueue<BMessage>) :
-        SimpleChannelInboundHandler<BType>(BType::class.java, true) {
+public inline fun <reified T:Any> requestQueueStorage(incoming: BlockingQueue<T>): ChannelHandler = RequestQueueStorage<T>(incoming, T::class)
 
-    override fun messageReceived(ctx: ChannelHandlerContext, msg: BType) {
-        incoming.put(BMessage(ctx.channel().remoteAddress(), msg))
+public class RequestQueueStorage<T:Any>(val incoming: BlockingQueue<T>, val type:KClass<T>) :
+        SimpleChannelInboundHandler<T>(type.java, true) {
+
+    override fun messageReceived(ctx: ChannelHandlerContext, msg: T) {
+        incoming.put(msg)
     }
 
 }

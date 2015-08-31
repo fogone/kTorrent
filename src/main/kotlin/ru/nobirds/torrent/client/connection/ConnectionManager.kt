@@ -7,8 +7,8 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import ru.nobirds.torrent.bencode.BencodeCodec
-import ru.nobirds.torrent.bencode.BencodeRequestQueueStorage
 import ru.nobirds.torrent.bencode.BMessage
+import ru.nobirds.torrent.bencode.requestQueueStorage
 import ru.nobirds.torrent.utils.*
 import java.io.Closeable
 import java.net.SocketAddress
@@ -85,7 +85,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
                 it.pipeline()
                         .addLast(BencodeCodec())
                         .addLast(ConnectionRegistryChannelHandler(registry))
-                        .addLast(BencodeRequestQueueStorage(incoming))
+                        .addLast(requestQueueStorage(incoming))
             }
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .bind(port)
@@ -97,7 +97,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
                 it.pipeline()
                         .addLast(BencodeCodec())
                         .addLast(ConnectionRegistryChannelHandler(registry))
-                        .addLast(BencodeRequestQueueStorage(incoming))
+                        .addLast(requestQueueStorage(incoming))
             }
             .option(ChannelOption.SO_KEEPALIVE, true)
 

@@ -3,8 +3,8 @@ package ru.nobirds.torrent.client
 import org.junit.Assert
 import org.junit.Test
 import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.bencode.BMessage
 import ru.nobirds.torrent.bencode.BTypeFactory
-import ru.nobirds.torrent.client.connection.Message
 import ru.nobirds.torrent.client.connection.NettyConnectionManager
 import java.net.InetSocketAddress
 import kotlin.concurrent.thread
@@ -21,7 +21,7 @@ public class ConnectionManagerTest {
                 value("hello", "world")
             }
 
-            manager1.send(Message(InetSocketAddress(6501), source))
+            manager1.send(BMessage(InetSocketAddress(6501), source))
 
             val message = manager2.read()
 
@@ -39,7 +39,7 @@ public class ConnectionManagerTest {
 
         val thread1 = thread {
             repeat(10) {
-                manager1.send(Message(InetSocketAddress(6501), BTypeFactory.createBMap {
+                manager1.send(BMessage(InetSocketAddress(6501), BTypeFactory.createBMap {
                     value("hello", "world")
                 }))
             }

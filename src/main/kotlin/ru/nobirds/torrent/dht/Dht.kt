@@ -22,6 +22,7 @@ import java.util.Collections
 import ru.nobirds.torrent.dht.message.AbstractErrorMessage
 import ru.nobirds.torrent.dht.message.ErrorMessageResponse
 import ru.nobirds.torrent.dht.message.BootstrapFindNodeRequest
+import ru.nobirds.torrent.utils.infiniteLoopThread
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.thread
 
@@ -39,7 +40,7 @@ public class Dht(val port:Int) {
 
     private val messageSerializer = BencodeMessageSerializer(localPeer, requestContainer)
 
-    private  val server = NettyDht(port)
+    private  val server = NettyDhtServer(port, messageSerializer)
 
     private val listeners = ConcurrentHashMap<Id, MutableList<(InetSocketAddress)->Unit>>()
 
@@ -50,12 +51,12 @@ public class Dht(val port:Int) {
     init { initialize() }
 
     private fun initialize() {
-        server.start()
-        server.sendTo(*BootstrapHosts.addresses) { messageFactory.createBootstrapFindNodeRequest(localPeer.id) }
+        BootstrapHosts.addresses.forEach {
+            server.send(AddressAndMessage(it, messageFactory.createBootstrapFindNodeRequest(localPeer.id)))
+        }
 
-        thread(name = "dht process messages thread", start = true) {
-            while(true)
-                handleMessage(server.receive())
+        infiniteLoopThread {
+            handleMessage(server.read())
         }
     }
 
@@ -67,13 +68,17 @@ public class Dht(val port:Int) {
 
             listeners.concurrentGetOrPut(hash) { ArrayList() }.add(callback)
 
-            server.send(peers.findClosest(hash)) { messageFactory.createGetPeersRequest(hash) }
+            peers.findClosest(hash).forEach {
+                server.send(it.address, messageFactory.createGetPeersRequest(hash))
+            }
         }
     }
 
     public fun announce(hash: Id) {
         processAction {
-            server.send(peers.findClosest(hash)) { messageFactory.createAnnouncePeerRequest(hash, tokens.getLocalToken()) }
+            peers.findClosest(hash).forEach {
+                server.send(it.address, messageFactory.createAnnouncePeerRequest(hash, tokens.getLocalToken()))
+            }
         }
     }
 
@@ -93,7 +98,7 @@ public class Dht(val port:Int) {
     }
 
     private fun tryResend(addressAndMessage: AddressAndMessage) {
-        server.sendTo(addressAndMessage.address) { addressAndMessage.message } // todo
+        server.send(addressAndMessage) // todo
     }
 
     private fun onReceiveMessage(message: Message) {
@@ -101,16 +106,16 @@ public class Dht(val port:Int) {
             requestContainer.cancelById(message.id)
     }
 
-    private fun handleMessage(message: Message) {
-        when(message) {
+    private fun handleMessage(message: AddressAndMessage) {
+        when(message.message) {
             is ResponseMessage -> {
-                onAnswer(message)
+                onAnswer(message.message)
             }
             is AbstractErrorMessage -> {
-                onErrorReceive(message)
+                onErrorReceive(message.message)
             }
             is RequestMessage -> {
-                onRequestReceive(message)
+                onRequestReceive(message.message)
             }
         }
     }
@@ -118,7 +123,7 @@ public class Dht(val port:Int) {
     private fun onRequestReceive(request:RequestMessage) {
         when(request) {
             is PingRequest -> {
-                server.sendTo(request.sender.address) { messageFactory.createPingResponse(request) }
+                server.send(request.sender.address, messageFactory.createPingResponse(request))
             }
             is GetPeersRequest -> {
                 val token = tokens.getPeerToken(request.sender.id)
@@ -131,7 +136,7 @@ public class Dht(val port:Int) {
                     messageFactory.createClosestNodesResponse(request, token, closest)
                 }
 
-                server.sendTo(request.sender.address) { response }
+                server.send(request.sender.address, response)
             }
             is FindNodeRequest -> {
                 val target = request.target
@@ -142,14 +147,14 @@ public class Dht(val port:Int) {
                     peers.findClosest(target)
                 }
 
-                server.sendTo(request.sender.address) { messageFactory.createFindNodeResponse(request, responsePeers) }
+                server.send(request.sender.address, messageFactory.createFindNodeResponse(request, responsePeers))
             }
             is AnnouncePeerRequest -> {
                 if(!tokens.checkPeerToken(request.sender, request.token))
-                    server.sendTo(request.sender.address) { messageFactory.errors.generic("Invalid token") }
+                    server.send(request.sender.address, messageFactory.errors.generic("Invalid token"))
                 else {
                     peers.putValue(request.hash, Collections.singleton(request.sender.address))
-                    server.sendTo(request.sender.address) { messageFactory.createAnnouncePeerResponse(request) }
+                    server.send(request.sender.address, messageFactory.createAnnouncePeerResponse(request))
                 }
             }
         }
@@ -166,7 +171,9 @@ public class Dht(val port:Int) {
                 when (response) {
                     is ClosestNodesResponse -> {
                         peers.addNodes(response.nodes)
-                        server.sendTo(response.nodes.map { it.address }) { messageFactory.createGetPeersRequest(request.hash) }
+                        response.nodes.map { it.address }.forEach {
+                            server.send(it, messageFactory.createGetPeersRequest(request.hash))
+                        }
                     }
                     is PeersFoundResponse -> {
                         peers.putValue(request.hash, response.nodes)
