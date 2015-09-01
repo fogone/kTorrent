@@ -12,17 +12,17 @@ public class MessageSerializerProvider {
     public fun getSerializer<T:Message>(t:MessageType):MessageSerializer<T> = getSerializerImpl(t) as MessageSerializer<T>
 
     private fun getSerializerImpl(t:MessageType): MessageSerializer<out Message> = when(t) {
+        MessageType.handshake -> HandshakeMessageSerializer
         MessageType.choke,
         MessageType.unchoke,
-        MessageType.interested,
         MessageType.interested -> SimpleMessageSerializer
         MessageType.bitfield -> BitFieldMessageSerializer
         MessageType.have -> HaveMessageSerializer
-        MessageType.request,
-        MessageType.cancel -> RequestMessageSerializer
+        MessageType.request -> RequestMessageSerializer
+        MessageType.cancel -> CancelMessageSerializer
         MessageType.piece -> PieceMessageSerializer
         MessageType.port -> PortMessageSerializer
-        else -> throw IllegalArgumentException("Illegal message type ${t}")
+        else -> throw IllegalArgumentException("Illegal message type $t")
     }
 }
 

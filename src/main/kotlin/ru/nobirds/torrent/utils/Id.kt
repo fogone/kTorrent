@@ -1,5 +1,6 @@
 package ru.nobirds.torrent.utils
 
+import io.netty.buffer.ByteBuf
 import java.math.BigInteger
 import java.security.SecureRandom
 import java.util.Arrays
@@ -46,6 +47,13 @@ public class Id(val size:Int = 20, factory:(Int)->Byte) {
                 throw IllegalArgumentException("Id must have 20 bytes length")
 
             return Id { bytes[it] }
+        }
+
+        public fun fromBuffer(buffer: ByteBuf):Id {
+            if(buffer.readableBytes() < 20)
+                throw IllegalArgumentException("Buffer must have 20 bytes or more")
+
+            return Id { buffer.readByte() }
         }
 
         public fun fromHexString(hexString: String): Id = hexString.hexToByteArray().toId()

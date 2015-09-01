@@ -6,8 +6,10 @@ import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.TorrentState
+import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.peers.provider.PeerProvider
 import ru.nobirds.torrent.utils.Id
+import ru.nobirds.torrent.utils.infiniteLoopThread
 import java.net.InetSocketAddress
 import java.nio.file.Path
 import java.util.*
@@ -15,13 +17,12 @@ import java.util.concurrent.ArrayBlockingQueue
 
 public class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
+                         val localPeer: Peer,
                          val peerManager: PeerProvider,
                          val connectionManager: ConnectionManager,
                          val digestProvider: DigestProvider) {
 
     private val torrentHash = Id.fromBytes(torrent.hash!!)
-
-    private val timer = Timer()
 
     public val uploadStatistics:TrafficStatistics = TrafficStatistics()
 
@@ -82,8 +83,7 @@ public class TorrentTask(val directory:Path,
         }
     }
 
-    fun addConnection(address: InetSocketAddress) {
-        //connectionManager.send(torrentHash, address)
-        connectionManager.send(address, HandshakeMessage())
+    private fun addConnection(address: InetSocketAddress) {
+        connectionManager.send(address, HandshakeMessage(torrentHash, localPeer.id))
     }
 }

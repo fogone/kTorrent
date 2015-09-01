@@ -14,7 +14,7 @@ public class DhtPeerProvider(localPeer: Peer, val dht:Dht) : AbstractPeerProvide
     }
 
     override fun onNoHashNeeded(hash: Id) {
-        // todo!!!
+
     }
 
 }

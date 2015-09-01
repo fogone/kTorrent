@@ -1,19 +1,20 @@
 package ru.nobirds.torrent.client.message.serializer
 
 import io.netty.buffer.ByteBuf
-import ru.nobirds.torrent.client.message.MessageType
-import ru.nobirds.torrent.client.message.RequestMessage
+import ru.nobirds.torrent.client.message.*
 
-public object RequestMessageSerializer : MessageSerializer<RequestMessage> {
+public abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage> : MessageSerializer<M> {
 
-    override fun read(length: Int, messageType: MessageType, stream: ByteBuf): RequestMessage {
+    override fun read(length: Int, messageType: MessageType, stream: ByteBuf): M {
         val index = stream.readInt()
         val begin = stream.readInt()
         val blockLength = stream.readInt()
-        return RequestMessage(index, begin, blockLength)
+        return create(index, begin, blockLength)
     }
 
-    override fun write(stream: ByteBuf, message: RequestMessage) {
+    protected abstract fun create(index: Int, begin: Int, length: Int): M
+
+    override fun write(stream: ByteBuf, message: M) {
         stream.writeInt(13)
         stream.writeByte(message.messageType.value)
         stream.writeInt(message.index)
@@ -21,4 +22,12 @@ public object RequestMessageSerializer : MessageSerializer<RequestMessage> {
         stream.writeInt(message.length)
     }
 
+}
+
+public object RequestMessageSerializer : AbstractRequestMessageSerializer<RequestMessage>() {
+    override fun create(index: Int, begin: Int, length: Int): RequestMessage = RequestMessage(index, begin, length)
+}
+
+public object CancelMessageSerializer : AbstractRequestMessageSerializer<CancelMessage>() {
+    override fun create(index: Int, begin: Int, length: Int): CancelMessage = CancelMessage(index, begin, length)
 }
