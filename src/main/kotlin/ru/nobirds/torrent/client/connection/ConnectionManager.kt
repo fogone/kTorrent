@@ -2,19 +2,27 @@ package ru.nobirds.torrent.client.connection
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.bootstrap.ServerBootstrap
+import io.netty.buffer.ByteBuf
 import io.netty.channel.*
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
+import io.netty.handler.codec.ByteToMessageCodec
 import ru.nobirds.torrent.bencode.BencodeCodec
-import ru.nobirds.torrent.bencode.BMessage
 import ru.nobirds.torrent.bencode.requestQueueStorage
-import ru.nobirds.torrent.utils.*
+import ru.nobirds.torrent.client.message.Message
+import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
+import ru.nobirds.torrent.utils.addCompleteListener
+import ru.nobirds.torrent.utils.channelInitializerHandler
+import ru.nobirds.torrent.utils.childHandler
+import ru.nobirds.torrent.utils.infiniteLoopThread
 import java.io.Closeable
+import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.concurrent.thread
+
+public data class AddressAndMessage(val address: InetSocketAddress, val message: Message)
 
 class ConnectionRegistry {
 
@@ -60,19 +68,50 @@ class ConnectionRegistryChannelHandler(val registry: ConnectionRegistry) : Chann
     }
 }
 
+public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<Message>() {
+
+    override fun decode(ctx: ChannelHandlerContext, buffer: ByteBuf, out: MutableList<Any>) {
+        val length = buffer.readInt()
+
+        if (length < buffer.readableBytes()) {
+            buffer.readerIndex(buffer.readerIndex()-1)
+            return
+        }
+
+        val type = buffer.readByte().toInt()
+
+        val serializer = serializerProvider.getSerializerByType<Message>(type)
+        val messageType = serializerProvider.findMessageTypeByValue(type)
+
+        val message = serializer.read(length, messageType, buffer)
+
+        out.add(AddressAndMessage(ctx.channel().remoteAddress() as InetSocketAddress, message))
+    }
+
+    override fun encode(ctx: ChannelHandlerContext, msg: Message, out: ByteBuf) {
+        val serializer = serializerProvider.getSerializer<Message>(msg.messageType)
+        serializer.write(out, msg)
+    }
+
+}
+
 public interface ConnectionManager : Closeable {
 
-    fun send(message: BMessage)
+    fun send(message: AddressAndMessage)
 
-    fun read(): BMessage
+    fun send(address: InetSocketAddress, message: Message) {
+        send(AddressAndMessage(address, message))
+    }
+
+    fun read(): AddressAndMessage
 
 }
 
 public class NettyConnectionManager(val port:Int) : ConnectionManager {
 
     private val registry = ConnectionRegistry()
-    private val incoming = ArrayBlockingQueue<BMessage>(1000)
-    private val outgoing = ArrayBlockingQueue<BMessage>(1000)
+    private val incoming = ArrayBlockingQueue<AddressAndMessage>(1000)
+    private val outgoing = ArrayBlockingQueue<AddressAndMessage>(1000)
 
     private val acceptGroup = NioEventLoopGroup()
     private val workerGroup = NioEventLoopGroup()
@@ -95,7 +134,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             .channel(NioSocketChannel::class.java)
             .channelInitializerHandler<Channel, Bootstrap> {
                 it.pipeline()
-                        .addLast(BencodeCodec())
+                        .addLast(TorrentMessageCodec(MessageSerializerProvider()))
                         .addLast(ConnectionRegistryChannelHandler(registry))
                         .addLast(requestQueueStorage(incoming))
             }
@@ -115,16 +154,16 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         } else {
             val ctx = context
             synchronized(ctx) {
-                ctx.writeAndFlush(message.value)
+                ctx.writeAndFlush(message)
             }
         }
     }
 
-    public override fun send(message: BMessage) {
+    public override fun send(message: AddressAndMessage) {
         outgoing.put(message)
     }
 
-    public override fun read(): BMessage = incoming.take()
+    public override fun read(): AddressAndMessage = incoming.take()
 
     private fun connect(address: SocketAddress): ChannelFuture {
         return clientBootstrap.remoteAddress(address).connect()

@@ -1,15 +1,15 @@
-package ru.nobirds.torrent.client.message
+package ru.nobirds.torrent.client.message.serializer
 
-import java.io.DataOutputStream
-import java.util.BitSet
-import java.io.DataInputStream
+import io.netty.buffer.ByteBuf
+import ru.nobirds.torrent.client.message.MessageType
+import ru.nobirds.torrent.client.message.PortMessage
 
 public object PortMessageSerializer : MessageSerializer<PortMessage> {
 
-    override fun read(length: Int, messageType: MessageType, stream: DataInputStream): PortMessage
+    override fun read(length: Int, messageType: MessageType, stream: ByteBuf): PortMessage
             = PortMessage(stream.readShort().toInt() and 0xffff)
 
-    override fun write(stream: DataOutputStream, message: PortMessage) {
+    override fun write(stream: ByteBuf, message: PortMessage) {
         stream.writeInt(5)
         stream.writeByte(message.messageType.value)
         stream.writeShort(message.port)

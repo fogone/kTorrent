@@ -1,21 +1,17 @@
-package ru.nobirds.torrent.client.message
+package ru.nobirds.torrent.client.message.serializer
 
-import java.io.OutputStream
-import java.io.InputStream
-import java.util.BitSet
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.nio.ByteBuffer
+import ru.nobirds.torrent.client.message.Message
+import ru.nobirds.torrent.client.message.MessageType
 
-public object MessageSerializerFactory {
+public class MessageSerializerProvider {
 
-    public fun findMessageTypeByValue(t:Int):MessageType = MessageType.values().find { it.value == t }!!
+    public fun findMessageTypeByValue(t:Int): MessageType = MessageType.values().find { it.value == t }!!
 
-    public fun getSerializerByType<T:Message>(t:Int):MessageSerializer<T> = getSerializer(findMessageTypeByValue(t))
+    public fun getSerializerByType<T: Message>(t:Int):MessageSerializer<T> = getSerializer(findMessageTypeByValue(t))
 
     public fun getSerializer<T:Message>(t:MessageType):MessageSerializer<T> = getSerializerImpl(t) as MessageSerializer<T>
 
-    private fun getSerializerImpl(t:MessageType):MessageSerializer<out Message> = when(t) {
+    private fun getSerializerImpl(t:MessageType): MessageSerializer<out Message> = when(t) {
         MessageType.choke,
         MessageType.unchoke,
         MessageType.interested,

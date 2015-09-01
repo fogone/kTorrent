@@ -1,12 +1,12 @@
 package ru.nobirds.torrent.client
 
-import org.springframework.boot.SpringApplication
 import org.springframework.boot.CommandLineRunner
+import org.springframework.boot.SpringApplication
 import ru.nobirds.torrent.client.task.TaskManager
 import java.nio.file.Paths
 
 public fun main(args:Array<String>) {
-    SpringApplication.run(arrayOf(TorrentClientConfiguration::class), args)
+    SpringApplication.run(arrayOf(TorrentClientConfiguration::class.java), args)
 }
 
 public open class ClientCommandLineRunner(val taskManager: TaskManager) : CommandLineRunner {

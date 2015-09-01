@@ -1,25 +1,25 @@
-package ru.nobirds.torrent.client.message
+package ru.nobirds.torrent.client.message.serializer
 
-import java.io.DataOutputStream
-import java.util.BitSet
-import java.io.DataInputStream
+import io.netty.buffer.ByteBuf
+import ru.nobirds.torrent.client.message.MessageType
+import ru.nobirds.torrent.client.message.PieceMessage
 
 public object PieceMessageSerializer : MessageSerializer<PieceMessage> {
 
-    override fun read(length: Int, messageType: MessageType, stream: DataInputStream): PieceMessage {
+    override fun read(length: Int, messageType: MessageType, stream: ByteBuf): PieceMessage {
         val index = stream.readInt()
         val begin = stream.readInt()
         val buffer = ByteArray(length - 8)
-        stream.readFully(buffer)
+        stream.readBytes(buffer)
         return PieceMessage(index, begin, buffer)
     }
 
-    override fun write(stream: DataOutputStream, message: PieceMessage) {
+    override fun write(stream: ByteBuf, message: PieceMessage) {
         stream.writeInt(message.block.size() + 9)
         stream.writeByte(message.messageType.value)
         stream.writeInt(message.index)
         stream.writeInt(message.begin)
-        stream.write(message.block)
+        stream.writeBytes(message.block)
     }
 
 }

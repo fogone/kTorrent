@@ -1,28 +1,16 @@
 package ru.nobirds.torrent.utils
 
-import java.math.BigInteger
-import java.util.HashMap
-import org.springframework.util.MultiValueMap
 import org.springframework.util.LinkedMultiValueMap
-import java.net.Socket
-import java.util.BitSet
-import java.util.Arrays
-import java.io.RandomAccessFile
+import org.springframework.util.MultiValueMap
+import ru.nobirds.torrent.peers.Peer
 import java.io.File
-import java.net.InetAddress
+import java.io.RandomAccessFile
+import java.math.BigInteger
+import java.net.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.net.InetSocketAddress
-import java.util.Timer
-import java.util.TimerTask
-import java.util.PriorityQueue
-import java.util.Queue
-import java.util.ArrayList
-import java.util.Collections
 import java.security.MessageDigest
-import java.net.ServerSocket
-import java.net.SocketException
-import ru.nobirds.torrent.peers.Peer
+import java.util.*
 import kotlin.concurrent.thread
 
 fun <P:Any, R:Any> P?.nullOr(body:P.()->R):R?
@@ -295,15 +283,14 @@ public fun Peer.toCompact(): ByteArray {
     return compact
 }
 
-public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = size()):ByteArray {
+public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = target.size()):ByteArray {
     System.arraycopy(this, offset, target, position, length)
     return target
 }
 
 public fun InetSocketAddress.toCompact(bytes:ByteArray = ByteArray(6)):ByteArray {
-    getAddress()!!.getAddress()!!.copyTo(bytes)
+    address.address.copyTo(bytes)
 
-    val port = getPort()
     bytes[4] = (port or 0xff).toByte()
     bytes[5] = (port shl 2 or 0xff).toByte()
 

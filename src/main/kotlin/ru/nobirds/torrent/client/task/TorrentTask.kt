@@ -1,18 +1,17 @@
 package ru.nobirds.torrent.client.task
 
-import ru.nobirds.torrent.peers.Peer
-import java.util.HashSet
-import java.nio.file.Path
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.Timer
+import ru.nobirds.torrent.client.DigestProvider
+import ru.nobirds.torrent.client.connection.ConnectionManager
+import ru.nobirds.torrent.client.message.HandshakeMessage
+import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.TorrentState
-import ru.nobirds.torrent.client.DigestProvider
-import ru.nobirds.torrent.client.model.TorrentInfo
+import ru.nobirds.torrent.peers.provider.PeerProvider
 import ru.nobirds.torrent.utils.Id
 import java.net.InetSocketAddress
-import ru.nobirds.torrent.client.connection.ConnectionManager
-import ru.nobirds.torrent.peers.provider.PeerProvider
+import java.nio.file.Path
+import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
 
 public class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
@@ -24,21 +23,22 @@ public class TorrentTask(val directory:Path,
 
     private val timer = Timer()
 
-    val uploadStatistics = TrafficStatistics()
+    public val uploadStatistics:TrafficStatistics = TrafficStatistics()
 
-    val downloadStatistics = TrafficStatistics()
+    public val downloadStatistics:TrafficStatistics = TrafficStatistics()
 
-    private val messages = createInitialQueue()
+    private val messages = ArrayBlockingQueue<TaskMessage>(300)
 
-    val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
+    private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-    val state: TorrentState = TorrentState(torrent)
+    private val state: TorrentState = TorrentState(torrent)
 
-    private val peers = HashSet<Peer>()
+    private val peers = HashSet<InetSocketAddress>()
 
     init {
-        peerManager.require(Id.fromBytes(torrent.hash!!)) {
-            for (peer in it.peers) {
+        peerManager.require(torrentHash) {
+            for (peer in this.peers.minus(it.peers).toList()) {
+                this.peers.add(peer)
                 addConnection(peer)
             }
         }
@@ -53,10 +53,6 @@ public class TorrentTask(val directory:Path,
         file.output.write(block)
 
         state.done(blockIndex.piece, blockIndex.block)
-    }
-
-    private fun createInitialQueue():ArrayBlockingQueue<TaskMessage> {
-        return ArrayBlockingQueue(300)
     }
 
     public fun sendMessage(message:TaskMessage) {
@@ -87,6 +83,7 @@ public class TorrentTask(val directory:Path,
     }
 
     fun addConnection(address: InetSocketAddress) {
-        // connectionManager.add(torrentHash, address)
+        //connectionManager.send(torrentHash, address)
+        connectionManager.send(address, HandshakeMessage())
     }
 }

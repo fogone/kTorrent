@@ -1,30 +1,14 @@
 package ru.nobirds.torrent.dht
 
-import ru.nobirds.torrent.dht.message.MessageFactory
-import java.net.InetSocketAddress
+import ru.nobirds.torrent.dht.message.*
 import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
-import ru.nobirds.torrent.dht.message.DefaultRequestContainer
-import ru.nobirds.torrent.dht.message.RequestMessage
-import ru.nobirds.torrent.dht.message.ResponseMessage
-import ru.nobirds.torrent.dht.message.Message
-import ru.nobirds.torrent.dht.message.PingRequest
-import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
-import java.util.concurrent.ConcurrentHashMap
-import ru.nobirds.torrent.dht.message.GetPeersRequest
-import ru.nobirds.torrent.dht.message.FindNodeRequest
-import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.dht.message.FindNodeResponse
-import ru.nobirds.torrent.dht.message.ClosestNodesResponse
-import ru.nobirds.torrent.dht.message.PeersFoundResponse
-import java.util.ArrayList
-import java.util.Collections
-import ru.nobirds.torrent.dht.message.AbstractErrorMessage
-import ru.nobirds.torrent.dht.message.ErrorMessageResponse
-import ru.nobirds.torrent.dht.message.BootstrapFindNodeRequest
+import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.infiniteLoopThread
+import java.net.InetSocketAddress
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.concurrent.thread
 
 public class Dht(val port:Int) {
 
@@ -40,7 +24,7 @@ public class Dht(val port:Int) {
 
     private val messageSerializer = BencodeMessageSerializer(localPeer, requestContainer)
 
-    private  val server = NettyDhtServer(port, messageSerializer)
+    private val server = NettyDhtServer(port, messageSerializer, requestContainer)
 
     private val listeners = ConcurrentHashMap<Id, MutableList<(InetSocketAddress)->Unit>>()
 
@@ -87,23 +71,6 @@ public class Dht(val port:Int) {
             action()
         else
             postponedActions.add(action)
-    }
-
-    private fun onSendMessage(addressAndMessage: AddressAndMessage) {
-        val message = addressAndMessage.message
-        if(message is RequestMessage)
-            requestContainer.storeWithTimeout(message) {
-                tryResend(addressAndMessage)
-            }
-    }
-
-    private fun tryResend(addressAndMessage: AddressAndMessage) {
-        server.send(addressAndMessage) // todo
-    }
-
-    private fun onReceiveMessage(message: Message) {
-        if(message is ResponseMessage)
-            requestContainer.cancelById(message.id)
     }
 
     private fun handleMessage(message: AddressAndMessage) {

@@ -1,13 +1,9 @@
 package ru.nobirds.torrent.dht
 
 import org.junit.Test
-import org.junit.Test as test
 import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.utils.toHexString
-import java.util.HashSet
 import java.util.concurrent.ConcurrentHashMap
-import ru.nobirds.torrent.peers.Peer
-import java.net.InetSocketAddress
+import org.junit.Test as test
 
 public class DhtTest {
 

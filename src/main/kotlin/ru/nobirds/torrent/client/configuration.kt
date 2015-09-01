@@ -1,30 +1,25 @@
 package ru.nobirds.torrent.client
 
-import org.springframework.beans.factory.config.CustomEditorConfigurer
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import org.springframework.core.convert.ConversionService
 import org.springframework.core.convert.converter.Converter
-import org.springframework.core.convert.support.DefaultConversionService
-import org.springframework.beans.factory.annotation.Autowired as autowired
-import ru.nobirds.torrent.parser.TorrentParser
-import ru.nobirds.torrent.parser.TorrentParserImpl
-import java.security.MessageDigest
-import ru.nobirds.torrent.client.task.TaskManager
-import ru.nobirds.torrent.peers.PeerManager
-import ru.nobirds.torrent.peers.provider.TrackerPeerProvider
-import ru.nobirds.torrent.peers.provider.DhtPeerProvider
-import ru.nobirds.torrent.peers.provider.PeerProvider
-import ru.nobirds.torrent.peers.LocalPeerFactory
-import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.client.connection.ConnectionManager
 import ru.nobirds.torrent.client.connection.NettyConnectionManager
+import ru.nobirds.torrent.client.task.TaskManager
+import ru.nobirds.torrent.dht.Dht
+import ru.nobirds.torrent.parser.TorrentParser
+import ru.nobirds.torrent.parser.TorrentParserImpl
+import ru.nobirds.torrent.peers.LocalPeerFactory
+import ru.nobirds.torrent.peers.Peer
+import ru.nobirds.torrent.peers.PeerManager
+import ru.nobirds.torrent.peers.provider.DhtPeerProvider
+import ru.nobirds.torrent.peers.provider.PeerProvider
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import java.security.MessageDigest
+import org.springframework.beans.factory.annotation.Autowired as autowired
 
 @Configuration
 @Import(ConfigConfiguration::class)
@@ -35,27 +30,30 @@ public open class TorrentClientConfiguration() {
     public open fun torrentParser(): TorrentParser = TorrentParserImpl(sha1Provider())
 
     @Bean
-    public open fun executorService(config:ClientProperties): ExecutorService = Executors.newFixedThreadPool(config.threads)
-
-    @Bean
     public open fun connectionManager(localPeer: Peer): ConnectionManager
             = NettyConnectionManager(localPeer.address.port)
 
     @Bean
     public open fun taskManager(config:ClientProperties, localPeer: Peer, peerManager:PeerProvider, connectionManager: ConnectionManager): TaskManager
-            = TaskManager(config.directory, localPeer, peerManager, connectionManager, sha1Provider())
+            = TaskManager(config.directory, localPeer, peerManager, connectionManager, torrentParser(), sha1Provider())
 
     @Bean
-    public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory
-            = LocalPeerFactory(config.ports)
+    public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports)
 
     @Bean
-    public open fun peerManager(localPeer: Peer): PeerManager {
+    public open fun peerManager(localPeer: Peer, providers:List<PeerProvider>): PeerManager {
         val peerManager = PeerManager()
-        peerManager.registerProvider(TrackerPeerProvider(localPeer))
-        peerManager.registerProvider(DhtPeerProvider(localPeer))
+        for (provider in providers) {
+            peerManager.registerProvider(provider)
+        }
         return peerManager
     }
+
+    @Bean
+    public open fun dht(localPeer: Peer): Dht = Dht(localPeer.address.port)
+
+    @Bean
+    public open fun dhtPeerProvider(localPeer: Peer, dht:Dht):PeerProvider = DhtPeerProvider(localPeer, dht)
 
     @Bean
     public open fun localPeer(localPeerFactory: LocalPeerFactory): Peer = localPeerFactory.createLocalPeer()
