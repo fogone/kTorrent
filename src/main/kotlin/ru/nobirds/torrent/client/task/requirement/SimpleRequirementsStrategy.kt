@@ -1,8 +1,6 @@
 package ru.nobirds.torrent.client.task.requirement
 
-import ru.nobirds.torrent.client.task.state.TorrentState
-import ru.nobirds.torrent.client.task.state.BlockIndex
-import ru.nobirds.torrent.client.task.state.StateListener
+import ru.nobirds.torrent.client.task.state.*
 import java.util.HashSet
 import java.util.concurrent.Semaphore
 import ru.nobirds.torrent.utils.copy
@@ -10,25 +8,15 @@ import ru.nobirds.torrent.utils.findIndex
 
 public class SimpleRequirementsStrategy() : RequirementsStrategy {
 
-    public override fun next(state:TorrentState, peerState:TorrentState):BlockIndex? {
-        val bitSet = peerState.toBitSet().copy()
-        bitSet.andNot(state.toBitSet())
-        val piece = bitSet.nextSetBit(fromPiece)
-
-        if(piece == -1)
+    public override fun next(state: ChoppedState, peerState: State): FreeBlockIndex? {
+        if(state.isDone())
             return null
 
-        val blocksBitSet = peerState.toBitSet(piece).copy()
+        val piece = state.find { i, state -> !state }
+        val blockState = state.state(piece!!)
+        val block = blockState.find { i, state -> !state }!!
 
-        blocksBitSet.andNot(state.toBitSet(piece))
-
-        val block = blocksBitSet.findIndex(state.pieceLength.toInt(), true)
-                        { BlockIndex(piece, it) !in values }
-
-        if(block == -1)
-            return findFirstUndone(fromPiece+1)
-
-        return BlockIndex(piece, block)
+        return state.getIndex(piece, block)
     }
 
 }

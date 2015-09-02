@@ -1,5 +1,6 @@
 package ru.nobirds.torrent.client.message
 
+import ru.nobirds.torrent.client.task.state.State
 import ru.nobirds.torrent.utils.Id
 import java.util.*
 
@@ -9,13 +10,13 @@ interface Message {
 
 }
 
-public abstract class SimpleMessage(override val messageType:MessageType) : Message
+public open class SimpleMessage(override val messageType:MessageType) : Message
 
 public class HandshakeMessage(val hash: Id, val peer:Id, val protocol:String= "BitTorrent protocol") : SimpleMessage(MessageType.handshake)
 
 public class HaveMessage(val piece:Int) : SimpleMessage(MessageType.have)
 
-public class BitFieldMessage(val pieces:BitSet) : SimpleMessage(MessageType.bitfield)
+public class BitFieldMessage(val pieces:State) : SimpleMessage(MessageType.bitfield)
 
 public open class AbstractRequestMessage(type:MessageType, val index:Int, val begin:Int, val length:Int) : SimpleMessage(type)
 

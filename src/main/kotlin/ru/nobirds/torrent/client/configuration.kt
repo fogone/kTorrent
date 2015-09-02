@@ -35,7 +35,7 @@ public open class TorrentClientConfiguration() {
 
     @Bean
     public open fun taskManager(config:ClientProperties, localPeerFactory: LocalPeerFactory, peerManager:PeerProvider, connectionManager: ConnectionManager): TaskManager
-            = TaskManager(config.directory, localPeerFactory, peerManager, connectionManager, torrentParser(), sha1Provider())
+            = TaskManager(config.directory, peerManager, connectionManager, torrentParser(), sha1Provider())
 
     @Bean
     public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports)

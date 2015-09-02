@@ -43,7 +43,7 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
         for(i in 0..count-1) {
             val piece = if(position + pieceLength <= length) pieceLength else length - position
 
-            val digest = readAndCalculateDigest(files.input, buffer, piece)
+            val digest = readAndCalculateDigest(files, buffer, piece)
 
             result.add(digest)
 
@@ -54,7 +54,7 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
         return result
     }
 
-    private fun readAndCalculateDigest(input:DataInput, buffer:ByteArray, length:Long):ByteArray {
+    private fun readAndCalculateDigest(input:CompositeRandomAccessFile, buffer:ByteArray, length:Long):ByteArray {
         val messageDigest = digestFactory()
 
         val bufferSize = buffer.size().toLong()
@@ -63,7 +63,7 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
         for (index in 0..(length/ bufferSize)-1) {
             val piece = if(position + bufferSize <= length) bufferSize else length - position
 
-            input.readFully(buffer, 0, piece.toInt())
+            input.read(buffer, 0, piece.toInt())
 
             messageDigest.update(buffer, 0, piece.toInt())
 

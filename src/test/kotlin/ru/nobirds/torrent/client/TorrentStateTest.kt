@@ -1,7 +1,7 @@
 package ru.nobirds.torrent.client
 
 import org.junit.Test
-import ru.nobirds.torrent.client.task.state.TorrentState
+import ru.nobirds.torrent.client.task.state.ChoppedState
 import ru.nobirds.torrent.client.model.Torrents
 import java.io.File
 import java.nio.file.Paths
@@ -34,7 +34,7 @@ public class TorrentStateTest() {
                 arrayListOf(File(ClassLoader.getSystemResource("torrent/test.file")!!.toURI()).randomAccess("r"))
         )
 
-        val state = TorrentState(torrent.info, 2)
+        val state = ChoppedState(torrent.info, 2)
 
         val bitSet = digestProvider.checkHashes(torrent.info.pieceLength, torrent.info.hashes, compositeFile)
 

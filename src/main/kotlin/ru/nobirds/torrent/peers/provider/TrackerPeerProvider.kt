@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import org.springframework.http.HttpStatus
 import org.springframework.web.client.HttpServerErrorException
 import ru.nobirds.torrent.announce.InfoHashNotFoundException
+import java.net.InetSocketAddress
 
 public enum class TrackerStatus() {
 
@@ -30,7 +31,7 @@ public enum class TrackerStatus() {
 
 data class Tracker(val uri: URI, var status: TrackerStatus = TrackerStatus.notChecked)
 
-public class TrackerPeerProvider(localPeer: Peer) : AbstractPeerProvider(localPeer) {
+public class TrackerPeerProvider() : AbstractPeerProvider() {
 
     private val httpAnnounceProvider = HttpAnnounceProvider()
 
@@ -76,10 +77,9 @@ public class TrackerPeerProvider(localPeer: Peer) : AbstractPeerProvider(localPe
 
     private fun processTracker(hash: Id, tracker: Tracker) {
         val announceProvider = announceProviders[tracker.uri.getScheme()]
-        if (announceProvider == null)
-            throw RuntimeException("Schema ${tracker.uri.getScheme()} not supported.")
+                ?: throw RuntimeException("Schema ${tracker.uri.getScheme()} not supported.")
 
-        val trackerInfo = announceProvider.getTrackerInfoByUrl(tracker.uri, localPeer, hash)
+        val trackerInfo = announceProvider.getTrackerInfoByUrl(tracker.uri, Peer(Id.Zero, Id.Zero, InetSocketAddress(0)), hash)
 
         if (trackerInfo.peers.isNotEmpty<Any?>())
             notifyPeerEvent(PeerEvent(hash, trackerInfo.peers.map { it.address }.toSet()))

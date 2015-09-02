@@ -5,6 +5,7 @@ import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.connection.ConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage
 import ru.nobirds.torrent.client.model.Torrent
+import ru.nobirds.torrent.client.task.requirement.SimpleRequirementsStrategy
 import ru.nobirds.torrent.parser.TorrentParser
 import ru.nobirds.torrent.peers.provider.PeerProvider
 import ru.nobirds.torrent.utils.Id
@@ -51,7 +52,7 @@ public class TaskManager(val directory: Path,
     private fun task(hash:Id):TorrentTask = tasks.get(hash) ?: throw IllegalArgumentException()
 
     private fun createTask(target: Path, torrent: Torrent): TorrentTask {
-        val task = TorrentTask(target, torrent.info, digestProvider, connectionManager)
+        val task = TorrentTask(target, torrent.info, digestProvider, connectionManager, SimpleRequirementsStrategy())
 
         peerManager.require(task.hash) {
             task.sendMessage(AddPeersMessage(it.peers))
