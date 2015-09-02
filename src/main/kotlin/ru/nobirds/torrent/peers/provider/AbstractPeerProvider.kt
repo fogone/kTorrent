@@ -1,16 +1,12 @@
 package ru.nobirds.torrent.peers.provider
 
-import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.peers.provider.PeerProvider
-import ru.nobirds.torrent.peers.PeerListener
 import ru.nobirds.torrent.peers.PeerEvent
+import ru.nobirds.torrent.peers.PeerListener
+import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.LinksCounter
-import java.util.HashMap
-import java.util.HashSet
-import java.util.Collections
-import ru.nobirds.torrent.peers.Peer
+import java.util.*
 
-public abstract class AbstractPeerProvider(val localPeer: Peer) : PeerProvider {
+public abstract class AbstractPeerProvider() : PeerProvider {
 
     private val linksCounter = LinksCounter<Id>()
     private val listeners = HashMap<Id, MutableSet<PeerListener>>()

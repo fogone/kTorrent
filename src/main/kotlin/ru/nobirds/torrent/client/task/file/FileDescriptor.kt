@@ -1,9 +1,9 @@
-package ru.nobirds.torrent.client.task
+package ru.nobirds.torrent.client.task.file
 
+import ru.nobirds.torrent.client.model.TorrentFile
+import java.io.RandomAccessFile
 import java.nio.file.Files
 import java.nio.file.Path
-import java.io.RandomAccessFile
-import ru.nobirds.torrent.client.model.TorrentFile
 
 public class FileDescriptor(val parent:Path, val torrentFile:TorrentFile) {
 
@@ -22,14 +22,15 @@ public class FileDescriptor(val parent:Path, val torrentFile:TorrentFile) {
 
     private fun createFile(path:List<String>):Path {
         var result = parent
+
         for (item in path) {
-            result = result.resolve(item)!!
+            result = result.resolve(item)
         }
 
-        val directory = result.getParent()
+        val directory = result.parent
 
         if(directory != null && !Files.exists(directory))
-            Files.createDirectories(result.getParent()!!)
+            Files.createDirectories(directory)
 
         return result
     }

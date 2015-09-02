@@ -11,6 +11,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.util.*
+import java.util.concurrent.BlockingQueue
 import kotlin.concurrent.thread
 
 fun <P:Any, R:Any> P?.nullOr(body:P.()->R):R?
@@ -218,7 +219,7 @@ public inline fun ByteArray.fillWith(factory:(Int)->Byte):ByteArray {
 
 public fun Byte.xor(byte:Byte):Byte = (toInt() xor byte.toInt()).toByte()
 
-public fun ByteArray.parse26BytesPeers():List<Peer> {
+public fun ByteArray.parse26BytesPeers():List<Pair<Id, InetSocketAddress>> {
     val source = ByteBuffer.wrap(this).order(ByteOrder.BIG_ENDIAN)
 
     val id = ByteArray(20)
@@ -227,10 +228,10 @@ public fun ByteArray.parse26BytesPeers():List<Peer> {
     return (0..size() / 26 - 1).map {
         source.get(id)
         source.get(ip)
-        val port = source.getShort().toInt() and 0xffff
+        val port = source.short.toInt() and 0xffff
         val address = InetSocketAddress(InetAddress.getByAddress(ip), port)
 
-        Peer(Id.fromBytes(id), address)
+        Pair(Id.fromBytes(id), address)
     }
 }
 
@@ -241,7 +242,7 @@ public fun ByteArray.toInetSocketAddresses():List<InetSocketAddress> {
 
     return (0..size() / 6 - 1).map {
         source.get(ip)
-        val port = source.getShort().toInt() and 0xffff
+        val port = source.short.toInt() and 0xffff
         InetSocketAddress(InetAddress.getByAddress(ip), port)
     }
 }
@@ -252,12 +253,12 @@ public fun ByteArray.toInetSocketAddress():InetSocketAddress {
     val ip = ByteArray(4)
 
     source.get(ip)
-    val port = source.getShort().toInt() and 0xffff
+    val port = source.short.toInt() and 0xffff
 
     return InetSocketAddress(InetAddress.getByAddress(ip), port)
 }
 
-public fun List<Peer>.toCompact():ByteArray {
+public fun List<Pair<Id, InetSocketAddress>>.toCompact():ByteArray {
     val peerIdBuffer = ByteArray(20)
     val addressBuffer = ByteArray(6)
 
@@ -265,8 +266,8 @@ public fun List<Peer>.toCompact():ByteArray {
     val buffer = ByteBuffer.wrap(result)
 
     for (peer in this) {
-        buffer.put(peer.id.toBytes(peerIdBuffer))
-        buffer.put(peer.address.toCompact(addressBuffer))
+        buffer.put(peer.first.toBytes(peerIdBuffer))
+        buffer.put(peer.second.toCompact(addressBuffer))
     }
 
     return result
@@ -308,7 +309,7 @@ public fun Timer.scheduleOnce(timeout:Long, callback:()->Unit):TimerTask {
 }
 
 public fun <T, R:Comparable<R>> Collection<T>.toPriorityQueue(order:(T)->R):PriorityQueue<T> {
-    val queue = PriorityQueue(size(), comparator {(x: T, y: T) -> order(x).compareTo(order(y)) })
+    val queue = PriorityQueue(size(), comparator { x: T, y: T -> order(x).compareTo(order(y)) })
     queue.addAll(this)
     return queue
 }
@@ -323,7 +324,7 @@ public fun <T> Queue<T>.top(count:Int):List<T> {
     var item = poll()
 
     while(item != null) {
-        result.add(item!!)
+        result.add(item)
         item = if (copy++ < count) poll() else null
     }
 
@@ -348,9 +349,9 @@ public fun byteArray(size:Int, factory:(Int)-> Byte): ByteArray {
 }
 
 public fun String.hexToByteArray(): ByteArray {
-    val data = ByteArray(length / 2)
+    val data = ByteArray(length() / 2)
 
-    for (i in (0..length-1).step(2)) {
+    for (i in (0..length() -1).step(2)) {
         data[i / 2] = ((Character.digit(charAt(i), 16) shl 4) + Character.digit(charAt(i + 1), 16)).toByte()
     }
 
@@ -371,3 +372,7 @@ public inline fun infiniteLoopThread(
         inlineOptions(InlineOption.ONLY_LOCAL_RETURN) block: () -> Unit):Thread = thread {
     infiniteLoop(block)
 }
+
+public inline fun <M> queueHandlerThread(queue:BlockingQueue<M>,
+        inlineOptions(InlineOption.ONLY_LOCAL_RETURN) handler: (M) -> Unit):Thread = infiniteLoopThread { handler(queue.take()) }
+

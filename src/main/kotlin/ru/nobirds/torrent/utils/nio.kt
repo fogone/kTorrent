@@ -6,6 +6,7 @@ import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelInitializer
+import io.netty.util.Attribute
 
 
 public fun ChannelFuture.addCompleteListener(listener:(ChannelFuture)->Unit) {
@@ -26,4 +27,11 @@ public fun <C: Channel> channelInitializer(initializer:(C)->Unit): ChannelInitia
     override fun initChannel(channel: C) {
         initializer(channel)
     }
+}
+
+public fun <T> Attribute<T>.getOrSet(getter:()->T):T {
+    if (get() == null) {
+        set(getter())
+    }
+    return get()
 }

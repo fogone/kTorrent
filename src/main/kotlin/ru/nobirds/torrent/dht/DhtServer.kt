@@ -11,11 +11,11 @@ import io.netty.channel.socket.nio.NioDatagramChannel
 import io.netty.handler.codec.MessageToMessageCodec
 import ru.nobirds.torrent.bencode.*
 import ru.nobirds.torrent.dht.message.DefaultRequestContainer
-import ru.nobirds.torrent.dht.message.Message
+import ru.nobirds.torrent.dht.message.DhtMessage
 import ru.nobirds.torrent.dht.message.RequestMessage
 import ru.nobirds.torrent.dht.message.ResponseMessage
 import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
-import ru.nobirds.torrent.utils.infiniteLoopThread
+import ru.nobirds.torrent.utils.queueHandlerThread
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.util.concurrent.ArrayBlockingQueue
@@ -37,16 +37,15 @@ public class MessageToDatagramCodec(val messageSerializer: BencodeMessageSeriali
 
     override fun decode(ctx: ChannelHandlerContext, msg: DatagramPacket, out: MutableList<Any>) {
         val content = msg.content()
-        val sender = msg.sender()
         val stream = BTokenStreamImpl(BufferByteReader(content))
 
         stream.next()
 
         val bType = stream.processBType()
 
-        val message = messageSerializer.deserialize(sender, bType as BMap)
+        val message = messageSerializer.deserialize(bType as BMap)
 
-        out.add(AddressAndMessage(sender, message))
+        out.add(AddressAndMessage(msg.sender(), message))
     }
 }
 
@@ -65,11 +64,9 @@ public class NettyDhtServer(val port: Int, val messageSerializer: BencodeMessage
             .bind(port).sync()
             .channel()
 
-    private val sender = infiniteLoopThread { sendMessage() }
+    private val sender = queueHandlerThread(outgoing) { sendMessage(it) }
 
-    private fun sendMessage() {
-        val addressAndMessage = outgoing.take()
-
+    private fun sendMessage(addressAndMessage:AddressAndMessage) {
         val message = addressAndMessage.message
         if(message is RequestMessage)
             requestContainer.storeWithTimeout(message) {
@@ -92,7 +89,7 @@ public class NettyDhtServer(val port: Int, val messageSerializer: BencodeMessage
         outgoing.put(addressAndMessage)
     }
 
-    public fun send(address:InetSocketAddress, message: Message) {
+    public fun send(address:InetSocketAddress, message: DhtMessage) {
         outgoing.put(AddressAndMessage(address, message))
     }
 

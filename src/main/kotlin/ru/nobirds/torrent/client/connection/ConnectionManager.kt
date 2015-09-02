@@ -8,39 +8,51 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.ByteToMessageCodec
-import ru.nobirds.torrent.bencode.BencodeCodec
+import io.netty.util.AttributeKey
 import ru.nobirds.torrent.bencode.requestQueueStorage
+import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
-import ru.nobirds.torrent.utils.addCompleteListener
-import ru.nobirds.torrent.utils.channelInitializerHandler
-import ru.nobirds.torrent.utils.childHandler
-import ru.nobirds.torrent.utils.infiniteLoopThread
+import ru.nobirds.torrent.peers.Peer
+import ru.nobirds.torrent.utils.*
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
+public data class PeerAndMessage(val peer: Peer, val message: Message)
 public data class AddressAndMessage(val address: InetSocketAddress, val message: Message)
+
+public data class Handshake(var local:Boolean = false, var remote:Boolean = false) {
+
+    public val complete:Boolean
+        get() = local && remote
+
+    public fun check(local: Boolean) {
+        if(local) this.local = true
+        else this.remote = true
+    }
+
+}
 
 class ConnectionRegistry {
 
-    private val connections = ConcurrentHashMap<SocketAddress, ChannelHandlerContext>()
+    private val connections = ConcurrentHashMap<InetSocketAddress, ChannelHandlerContext>()
 
-    fun register(address: SocketAddress, context: ChannelHandlerContext) {
-        connections.put(address, context)
+    fun register(peer: InetSocketAddress, context: ChannelHandlerContext) {
+        connections.put(peer, context)
     }
 
-    fun unregister(address: SocketAddress) {
-        connections.remove(address)
+    fun unregister(peer: InetSocketAddress) {
+        connections.remove(peer)
     }
 
-    fun find(address: SocketAddress):ChannelHandlerContext? {
-        val context = connections.get(address)
+    fun find(peer: InetSocketAddress):ChannelHandlerContext? {
+        val context = connections.get(peer)
 
         if(context == null || context.isRemoved) {
-            unregister(address)
+            unregister(peer)
             return null
         }
 
@@ -49,26 +61,31 @@ class ConnectionRegistry {
 
 }
 
-class ConnectionRegistryChannelHandler(val registry: ConnectionRegistry) : ChannelHandlerAdapter() {
+public object Attributes {
 
-    override fun connect(ctx: ChannelHandlerContext, remoteAddress: SocketAddress,
-                         localAddress: SocketAddress?, promise: ChannelPromise) {
-        ctx.connect(remoteAddress, localAddress, promise)
-        registry.register(remoteAddress, ctx)
-    }
+    public val peer:AttributeKey<Peer> = AttributeKey.valueOf<Peer>("peer")
+    public val handshake:AttributeKey<Handshake> = AttributeKey.valueOf<Handshake>("handshake")
+
+}
+
+public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider, val registry: ConnectionRegistry) : ByteToMessageCodec<Message>() {
 
     override fun disconnect(ctx: ChannelHandlerContext, promise: ChannelPromise) {
+        registry.unregister(ctx.channel().remoteAddress() as InetSocketAddress)
+
         ctx.disconnect(promise)
-        registry.unregister(ctx.channel().remoteAddress())
+    }
+
+    override fun connect(ctx: ChannelHandlerContext, remoteAddress: SocketAddress, localAddress: SocketAddress, promise: ChannelPromise) {
+        ctx.connect(remoteAddress)
+
+        registry.register(remoteAddress as InetSocketAddress, ctx)
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         cause.printStackTrace()
         ctx.close()
     }
-}
-
-public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<Message>() {
 
     override fun decode(ctx: ChannelHandlerContext, buffer: ByteBuf, out: MutableList<Any>) {
         val length = buffer.readInt()
@@ -85,12 +102,36 @@ public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvid
 
         val message = serializer.read(length, messageType, buffer)
 
-        out.add(AddressAndMessage(ctx.channel().remoteAddress() as InetSocketAddress, message))
+        handshake(ctx, message, false)
+
+        val peer = ctx.attr(Attributes.peer).get()
+
+        requireNotNull(peer, "Need handshake before")
+
+        out.add(PeerAndMessage(peer, message))
     }
 
     override fun encode(ctx: ChannelHandlerContext, msg: Message, out: ByteBuf) {
-        val serializer = serializerProvider.getSerializer<Message>(msg.messageType)
-        serializer.write(out, msg)
+        handshake(ctx, msg, true)
+
+        serializerProvider.getSerializer<Message>(msg.messageType).write(out, msg)
+    }
+
+    private fun handshake(ctx: ChannelHandlerContext, message: Message, local: Boolean) {
+        if (message is HandshakeMessage) {
+            val handshake = ctx.attr(Attributes.handshake).getOrSet { Handshake() }
+
+            require(handshake.complete.not(), "Unexpected handshake: $message")
+
+            handshake.check(local)
+
+            if (!local) {
+                ctx.attr(Attributes.peer)
+                        .getOrSet { Peer(message.hash, message.peer, ctx.channel().remoteAddress() as InetSocketAddress) }
+            }
+        } else {
+            require(ctx.attr(Attributes.handshake).get()?.complete ?: false)
+        }
     }
 
 }
@@ -103,14 +144,14 @@ public interface ConnectionManager : Closeable {
         send(AddressAndMessage(address, message))
     }
 
-    fun read(): AddressAndMessage
+    fun read(): PeerAndMessage
 
 }
 
 public class NettyConnectionManager(val port:Int) : ConnectionManager {
 
     private val registry = ConnectionRegistry()
-    private val incoming = ArrayBlockingQueue<AddressAndMessage>(1000)
+    private val incoming = ArrayBlockingQueue<PeerAndMessage>(1000)
     private val outgoing = ArrayBlockingQueue<AddressAndMessage>(1000)
 
     private val acceptGroup = NioEventLoopGroup()
@@ -122,8 +163,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             .channel(NioServerSocketChannel::class.java)
             .childHandler<Channel> {
                 it.pipeline()
-                        .addLast(BencodeCodec())
-                        .addLast(ConnectionRegistryChannelHandler(registry))
+                        .addLast(TorrentMessageCodec(MessageSerializerProvider(), registry))
                         .addLast(requestQueueStorage(incoming))
             }
             .childOption(ChannelOption.SO_KEEPALIVE, true)
@@ -134,15 +174,12 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             .channel(NioSocketChannel::class.java)
             .channelInitializerHandler<Channel, Bootstrap> {
                 it.pipeline()
-                        .addLast(TorrentMessageCodec(MessageSerializerProvider()))
-                        .addLast(ConnectionRegistryChannelHandler(registry))
+                        .addLast(TorrentMessageCodec(MessageSerializerProvider(), registry))
                         .addLast(requestQueueStorage(incoming))
             }
             .option(ChannelOption.SO_KEEPALIVE, true)
 
-    private val sendWorker = infiniteLoopThread {
-        val message = outgoing.take()
-
+    private val sendWorker = queueHandlerThread(outgoing) { message ->
         var context = registry.find(message.address)
 
         if (context == null) {
@@ -154,7 +191,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         } else {
             val ctx = context
             synchronized(ctx) {
-                ctx.writeAndFlush(message)
+                ctx.writeAndFlush(message.message)
             }
         }
     }
@@ -163,7 +200,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         outgoing.put(message)
     }
 
-    public override fun read(): AddressAndMessage = incoming.take()
+    public override fun read(): PeerAndMessage = incoming.take()
 
     private fun connect(address: SocketAddress): ChannelFuture {
         return clientBootstrap.remoteAddress(address).connect()

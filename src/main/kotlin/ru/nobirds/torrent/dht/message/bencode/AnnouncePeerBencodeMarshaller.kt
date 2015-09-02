@@ -1,18 +1,16 @@
 package ru.nobirds.torrent.dht.message.bencode
 
 import ru.nobirds.torrent.bencode.BMap
-import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.bencode.BTypeFactory
-import java.net.InetSocketAddress
 import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
 import ru.nobirds.torrent.dht.message.AnnouncePeerResponse
-import ru.nobirds.torrent.peers.Peer
+import ru.nobirds.torrent.utils.Id
 
 public class AnnouncePeerBencodeMarshaller() :
         RequestMarshaller<AnnouncePeerRequest>, RequestUnmarshaller<AnnouncePeerRequest>,
         ResponseMarshaller<AnnouncePeerRequest, AnnouncePeerResponse>, ResponseUnmarshaller<AnnouncePeerResponse> {
 
-    override fun marshallRequest(id: String, address: InetSocketAddress, map: BMap): AnnouncePeerRequest {
+    override fun marshallRequest(id: String, map: BMap): AnnouncePeerRequest {
         val sender = map.getBytes("id")!!
         val impliedPortValue = map.getString("implied_port")
         val impliedPort = impliedPortValue != null && impliedPortValue == "1"
@@ -22,11 +20,11 @@ public class AnnouncePeerBencodeMarshaller() :
 
         val token = map.getString("token")!!
 
-        return AnnouncePeerRequest(id, Peer(Id.fromBytes(sender), address), Id.fromBytes(hash), impliedPort, port, token)
+        return AnnouncePeerRequest(id, Id.fromBytes(sender), Id.fromBytes(hash), impliedPort, port, token)
     }
 
     override fun unmarshallRequest(request: AnnouncePeerRequest): BMap = BTypeFactory.createBMap {
-        value("id", request.sender.id.toBytes())
+        value("id", request.sender.toBytes())
         value("info_hash", request.hash.toBytes())
 
         if(request.impliedPort)
@@ -39,14 +37,14 @@ public class AnnouncePeerBencodeMarshaller() :
     }
 
 
-    override fun marshallResponse(address: InetSocketAddress, map: BMap, request: AnnouncePeerRequest): AnnouncePeerResponse {
+    override fun marshallResponse(map: BMap, request: AnnouncePeerRequest): AnnouncePeerResponse {
         val sender = map.getBytes("id")!!
 
-        return AnnouncePeerResponse(Peer(Id.fromBytes(sender), address), request)
+        return AnnouncePeerResponse(Id.fromBytes(sender), request)
     }
 
     override fun unmarshallResponse(response: AnnouncePeerResponse): BMap = BTypeFactory.createBMap {
-        value("id", response.sender.id.toBytes())
+        value("id", response.sender.toBytes())
     }
 
 }

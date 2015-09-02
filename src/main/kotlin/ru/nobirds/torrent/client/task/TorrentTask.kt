@@ -1,60 +1,73 @@
 package ru.nobirds.torrent.client.task
 
+import io.netty.util.internal.ConcurrentSet
 import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.connection.ConnectionManager
+import ru.nobirds.torrent.client.connection.PeerAndMessage
+import ru.nobirds.torrent.client.message.BitFieldMessage
 import ru.nobirds.torrent.client.message.HandshakeMessage
+import ru.nobirds.torrent.client.message.PieceMessage
+import ru.nobirds.torrent.client.message.RequestMessage
 import ru.nobirds.torrent.client.model.TorrentInfo
+import ru.nobirds.torrent.client.task.file.CompositeFileDescriptor
+import ru.nobirds.torrent.client.task.file.FileDescriptor
+import ru.nobirds.torrent.client.task.requirement.RequirementsStrategy
 import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.TorrentState
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.peers.provider.PeerProvider
 import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.utils.infiniteLoopThread
+import ru.nobirds.torrent.utils.queueHandlerThread
+import java.io.Closeable
 import java.net.InetSocketAddress
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ConcurrentHashMap
 
 public class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
-                         val localPeer: Peer,
-                         val peerManager: PeerProvider,
-                         val connectionManager: ConnectionManager,
-                         val digestProvider: DigestProvider) {
+                         val digestProvider: DigestProvider,
+                         val connectionManager:ConnectionManager,
+                         val requirementsStrategy: RequirementsStrategy) : Closeable {
 
-    private val torrentHash = Id.fromBytes(torrent.hash!!)
+    public val hash:Id = Id.fromBytes(torrent.hash!!)
+
+    public val localPeer:Id = Id.random()
 
     public val uploadStatistics:TrafficStatistics = TrafficStatistics()
 
     public val downloadStatistics:TrafficStatistics = TrafficStatistics()
 
-    private val messages = ArrayBlockingQueue<TaskMessage>(300)
+    private val messages = ArrayBlockingQueue<TaskMessage>(1000)
 
     private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
     private val state: TorrentState = TorrentState(torrent)
+    private val peersState = ConcurrentHashMap<Id, TorrentState>()
 
-    private val peers = HashSet<InetSocketAddress>()
+    private val peers:MutableSet<InetSocketAddress> = ConcurrentSet<InetSocketAddress>()
 
-    init {
-        peerManager.require(torrentHash) {
-            for (peer in this.peers.minus(it.peers).toList()) {
-                this.peers.add(peer)
-                addConnection(peer)
-            }
-        }
+    private val handlerThread = queueHandlerThread(messages) { handleMessage(it) }
+
+    private fun addBlock(piece: Int, begin:Int, block:ByteArray) {
+        addBlock(FreeBlockIndex(piece, begin, block.size()), block)
     }
 
-    public fun addBlock(index: FreeBlockIndex, block:ByteArray) {
+    private fun addBlock(index: FreeBlockIndex, block:ByteArray) {
         val file = files.compositeRandomAccessFile
         val blockIndex = state.freeIndexToBlockIndex(index.piece, index.begin, index.length) ?: return
         val globalIndex = state.blockIndexToGlobalIndex(blockIndex.piece, blockIndex.block)
 
         file.seek(globalIndex.begin.toLong())
-        file.output.write(block)
+        file.write(block)
 
         state.done(blockIndex.piece, blockIndex.block)
+
+        downloadStatistics.process(block.size().toLong())
     }
+
+    public val piecesState:BitSet
+        get() = state.toBitSet()
 
     public fun sendMessage(message:TaskMessage) {
         messages.put(message)
@@ -79,11 +92,66 @@ public class TorrentTask(val directory:Path,
 
     private fun handleMessage(message: TaskMessage) {
         when(message) {
+            is HandleTaskMessage -> handleIncomingMessage(message.message)
             is RehashTorrentFilesMessage -> rehashTorrentFiles()
+            is AddPeersMessage -> handleAddPeers(message.peers)
+            is RequestBlockMessage -> sendRequest(message.peer.address, message.index)
         }
     }
 
-    private fun addConnection(address: InetSocketAddress) {
-        connectionManager.send(address, HandshakeMessage(torrentHash, localPeer.id))
+    private fun sendRequest(address: InetSocketAddress, index: FreeBlockIndex) {
+        connectionManager.send(address, RequestMessage(index.piece, index.begin, index.length))
     }
+
+    private fun handleAddPeers(peers: Set<InetSocketAddress>) {
+        newPeers(peers.asSequence()).forEach { sendHandshake(hash, it) }
+    }
+
+    private fun handleIncomingMessage(message: PeerAndMessage) {
+        when (message.message) {
+            is HandshakeMessage -> handleHandshake(message.peer, message.message)
+            is BitFieldMessage -> handleBifField(message.peer, message.message)
+            is PieceMessage -> handlePiece(message.peer.id, message.message)
+        }
+    }
+
+    private fun handleBifField(peer: Peer, message: BitFieldMessage) {
+        val peerTorrentState = getPeerTorrentState(peer.id)
+        peerTorrentState.done(message.pieces)
+
+        val index = requirementsStrategy.next(state, peerTorrentState)
+
+        if (index != null) {
+            sendMessage(RequestBlockMessage(peer, index))
+        }
+    }
+
+    private fun handlePiece(peer:Id, message: PieceMessage) {
+        getPeerTorrentState(peer).done(message.index, message.begin)
+        addBlock(message.index, message.begin, message.block)
+    }
+
+    private fun newPeers(peers:Sequence<InetSocketAddress>):Sequence<InetSocketAddress>
+            = peers.filter { it !in this.peers }
+
+    override fun close() {
+        handlerThread.interrupt()
+    }
+
+    private fun getPeerTorrentState(peer: Id) = peersState.concurrentGetOrPut(peer) { TorrentState(torrent) }
+
+    private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
+        peers.add(peer.address)
+        sendState(peer, piecesState)
+    }
+
+    private fun sendState(peer: Peer, state: BitSet) {
+        connectionManager.send(peer.address, BitFieldMessage(state))
+    }
+
+    private fun sendHandshake(hash:Id, address: InetSocketAddress) {
+        connectionManager.send(address, HandshakeMessage(hash, localPeer))
+    }
+
+
 }

@@ -8,5 +8,6 @@ import java.nio.file.Paths
 public class ClientProperties(
         val threads:Int = 10,
         val ports:LongRange = 6881L..6889L,
+        val dhtPorts:LongRange = 11111L..11119L,
         val directory:Path = Paths.get("")
 )

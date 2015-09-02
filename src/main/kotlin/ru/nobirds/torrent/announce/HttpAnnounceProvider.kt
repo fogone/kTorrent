@@ -1,25 +1,26 @@
 package ru.nobirds.torrent.announce
 
-import ru.nobirds.torrent.utils.toUrlString
-import ru.nobirds.torrent.utils.toInetSocketAddresses
-import ru.nobirds.torrent.utils.toId
-import java.net.URI
-import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.bencode.BMap
+import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.util.MultiValueMap
-import ru.nobirds.torrent.bencode.BType
-import ru.nobirds.torrent.bencode.BList
-import ru.nobirds.torrent.bencode.BBytes
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
-import ru.nobirds.torrent.utils
-import java.net.InetSocketAddress
+import ru.nobirds.torrent.bencode.BBytes
+import ru.nobirds.torrent.bencode.BList
+import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.bencode.BType
 import ru.nobirds.torrent.parser.BEncodeHttpMessageConverter
+import ru.nobirds.torrent.peers.Peer
+import ru.nobirds.torrent.utils
+import ru.nobirds.torrent.utils.Id
+import ru.nobirds.torrent.utils.toId
+import ru.nobirds.torrent.utils.toInetSocketAddresses
+import ru.nobirds.torrent.utils.toUrlString
+import java.net.InetSocketAddress
+import java.net.URI
 
 public class HttpAnnounceProvider : AnnounceProvider {
 
-    private val template = RestTemplate(arrayListOf(BEncodeHttpMessageConverter()))
+    private val template = RestTemplate(arrayListOf<HttpMessageConverter<*>>(BEncodeHttpMessageConverter()))
 
     public override fun getTrackerInfoByUrl(uri: URI, localPeer: Peer, hash: Id): TrackerInfo {
         val parameters = createUrlParameters(localPeer, hash)
@@ -40,7 +41,7 @@ public class HttpAnnounceProvider : AnnounceProvider {
 
         val interval = result.getLong("interval")!!
 
-        val peers = fetchPeers(result.getValue("peers")!!)
+        val peers = fetchPeers(hash, result.getValue("peers")!!)
 
         val complete = result.getInt("complete")!!
 
@@ -73,17 +74,17 @@ public class HttpAnnounceProvider : AnnounceProvider {
         )
     }
 
-    private fun fetchPeers(peers: BType):List<Peer> {
+    private fun fetchPeers(hash: Id, peers: BType):List<Peer> {
         return when(peers) {
-            is BList -> parseFullPeersList(peers)
-            is BBytes -> peers.value.toInetSocketAddresses().map { Peer(Id.Zero, it) }
+            is BList -> parseFullPeersList(hash, peers)
+            is BBytes -> peers.value.toInetSocketAddresses().map { Peer(hash, Id.Zero, it) }
             else -> throw IllegalArgumentException()
         }
     }
 
-    private fun parseFullPeersList(peers: BList):List<Peer> = peers.map {
+    private fun parseFullPeersList(hash: Id, peers: BList):List<Peer> = peers.map {
         val peer = it as BMap
-        Peer(peer.getBytes("id")!!.toId(), InetSocketAddress(peer.getString("ip")!!, peer.getLong("port")!!.toInt()))
+        Peer(hash, peer.getBytes("id")!!.toId(), InetSocketAddress(peer.getString("ip")!!, peer.getLong("port")!!.toInt()))
     }
 
 }

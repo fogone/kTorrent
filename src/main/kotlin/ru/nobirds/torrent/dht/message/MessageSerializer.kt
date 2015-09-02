@@ -1,12 +1,11 @@
 package ru.nobirds.torrent.dht.message
 
 import ru.nobirds.torrent.bencode.BMap
-import java.net.InetSocketAddress
 
 public interface MessageSerializer {
 
-    fun deserialize(address:InetSocketAddress, map:BMap):Message
+    fun deserialize(map:BMap): DhtMessage
 
-    fun serialize(message:Message):BMap
+    fun serialize(message: DhtMessage):BMap
 
 }

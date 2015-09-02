@@ -2,27 +2,29 @@ package ru.nobirds.torrent.dht
 
 import ru.nobirds.torrent.dht.message.*
 import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
-import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.infiniteLoopThread
+import ru.nobirds.torrent.utils.isPortAvailable
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
-public class Dht(val port:Int) {
+public class Dht(val ports:LongRange) {
+
+    private val port = ports.firstOrNull { it.toInt().isPortAvailable() }?.toInt()  ?: throw IllegalStateException("All configured ports used.")
 
     private val requestContainer = DefaultRequestContainer()
 
     private val tokens = TokenProvider()
 
-    private val localPeer = Peer(Id.random(), InetSocketAddress.createUnresolved("localhost", port))
+    private val localHash = Id.random()
 
-    private val peers: KBucket = SimpleKBucket(localPeer.id)
+    private val peers: KBucket = SimpleKBucket(localHash)
 
-    private val messageFactory = MessageFactory(localPeer)
+    private val messageFactory = MessageFactory(localHash)
 
-    private val messageSerializer = BencodeMessageSerializer(localPeer, requestContainer)
+    private val messageSerializer = BencodeMessageSerializer(localHash, requestContainer)
 
     private val server = NettyDhtServer(port, messageSerializer, requestContainer)
 
@@ -36,7 +38,7 @@ public class Dht(val port:Int) {
 
     private fun initialize() {
         BootstrapHosts.addresses.forEach {
-            server.send(AddressAndMessage(it, messageFactory.createBootstrapFindNodeRequest(localPeer.id)))
+            server.send(AddressAndMessage(it, messageFactory.createBootstrapFindNodeRequest(localHash)))
         }
 
         infiniteLoopThread {
@@ -76,24 +78,24 @@ public class Dht(val port:Int) {
     private fun handleMessage(message: AddressAndMessage) {
         when(message.message) {
             is ResponseMessage -> {
-                onAnswer(message.message)
+                onAnswer(message.message, message.address)
             }
             is AbstractErrorMessage -> {
-                onErrorReceive(message.message)
+                onErrorReceive(message.message, message.address)
             }
             is RequestMessage -> {
-                onRequestReceive(message.message)
+                onRequestReceive(message.message, message.address)
             }
         }
     }
 
-    private fun onRequestReceive(request:RequestMessage) {
+    private fun onRequestReceive(request:RequestMessage, address: InetSocketAddress) {
         when(request) {
             is PingRequest -> {
-                server.send(request.sender.address, messageFactory.createPingResponse(request))
+                server.send(address, messageFactory.createPingResponse(request))
             }
             is GetPeersRequest -> {
-                val token = tokens.getPeerToken(request.sender.id)
+                val token = tokens.getPeerToken(request.sender)
 
                 val response = if (peers.containsValue(request.hash)) {
                     val nodes = peers.getValue(request.hash)
@@ -103,7 +105,7 @@ public class Dht(val port:Int) {
                     messageFactory.createClosestNodesResponse(request, token, closest)
                 }
 
-                server.send(request.sender.address, response)
+                server.send(address, response)
             }
             is FindNodeRequest -> {
                 val target = request.target
@@ -114,25 +116,25 @@ public class Dht(val port:Int) {
                     peers.findClosest(target)
                 }
 
-                server.send(request.sender.address, messageFactory.createFindNodeResponse(request, responsePeers))
+                server.send(address, messageFactory.createFindNodeResponse(request, responsePeers))
             }
             is AnnouncePeerRequest -> {
                 if(!tokens.checkPeerToken(request.sender, request.token))
-                    server.send(request.sender.address, messageFactory.errors.generic("Invalid token"))
+                    server.send(address, messageFactory.errors.generic("Invalid token"))
                 else {
-                    peers.putValue(request.hash, Collections.singleton(request.sender.address))
-                    server.send(request.sender.address, messageFactory.createAnnouncePeerResponse(request))
+                    peers.putValue(request.hash, Collections.singleton(address))
+                    server.send(address, messageFactory.createAnnouncePeerResponse(request))
                 }
             }
         }
     }
 
-    private fun onAnswer(response:ResponseMessage) {
+    private fun onAnswer(response: ResponseMessage, address: InetSocketAddress) {
         val request = response.request
 
         when (request) {
             is PingRequest -> {
-                peers.addNode(response.sender)
+                peers.addNode(Peer(response.sender, address))
             }
             is GetPeersRequest -> {
                 when (response) {
@@ -165,12 +167,12 @@ public class Dht(val port:Int) {
         }
     }
 
-    private fun onErrorReceive(message:AbstractErrorMessage) {
+    private fun onErrorReceive(message:AbstractErrorMessage, address: InetSocketAddress) {
         when (message) {
             is ErrorMessageResponse -> {
                 when(message.request) {
                     is PingRequest -> {
-                        peers.removeNode(message.sender.id)
+                        peers.removeNode(message.sender)
                     }
                 }
             }

@@ -30,12 +30,12 @@ public open class TorrentClientConfiguration() {
     public open fun torrentParser(): TorrentParser = TorrentParserImpl(sha1Provider())
 
     @Bean
-    public open fun connectionManager(localPeer: Peer): ConnectionManager
-            = NettyConnectionManager(localPeer.address.port)
+    public open fun connectionManager(localPeerFactory: LocalPeerFactory): ConnectionManager
+            = NettyConnectionManager(localPeerFactory.port)
 
     @Bean
-    public open fun taskManager(config:ClientProperties, localPeer: Peer, peerManager:PeerProvider, connectionManager: ConnectionManager): TaskManager
-            = TaskManager(config.directory, localPeer, peerManager, connectionManager, torrentParser(), sha1Provider())
+    public open fun taskManager(config:ClientProperties, localPeerFactory: LocalPeerFactory, peerManager:PeerProvider, connectionManager: ConnectionManager): TaskManager
+            = TaskManager(config.directory, localPeerFactory, peerManager, connectionManager, torrentParser(), sha1Provider())
 
     @Bean
     public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports)
@@ -50,13 +50,10 @@ public open class TorrentClientConfiguration() {
     }
 
     @Bean
-    public open fun dht(localPeer: Peer): Dht = Dht(localPeer.address.port)
+    public open fun dht(config: ClientProperties): Dht = Dht(config.dhtPorts)
 
     @Bean
-    public open fun dhtPeerProvider(localPeer: Peer, dht:Dht):PeerProvider = DhtPeerProvider(localPeer, dht)
-
-    @Bean
-    public open fun localPeer(localPeerFactory: LocalPeerFactory): Peer = localPeerFactory.createLocalPeer()
+    public open fun dhtPeerProvider(dht:Dht):PeerProvider = DhtPeerProvider(dht)
 
     @Bean
     public open fun sha1Provider(): DigestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }

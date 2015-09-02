@@ -1,17 +1,15 @@
 package ru.nobirds.torrent.dht
 
-import java.util.concurrent.ConcurrentHashMap
-import ru.nobirds.torrent.utils.TokenGenerator
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.Collections
+import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.toPriorityQueue
 import ru.nobirds.torrent.utils.top
-import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.peers.Peer
-import java.net.InetSocketAddress
-import java.util.TreeMap
-import java.util.Comparator
 import java.math.BigInteger
+import java.net.InetSocketAddress
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+
+public data class Peer(val id:Id, val address: InetSocketAddress)
 
 public interface KBucket {
 

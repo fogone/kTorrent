@@ -1,15 +1,8 @@
 package ru.nobirds.torrent.client.task.file
 
-import java.io.RandomAccessFile
-import java.io.DataInput
-import java.io.DataOutput
-import java.io.DataInputStream
-import java.io.InputStream
-import java.io.DataOutputStream
-import java.io.OutputStream
-import java.io.EOFException
 import ru.nobirds.torrent.client.task.state.GlobalBlockIndex
 import ru.nobirds.torrent.utils.closeQuietly
+import java.io.*
 
 class InputImplementer(val file:CompositeRandomAccessFile) : InputStream() {
     override fun read(): Int = file.read()
@@ -29,8 +22,8 @@ class OutputImplementer(val file:CompositeRandomAccessFile) : OutputStream() {
 
 public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
 
-    public val input:DataInput = DataInputStream(InputImplementer(this))
-    public val output:DataOutput = DataOutputStream(OutputImplementer(this))
+    private val input:DataInput = DataInputStream(InputImplementer(this))
+    private val output:DataOutput = DataOutputStream(OutputImplementer(this))
 
     private var index:Int = 0
 
@@ -59,6 +52,10 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         throw IllegalStateException()
     }
 
+    public fun write(b:ByteArray) {
+        write(b, 0, b.size())
+    }
+
     public fun write(b:ByteArray, off:Int, len:Int) {
         val toWrite = len - off
 
@@ -76,7 +73,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
     }
 
     public fun write(b:Int) {
-        if(current.getFilePointer() == current.length()) {
+        if(current.filePointer == current.length()) {
             if(index == files.size() -1)
                 throw EOFException()
             else

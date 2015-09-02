@@ -1,11 +1,9 @@
 package ru.nobirds.torrent.dht
 
-import java.util.concurrent.ConcurrentHashMap
 import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.TokenGenerator
-import java.util.Random
-import java.util.UUID
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 public class TokenProvider {
 
@@ -13,8 +11,8 @@ public class TokenProvider {
 
     private val localToken: String = generateToken()
 
-    public fun checkPeerToken(sender: Peer, token:String):Boolean {
-        val tokenPair = tokens[sender.id]?.peerToken
+    public fun checkPeerToken(sender: Id, token:String):Boolean {
+        val tokenPair = tokens[sender]?.peerToken
 
         return tokenPair != null && token == tokenPair
     }

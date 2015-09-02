@@ -1,7 +1,7 @@
 package ru.nobirds.torrent.client.message
 
 import ru.nobirds.torrent.utils.Id
-import java.util.BitSet
+import java.util.*
 
 interface Message {
 
@@ -9,7 +9,7 @@ interface Message {
 
 }
 
-public open class SimpleMessage(override val messageType:MessageType) : Message
+public abstract class SimpleMessage(override val messageType:MessageType) : Message
 
 public class HandshakeMessage(val hash: Id, val peer:Id, val protocol:String= "BitTorrent protocol") : SimpleMessage(MessageType.handshake)
 

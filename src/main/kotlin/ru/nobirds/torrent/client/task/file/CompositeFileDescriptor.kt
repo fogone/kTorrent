@@ -1,6 +1,4 @@
-package ru.nobirds.torrent.client.task
-
-import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
+package ru.nobirds.torrent.client.task.file
 
 public class CompositeFileDescriptor(val files:List<FileDescriptor>) {
 
