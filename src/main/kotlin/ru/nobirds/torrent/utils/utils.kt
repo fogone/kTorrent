@@ -98,11 +98,11 @@ public object UrlUtils {
 
 }
 
-public fun BitSet.set():Sequence<Int> {
+public fun BitSet.setBits(count: Int):Sequence<Int> {
     var last = 0
     return sequence {
         val nextSetBit = nextSetBit(last)
-        if (nextSetBit != -1) nextSetBit else null
+        if (nextSetBit != -1 || nextSetBit < count) nextSetBit else null
     }
 }
 
@@ -114,8 +114,9 @@ public fun BitSet.clear():Sequence<Int> {
     }
 }
 
-public fun BitSet.copy(bitSet:BitSet) {
-    set().forEach { bitSet.set(it) }
+public fun BitSet.copyTo(bitSet:BitSet, count:Int) {
+    bitSet.clear()
+    setBits(count).forEach { bitSet.set(it) }
 }
 
 public fun BitSet.isAllSet(size:Int):Boolean = cardinality() == size

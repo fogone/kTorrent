@@ -3,7 +3,7 @@ package ru.nobirds.torrent.client.task.requirement
 import ru.nobirds.torrent.client.task.state.*
 import java.util.HashSet
 import java.util.concurrent.Semaphore
-import ru.nobirds.torrent.utils.copy
+import ru.nobirds.torrent.utils.copyTo
 import ru.nobirds.torrent.utils.findIndex
 
 public class SimpleRequirementsStrategy() : RequirementsStrategy {

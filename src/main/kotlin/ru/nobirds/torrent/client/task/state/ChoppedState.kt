@@ -11,13 +11,15 @@ public interface State {
 
     fun done()
 
-    fun done(state: BitSet)
+    fun done(bytes: ByteArray)
 
     fun done(piece: Int)
 
     fun isDone():Boolean
 
     fun isDone(piece: Int):Boolean
+
+    fun toBytes():ByteArray
 
 }
 
@@ -38,8 +40,8 @@ public class SimpleState(override val count:Int) : State {
         state.setAll(count, true)
     }
 
-    public override fun done(state:BitSet) {
-        state.clear(0, count)
+    public override fun done(bytes:ByteArray) {
+        BitSet.valueOf(bytes).copyTo(this.state, count)
     }
 
     override fun done(piece: Int) {
@@ -51,6 +53,8 @@ public class SimpleState(override val count:Int) : State {
     }
 
     override fun isDone(): Boolean = state.isAllSet(count)
+
+    override fun toBytes(): ByteArray = state.toByteArray()
 
 }
 
@@ -98,7 +102,8 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
         state(piece).done(block)
     }
 
-    public override fun done(state:BitSet) {
+    public override fun done(bytes:ByteArray) {
+        val state = BitSet.valueOf(bytes)
         blocksState.forEachIndexed { i, blockState -> if(state.get(i)) blockState.done() }
     }
 
@@ -111,11 +116,20 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
     }
 
     public fun getIndex(piece: Int, block: Int):FreeBlockIndex {
-        val length = if(piece == count && block == lastPieceBlocksCount)
-            blockLength else lastBlockLength
 
-        return FreeBlockIndex(piece, block*blockLength - 1, length)
+        val length = when {
+            piece == count && block == lastPieceBlocksCount -> lastBlockLength
+            piece != count && block == commonBlocksCount -> commonLastBlockLength
+            else -> blockLength
+        }
+
+        return FreeBlockIndex(piece, block*blockLength, length)
     }
 
+    override fun toBytes(): ByteArray {
+        val bitSet = BitSet(count)
+        blocksState.forEachIndexed { i, state -> bitSet.set(i, state.isDone()) }
+        return bitSet.toByteArray()
+    }
 }
 
