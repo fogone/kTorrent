@@ -9,7 +9,7 @@ public class DhtTest {
 
     @Test
     public fun test1() {
-        val dht = Dht(11111)
+        val dht = Dht(11111L..111113L)
 
         val peers = ConcurrentHashMap<String, Boolean>()
 

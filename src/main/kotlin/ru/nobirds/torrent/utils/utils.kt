@@ -379,7 +379,7 @@ public fun String.hexToByteArray(): ByteArray {
     return data
 }
 
-public inline fun infiniteLoop(block: () -> Unit) {
+public fun infiniteLoop(block: () -> Unit) {
     try {
         while (Thread.currentThread().isInterrupted.not()) {
             block()
@@ -389,11 +389,7 @@ public inline fun infiniteLoop(block: () -> Unit) {
     }
 }
 
-public inline fun infiniteLoopThread(
-        inlineOptions(InlineOption.ONLY_LOCAL_RETURN) block: () -> Unit):Thread = thread {
-    infiniteLoop(block)
-}
+public fun infiniteLoopThread(block: () -> Unit):Thread = thread(start = true) { infiniteLoop(block) }
 
-public inline fun <M> queueHandlerThread(queue:BlockingQueue<M>,
-        inlineOptions(InlineOption.ONLY_LOCAL_RETURN) handler: (M) -> Unit):Thread = infiniteLoopThread { handler(queue.take()) }
+public fun <M> queueHandlerThread(queue:BlockingQueue<M>, handler: (M) -> Unit):Thread = infiniteLoopThread { handler(queue.take()) }
 

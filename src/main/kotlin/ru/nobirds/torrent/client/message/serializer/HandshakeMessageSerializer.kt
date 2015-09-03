@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.MessageType
-import ru.nobirds.torrent.client.message.SimpleMessage
 import ru.nobirds.torrent.utils.Id
 import java.nio.charset.Charset
 
@@ -13,6 +12,8 @@ public object HandshakeMessageSerializer : MessageSerializer<HandshakeMessage> {
     private val zeroBytes = Unpooled.wrappedBuffer(ByteArray(8))
 
     override fun read(length: Int, messageType: MessageType, stream: ByteBuf): HandshakeMessage {
+        stream.readerIndex(stream.readerIndex()-1)
+
         val protocolLength = length - (8 + 20 + 20)
 
         val protocol = stream.readBytes(protocolLength)
@@ -28,7 +29,7 @@ public object HandshakeMessageSerializer : MessageSerializer<HandshakeMessage> {
                 protocol.toString(Charset.forName("UTF-8"))
         )
 
-        sequenceOf(protocol, hash, peer).forEach { it.release() }
+        // sequenceOf(protocol, hash, peer).forEach { it.release() }
 
         return message
     }

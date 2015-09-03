@@ -38,9 +38,9 @@ public data class Handshake(var local:Boolean = false, var remote:Boolean = fals
 
 class ConnectionRegistry {
 
-    private val connections = ConcurrentHashMap<InetSocketAddress, ChannelHandlerContext>()
+    private val connections = ConcurrentHashMap<InetSocketAddress, Channel>()
 
-    fun register(peer: InetSocketAddress, context: ChannelHandlerContext) {
+    fun register(peer: InetSocketAddress, context: Channel) {
         connections.put(peer, context)
     }
 
@@ -48,15 +48,16 @@ class ConnectionRegistry {
         connections.remove(peer)
     }
 
-    fun find(peer: InetSocketAddress):ChannelHandlerContext? {
-        val context = connections.get(peer)
+    fun find(peer: InetSocketAddress):Channel? {
+        val channel = connections.get(peer)
 
-        if(context == null || context.isRemoved) {
+        /*if(channel == null || channel.isActive) {
+
             unregister(peer)
             return null
-        }
+        }*/
 
-        return context
+        return channel
     }
 
 }
@@ -68,29 +69,36 @@ public object Attributes {
 
 }
 
-public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider, val registry: ConnectionRegistry) : ByteToMessageCodec<Message>() {
+public class ConnectionStorageHandler(val registry: ConnectionRegistry) : ChannelHandlerAdapter() {
+
+    override fun connect(ctx: ChannelHandlerContext, remoteAddress: SocketAddress, localAddress: SocketAddress?, promise: ChannelPromise) {
+        promise.addCompleteListener {
+            if(it.isSuccess)
+                registry.register(ctx.channel().remoteAddress() as InetSocketAddress, ctx.channel())
+        }
+        super.connect(ctx, remoteAddress, localAddress, promise)
+
+    }
 
     override fun disconnect(ctx: ChannelHandlerContext, promise: ChannelPromise) {
         registry.unregister(ctx.channel().remoteAddress() as InetSocketAddress)
-
-        ctx.disconnect(promise)
+        super.disconnect(ctx, promise)
     }
 
-    override fun connect(ctx: ChannelHandlerContext, remoteAddress: SocketAddress, localAddress: SocketAddress, promise: ChannelPromise) {
-        ctx.connect(remoteAddress)
-
-        registry.register(remoteAddress as InetSocketAddress, ctx)
-    }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         cause.printStackTrace()
         ctx.close()
+        registry.unregister(ctx.channel().remoteAddress() as InetSocketAddress)
     }
+}
+
+public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<Message>(Message::class.java) {
 
     override fun decode(ctx: ChannelHandlerContext, buffer: ByteBuf, out: MutableList<Any>) {
         val length = buffer.readInt()
 
-        if (length < buffer.readableBytes()) {
+        if (length > buffer.readableBytes()) {
             buffer.readerIndex(buffer.readerIndex()-1)
             return
         }
@@ -158,13 +166,18 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
     private val workerGroup = NioEventLoopGroup()
     private val clientGroup = NioEventLoopGroup()
 
+    private val messageSerializerProvider = MessageSerializerProvider()
+
     private val server = ServerBootstrap()
             .group(acceptGroup, workerGroup)
             .channel(NioServerSocketChannel::class.java)
             .childHandler<Channel> {
                 it.pipeline()
-                        .addLast(TorrentMessageCodec(MessageSerializerProvider(), registry))
-                        .addLast(requestQueueStorage(incoming))
+                        .addLast(
+                                ConnectionStorageHandler(registry),
+                                TorrentMessageCodec(messageSerializerProvider),
+                                requestQueueStorage(incoming)
+                        )
             }
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .bind(port)
@@ -172,26 +185,30 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
     private val clientBootstrap = Bootstrap()
             .group(clientGroup)
             .channel(NioSocketChannel::class.java)
-            .channelInitializerHandler<Channel, Bootstrap> {
+            .channelInitializerHandler<Channel,Bootstrap>{
                 it.pipeline()
-                        .addLast(TorrentMessageCodec(MessageSerializerProvider(), registry))
-                        .addLast(requestQueueStorage(incoming))
+                    .addLast(
+                            ConnectionStorageHandler(registry),
+                            TorrentMessageCodec(messageSerializerProvider),
+                            requestQueueStorage(incoming)
+                    )
             }
             .option(ChannelOption.SO_KEEPALIVE, true)
 
-    private val sendWorker = queueHandlerThread(outgoing) { message ->
-        var context = registry.find(message.address)
 
-        if (context == null) {
+    private val sendWorker = queueHandlerThread(outgoing) { sendMessage(it) }
+
+    private fun sendMessage(message: AddressAndMessage) {
+        var channel = registry.find(message.address)
+
+        if (channel == null) {
             connect(message.address).addCompleteListener {
-                if (it.isSuccess) {
-                    outgoing.put(message)
-                }
+                send(message)
             }
         } else {
-            val ctx = context
-            synchronized(ctx) {
-                ctx.writeAndFlush(message.message)
+            val chnl = channel
+            synchronized(chnl) {
+                chnl.writeAndFlush(message.message).sync()
             }
         }
     }
@@ -203,7 +220,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
     public override fun read(): PeerAndMessage = incoming.take()
 
     private fun connect(address: SocketAddress): ChannelFuture {
-        return clientBootstrap.remoteAddress(address).connect()
+        return clientBootstrap.connect(address)
     }
 
     override fun close() {

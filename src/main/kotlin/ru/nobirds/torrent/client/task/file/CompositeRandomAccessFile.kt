@@ -115,6 +115,10 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         return value
     }
 
+    public fun read(bytes:ByteArray) {
+        input.readFully(bytes)
+    }
+
     public fun read(index:GlobalBlockIndex, buffer:ByteArray = ByteArray(index.length)):ByteArray {
         seek(index.begin.toLong())
         input.readFully(buffer)

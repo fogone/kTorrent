@@ -1,10 +1,10 @@
 package ru.nobirds.torrent
 
+import org.junit.Assert
 import org.junit.Test
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.RandomAccessFile
 import java.nio.file.Paths
-import org.junit.Assert
 
 public class RandomAccessTest {
 
@@ -18,7 +18,7 @@ public class RandomAccessTest {
         )
 
         val byteArray = ByteArray(file.length.toInt())
-        file.input.readFully(byteArray)
+        file.read(byteArray)
         val str = String(byteArray, "UTF-8")
         Assert.assertEquals("hello worldthis is me", str)
     }

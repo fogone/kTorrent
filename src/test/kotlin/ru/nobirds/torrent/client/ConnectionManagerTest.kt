@@ -2,12 +2,11 @@ package ru.nobirds.torrent.client
 
 import org.junit.Assert
 import org.junit.Test
-import ru.nobirds.torrent.bencode.BMap
-import ru.nobirds.torrent.bencode.BMessage
-import ru.nobirds.torrent.bencode.BTypeFactory
 import ru.nobirds.torrent.client.connection.NettyConnectionManager
+import ru.nobirds.torrent.client.connection.PeerAndMessage
+import ru.nobirds.torrent.client.message.HandshakeMessage
+import ru.nobirds.torrent.utils.Id
 import java.net.InetSocketAddress
-import kotlin.concurrent.thread
 
 public class ConnectionManagerTest {
 
@@ -17,50 +16,38 @@ public class ConnectionManagerTest {
         val manager2 = NettyConnectionManager(6501)
 
         try {
-            val source = BTypeFactory.createBMap {
-                value("hello", "world")
-            }
 
-            manager1.send(BMessage(InetSocketAddress(6501), source))
+            val hash = Id.random()
+            val peer = Id.random()
+
+            manager1.send(InetSocketAddress(6501), HandshakeMessage(hash, peer, "BTest"))
 
             val message = manager2.read()
 
-            Assert.assertEquals(source.getString("hello"), (message.value as BMap).getString("hello"))
+            assertMessage(hash, peer, message)
+
+            val peer2 = Id.random()
+
+            manager2.send(InetSocketAddress(6500), HandshakeMessage(hash, peer2, "BTest"))
+
+            val message2 = manager1.read()
+
+            assertMessage(hash, peer2, message2)
         } finally {
             manager1.close()
             manager2.close()
         }
     }
 
-    @Test
-    public fun test2() {
-        val manager1 = NettyConnectionManager(6500)
-        val manager2 = NettyConnectionManager(6501)
+    private fun assertMessage(hash: Id, peer: Id, message: PeerAndMessage) {
+        Assert.assertEquals(hash, message.peer.hash)
+        Assert.assertTrue(message.message is HandshakeMessage)
 
-        val thread1 = thread {
-            repeat(10) {
-                manager1.send(BMessage(InetSocketAddress(6501), BTypeFactory.createBMap {
-                    value("hello", "world")
-                }))
-            }
-        }
+        val handshakeMessage = message.message as HandshakeMessage
 
-        val thread2 = thread {
-            var counter = 0
-            while(counter < 10) {
-                val message = manager2.read()
-                Assert.assertEquals(true, message.value is BMap)
-                val map:BMap = message.value as BMap
-                Assert.assertEquals("world", map.getString("hello"))
-                counter++
-            }
-        }
-
-        thread1.join()
-        thread2.join()
-
-        manager1.close()
-        manager2.close()
+        Assert.assertEquals(peer, handshakeMessage.peer)
+        Assert.assertEquals(hash, handshakeMessage.hash)
+        Assert.assertEquals("BTest", handshakeMessage.protocol)
     }
 
 }

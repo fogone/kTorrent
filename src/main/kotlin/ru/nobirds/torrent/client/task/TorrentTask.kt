@@ -12,8 +12,9 @@ import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.client.task.file.CompositeFileDescriptor
 import ru.nobirds.torrent.client.task.file.FileDescriptor
 import ru.nobirds.torrent.client.task.requirement.RequirementsStrategy
-import ru.nobirds.torrent.client.task.state.FreeBlockIndex
 import ru.nobirds.torrent.client.task.state.ChoppedState
+import ru.nobirds.torrent.client.task.state.FreeBlockIndex
+import ru.nobirds.torrent.client.task.state.SimpleState
 import ru.nobirds.torrent.client.task.state.State
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.Id
@@ -21,7 +22,6 @@ import ru.nobirds.torrent.utils.queueHandlerThread
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.nio.file.Path
-import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
@@ -44,7 +44,7 @@ public class TorrentTask(val directory:Path,
     private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
     private val state: ChoppedState = ChoppedState(torrent)
-    private val peersState = ConcurrentHashMap<Id, ChoppedState>()
+    private val peersState = ConcurrentHashMap<Id, State>()
 
     private val peers:MutableSet<InetSocketAddress> = ConcurrentSet<InetSocketAddress>()
 
@@ -80,7 +80,7 @@ public class TorrentTask(val directory:Path,
         val bitSet = digestProvider.checkHashes(
                 torrent.pieceLength, torrent.hashes, files.compositeRandomAccessFile)
 
-        state.done(bitSet)
+        state.done(bitSet.toByteArray())
     }
 
     private fun createFiles():List<FileDescriptor> {
@@ -122,15 +122,13 @@ public class TorrentTask(val directory:Path,
         val peerTorrentState = getPeerTorrentState(peer.id)
         peerTorrentState.done(message.pieces)
 
-        val index = requirementsStrategy.next(state, peerTorrentState)
-
-        if (index != null) {
-            sendMessage(RequestBlockMessage(peer, index))
+        requirementsStrategy.next(state, peerTorrentState, 10).forEach {
+            sendMessage(RequestBlockMessage(peer, it))
         }
+
     }
 
     private fun handlePiece(peer:Id, message: PieceMessage) {
-        getPeerTorrentState(peer).done(message.index, message.begin)
         addBlock(message.index, message.begin, message.block)
     }
 
@@ -141,7 +139,7 @@ public class TorrentTask(val directory:Path,
         handlerThread.interrupt()
     }
 
-    private fun getPeerTorrentState(peer: Id) = peersState.concurrentGetOrPut(peer) { ChoppedState(torrent) }
+    private fun getPeerTorrentState(peer: Id) = peersState.concurrentGetOrPut(peer) { SimpleState(state.count) }
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
         peers.add(peer.address)
