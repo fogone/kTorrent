@@ -5,14 +5,13 @@ import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.infiniteLoopThread
 import ru.nobirds.torrent.utils.isPortAvailable
+import java.io.Closeable
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
-public class Dht(val ports:LongRange) {
-
-    private val port = ports.firstOrNull { it.toInt().isPortAvailable() }?.toInt()  ?: throw IllegalStateException("All configured ports used.")
+public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Closeable {
 
     private val requestContainer = DefaultRequestContainer()
 
@@ -37,7 +36,7 @@ public class Dht(val ports:LongRange) {
     init { initialize() }
 
     private fun initialize() {
-        BootstrapHosts.addresses.forEach {
+        bootstrap.forEach {
             server.send(AddressAndMessage(it, messageFactory.createBootstrapFindNodeRequest(localHash)))
         }
 
@@ -65,6 +64,13 @@ public class Dht(val ports:LongRange) {
             peers.findClosest(hash).forEach {
                 server.send(it.address, messageFactory.createAnnouncePeerRequest(hash, tokens.getLocalToken()))
             }
+        }
+    }
+
+    public fun makeInitialized() {
+        if (!initialized) {
+            initialized = true
+            postponedActions.forEach { it() }
         }
     }
 
@@ -160,8 +166,7 @@ public class Dht(val ports:LongRange) {
                 peers.addNodes(findNodeResponse.nodes)
 
                 if(request is BootstrapFindNodeRequest && !initialized) {
-                    initialized = true
-                    postponedActions.forEach { it() }
+                    makeInitialized()
                 }
             }
         }
@@ -180,4 +185,8 @@ public class Dht(val ports:LongRange) {
 
     }
 
+    override fun close() {
+
+        server.close()
+    }
 }

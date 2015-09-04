@@ -80,7 +80,7 @@ public class TorrentTask(val directory:Path,
         val bitSet = digestProvider.checkHashes(
                 torrent.pieceLength, torrent.hashes, files.compositeRandomAccessFile)
 
-        state.done(bitSet.toByteArray())
+        state.done(bitSet)
     }
 
     private fun createFiles():List<FileDescriptor> {
@@ -139,7 +139,7 @@ public class TorrentTask(val directory:Path,
         handlerThread.interrupt()
     }
 
-    private fun getPeerTorrentState(peer: Id) = peersState.concurrentGetOrPut(peer) { SimpleState(state.count) }
+    private fun getPeerTorrentState(peer: Id) = peersState.concurrentGetOrPut(peer) { SimpleState(torrent.pieceCount) }
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
         peers.add(peer.address)
@@ -147,7 +147,7 @@ public class TorrentTask(val directory:Path,
     }
 
     private fun sendState(peer: Peer, state: State) {
-        connectionManager.send(peer.address, BitFieldMessage(state))
+        connectionManager.send(peer.address, BitFieldMessage(state.getBits()))
     }
 
     private fun sendHandshake(hash:Id, address: InetSocketAddress) {

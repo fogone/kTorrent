@@ -25,16 +25,6 @@ public fun <T> Array<T>.component3():T = this[2]
 
 public fun ByteArray.toHexString():String = BigInteger(1, this).toString(16)
 
-public fun <T, R> Iterable<T>.toMap(mapper:(T)->R):Map<R, T> {
-    val result = HashMap<R, T>()
-
-    for (item in this) {
-        result[mapper(item)] = item
-    }
-
-    return result
-}
-
 public fun <K, V> multiValueMapOf(vararg pairs:Pair<K, V>):MultiValueMap<K, V> {
     val map = LinkedMultiValueMap<K, V>()
 
@@ -43,13 +33,6 @@ public fun <K, V> multiValueMapOf(vararg pairs:Pair<K, V>):MultiValueMap<K, V> {
     }
 
     return map
-}
-
-public fun Socket.closeQuietly() {
-    try {
-        close()
-    } catch(e:Exception) {
-    }
 }
 
 public fun ByteArray.toUrlString():String {
@@ -106,51 +89,14 @@ public fun BitSet.setBits(count: Int):Sequence<Int> {
     }
 }
 
-public fun BitSet.clear():Sequence<Int> {
+public fun BitSet.clearBits():Sequence<Int> {
     var last = 0
     return sequence {
         val nextClearBit = nextClearBit(last)
         if (nextClearBit != -1) nextClearBit else null
     }
 }
-
-public fun BitSet.copyTo(bitSet:BitSet, count:Int) {
-    bitSet.clear()
-    setBits(count).forEach { bitSet.set(it) }
-}
-
-public fun BitSet.isAllSet(size:Int):Boolean = cardinality() == size
-
-public fun BitSet.setAll(size:Int, value:Boolean = true) { set(0, size, value) }
-
-public fun BitSet.each(size:Int, value:Boolean, block:(Boolean, Int)->Boolean) {
-    var index = if(value) nextSetBit(0) else nextClearBit(0)
-    while(index != -1 && index <= size) {
-        set(index, block(value, index))
-        index = if(value) nextSetBit(index+1) else nextClearBit(index+1)
-    }
-}
-
-public fun BitSet.findIndex(size:Int, value:Boolean, predicate:(Int)->Boolean):Int {
-    var index = if(value) nextSetBit(0) else nextClearBit(0)
-    while(index != -1 && index <= size) {
-        if(predicate(index))
-            return index
-        index = if(value) nextSetBit(index+1) else nextClearBit(index+1)
-    }
-
-    return -1
-}
-
-public fun BitSet.eachSet(size:Int, block:(Boolean, Int)->Boolean) {
-    each(size, true, block)
-}
-
-public fun BitSet.eachClear(size:Int, block:(Boolean, Int)->Boolean) {
-    each(size, false, block)
-}
-
-public fun BitSet.copy():BitSet = this.clone() as BitSet
+public fun BitSet.copy():BitSet = BitSet.valueOf(this.toByteArray())
 
 public fun <T:Any> T?.equalsNullable(other:T?):Boolean {
     if(this == null && other == null)
@@ -392,4 +338,7 @@ public fun infiniteLoop(block: () -> Unit) {
 public fun infiniteLoopThread(block: () -> Unit):Thread = thread(start = true) { infiniteLoop(block) }
 
 public fun <M> queueHandlerThread(queue:BlockingQueue<M>, handler: (M) -> Unit):Thread = infiniteLoopThread { handler(queue.take()) }
+
+public fun IntRange.availablePort():Int =
+        firstOrNull { it.toInt().isPortAvailable() }?.toInt()  ?: throw IllegalStateException("All configured ports used.")
 

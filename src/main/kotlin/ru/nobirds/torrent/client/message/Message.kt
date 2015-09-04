@@ -10,23 +10,23 @@ interface Message {
 
 }
 
-public open class SimpleMessage(override val messageType:MessageType) : Message
+public data class SimpleMessage(override val messageType:MessageType) : Message
 
-public class HandshakeMessage(val hash: Id, val peer:Id, val protocol:String= "BitTorrent protocol") : SimpleMessage(MessageType.handshake)
+public data class HandshakeMessage(val hash: Id, val peer:Id, val protocol:String= "BitTorrent protocol", override val messageType:MessageType = MessageType.handshake) : Message
 
-public class HaveMessage(val piece:Int) : SimpleMessage(MessageType.have)
+public data class HaveMessage(val piece:Int, override val messageType:MessageType = MessageType.have) : Message
 
-public class BitFieldMessage(val pieces:State) : SimpleMessage(MessageType.bitfield)
+public data class BitFieldMessage(val pieces:BitSet, override val messageType:MessageType = MessageType.bitfield) : Message
 
-public open class AbstractRequestMessage(type:MessageType, val index:Int, val begin:Int, val length:Int) : SimpleMessage(type)
+public abstract data class AbstractRequestMessage(override val messageType: MessageType, val index:Int, val begin:Int, val length:Int) : Message
 
 public class RequestMessage(index:Int, begin:Int, length:Int) : AbstractRequestMessage(MessageType.request, index, begin, length)
 
-public class CancelMessage(index:Int, begin:Int, length:Int) : AbstractRequestMessage(MessageType.cancel, index, begin, length)
+public data class CancelMessage(index:Int, begin:Int, length:Int) : AbstractRequestMessage(MessageType.cancel, index, begin, length)
 
-public class PieceMessage(val index:Int, val begin:Int, val block:ByteArray) : SimpleMessage(MessageType.piece)
+public data class PieceMessage(val index:Int, val begin:Int, val block:ByteArray, override val messageType:MessageType = MessageType.piece) : Message
 
-public class PortMessage(val port:Int) : SimpleMessage(MessageType.port)
+public data class PortMessage(val port:Int, override val messageType:MessageType = MessageType.port) : Message
 
 
 

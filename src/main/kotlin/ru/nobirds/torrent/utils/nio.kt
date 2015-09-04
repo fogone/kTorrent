@@ -12,8 +12,7 @@ import io.netty.util.Attribute
 public fun ChannelFuture.addCompleteListener(listener:(ChannelFuture)->Unit) {
     addListener(object: ChannelFutureListener {
         override fun operationComplete(future: ChannelFuture) {
-            if(future.isSuccess)
-                listener(future)
+            listener(future)
         }
     })
 }

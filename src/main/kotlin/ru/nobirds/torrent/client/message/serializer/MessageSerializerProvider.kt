@@ -1,21 +1,34 @@
 package ru.nobirds.torrent.client.message.serializer
 
+import io.netty.buffer.ByteBuf
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.MessageType
 
 public class MessageSerializerProvider {
 
-    public fun findMessageTypeByValue(t:Int): MessageType = MessageType.values().find { it.value == t }!!
+    private fun findMessageTypeByValue(t:Int): MessageType = MessageType.values().find { it.value == t }!!
 
-    public fun getSerializerByType<T: Message>(t:Int):MessageSerializer<T> = getSerializer(findMessageTypeByValue(t))
+    public fun marshall(message: Message, buffer:ByteBuf) {
+        getMarshaller(message.messageType).write(buffer, message)
+    }
 
-    public fun getSerializer<T:Message>(t:MessageType):MessageSerializer<T> = getSerializerImpl(t) as MessageSerializer<T>
+    private fun getMarshaller(t:MessageType):MessageMarshaller<Message> = getSerializerImpl(t) as MessageMarshaller<Message>
+    private fun getUnmarshaller(t:MessageType):MessageUnmarshaller<Message> = getSerializerImpl(t)
 
-    private fun getSerializerImpl(t:MessageType): MessageSerializer<out Message> = when(t) {
+    public fun unmarshall(buffer: ByteBuf):Message {
+        val length = buffer.readInt()
+        val type = buffer.readByte()
+        val messageType = findMessageTypeByValue(type.toInt())
+        val unmarshaller = getUnmarshaller(messageType)
+        return unmarshaller.read(length-1, messageType, buffer)
+    }
+
+    private fun getSerializerImpl(t:MessageType): MessageSerializer<*> = when(t) {
         MessageType.handshake -> HandshakeMessageSerializer
         MessageType.choke,
         MessageType.unchoke,
-        MessageType.interested -> SimpleMessageSerializer
+        MessageType.interested,
+        MessageType.notInterested -> SimpleMessageSerializer
         MessageType.bitfield -> BitFieldMessageSerializer
         MessageType.have -> HaveMessageSerializer
         MessageType.request -> RequestMessageSerializer

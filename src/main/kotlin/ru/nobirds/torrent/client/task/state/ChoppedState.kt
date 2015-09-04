@@ -1,20 +1,17 @@
 package ru.nobirds.torrent.client.task.state
 
 import ru.nobirds.torrent.client.model.TorrentInfo
-import ru.nobirds.torrent.utils.copyTo
-import ru.nobirds.torrent.utils.divToUp
-import ru.nobirds.torrent.utils.isAllSet
-import ru.nobirds.torrent.utils.setAll
+import ru.nobirds.torrent.utils.*
 import java.util.*
 import kotlin.support.AbstractIterator
 
 public interface State {
 
-    val count:Int
+    val count: Int
 
     fun done()
 
-    fun done(bytes: ByteArray)
+    fun done(bits: BitSet)
 
     fun done(state: State)
 
@@ -24,9 +21,13 @@ public interface State {
 
     fun isDone(piece: Int):Boolean
 
-    fun toBytes():ByteArray
+    fun getBits():BitSet
 
     fun undone()
+
+    fun complete():Sequence<Int>
+
+    fun incomplete():Sequence<Int>
 
 }
 
@@ -36,43 +37,18 @@ public interface IndexedState : State {
 
 }
 
-public fun State.complete():Sequence<Int> = object: Sequence<Int> {
-    private var index = 0
 
-    override fun iterator(): Iterator<Int> = object: AbstractIterator<Int>() {
-        override fun computeNext() {
-            while (index < count && !isDone(index)) {
-                index++
-            }
-
-            if(index==count) done() else setNext(index)
-        }
-    }
-}
-public fun State.incomplete():Sequence<Int> = object: Sequence<Int> {
-    private var index = 0
-
-    override fun iterator(): Iterator<Int> = object: AbstractIterator<Int>() {
-        override fun computeNext() {
-            while (index < count && isDone(index)) {
-                index++
-            }
-
-            if(index==count) done() else setNext(index)
-        }
-    }
-}
-
-public open class SimpleState(override val count:Int) : State {
+public open class SimpleState(override val count: Int) : State {
 
     private val state:BitSet = BitSet(count)
 
     override fun done() {
-        state.setAll(count, true)
+        state.set(0, count)
     }
 
-    public override fun done(bytes:ByteArray) {
-        BitSet.valueOf(bytes).copyTo(this.state, count)
+    public override fun done(bits: BitSet) {
+        undone()
+        bits.setBits(count).forEach { done(it) }
     }
 
     override fun done(piece: Int) {
@@ -84,17 +60,40 @@ public open class SimpleState(override val count:Int) : State {
     }
 
     override fun done(state: State) {
-        this.state.clear()
+        undone()
         state.complete().forEach { this.state.set(it) }
     }
 
-    override fun isDone(): Boolean = state.isAllSet(count)
+    override fun isDone(): Boolean = state.setBits(count).all { state.get(it) }
 
-    override fun toBytes(): ByteArray = state.toByteArray()
+    override fun getBits(): BitSet = state.copy()
 
     override fun undone() {
         state.clear()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if(other == null || other !is State) return false
+        return complete().toSet() == other.complete().toSet()
+    }
+
+    override fun toString(): String {
+        return (0..count).joinToString(",", "[", "]") { if(isDone(it)) "1" else "0" }
+    }
+
+    override fun complete(): Sequence<Int> {
+        var index = 0
+        return sequence {
+            val next = state.nextSetBit(index)
+            if(next != -1) next else null
+        }
+    }
+
+    override fun incomplete(): Sequence<Int> {
+        val complete = complete().toSet()
+        return (0..count).asSequence().filter { it !in complete }
+    }
+
 }
 
 public class SimpleIndexedState(count:Int, override val index:Int) : SimpleState(count), IndexedState
@@ -109,7 +108,7 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
 
     private val commonLastBlockLength = pieceLength - ((blocksInPiece-1) * blockLength)
 
-    override val count: Int
+    public override val count: Int
         get() = torrentInfo.pieceCount
 
     private val commonBlocksCount = (blocksInPiece * (count - 1)).toInt()
@@ -145,9 +144,8 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
         piece(piece).done(block)
     }
 
-    public override fun done(bytes:ByteArray) {
-        val state = BitSet.valueOf(bytes)
-        blocksState.forEachIndexed { i, blockState -> if(state.get(i)) blockState.done() else blockState.undone() }
+    public override fun done(bits: BitSet) {
+        blocksState.forEachIndexed { i, blockState -> if(bits.get(i)) blockState.done() else blockState.undone() }
     }
 
     override fun done(state: State) {
@@ -174,14 +172,19 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
         return FreeBlockIndex(piece, block*blockLength, length)
     }
 
-    override fun toBytes(): ByteArray {
+    override fun getBits(): BitSet {
         val bitSet = BitSet(count)
         blocksState.forEachIndexed { i, state -> bitSet.set(i, state.isDone()) }
-        return bitSet.toByteArray()
+        return bitSet
     }
 
     override fun undone() {
         blocksState.forEach { it.undone() }
     }
+
+    override fun complete(): Sequence<Int> = blocksState.asSequence().filter { it.isDone() }.map { it.index }
+
+    override fun incomplete(): Sequence<Int> = blocksState.asSequence().filter { !it.isDone() }.map { it.index }
+
 }
 

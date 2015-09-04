@@ -6,8 +6,7 @@ import java.nio.file.Paths
 
 @ConfigurationProperties("client")
 public class ClientProperties(
-        val threads:Int = 10,
-        val ports:LongRange = 6881L..6889L,
-        val dhtPorts:LongRange = 11111L..11119L,
+        val ports:IntRange = 6881..6889,
+        val dhtPorts:IntRange = 11111..11119,
         val directory:Path = Paths.get("")
 )

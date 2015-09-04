@@ -8,6 +8,7 @@ import org.springframework.core.convert.converter.Converter
 import ru.nobirds.torrent.client.connection.ConnectionManager
 import ru.nobirds.torrent.client.connection.NettyConnectionManager
 import ru.nobirds.torrent.client.task.TaskManager
+import ru.nobirds.torrent.dht.BootstrapHosts
 import ru.nobirds.torrent.dht.Dht
 import ru.nobirds.torrent.parser.TorrentParser
 import ru.nobirds.torrent.parser.TorrentParserImpl
@@ -16,6 +17,7 @@ import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.peers.PeerManager
 import ru.nobirds.torrent.peers.provider.DhtPeerProvider
 import ru.nobirds.torrent.peers.provider.PeerProvider
+import ru.nobirds.torrent.utils.availablePort
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.MessageDigest
@@ -38,7 +40,7 @@ public open class TorrentClientConfiguration() {
             = TaskManager(config.directory, peerManager, connectionManager, torrentParser(), sha1Provider())
 
     @Bean
-    public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports)
+    public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports.availablePort())
 
     @Bean
     public open fun peerManager(localPeer: Peer, providers:List<PeerProvider>): PeerManager {
@@ -50,7 +52,7 @@ public open class TorrentClientConfiguration() {
     }
 
     @Bean
-    public open fun dht(config: ClientProperties): Dht = Dht(config.dhtPorts)
+    public open fun dht(config: ClientProperties): Dht = Dht(config.dhtPorts.availablePort(), BootstrapHosts.addresses.asSequence())
 
     @Bean
     public open fun dhtPeerProvider(dht:Dht):PeerProvider = DhtPeerProvider(dht)

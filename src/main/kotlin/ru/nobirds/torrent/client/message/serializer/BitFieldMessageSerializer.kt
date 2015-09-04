@@ -11,15 +11,11 @@ public object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {
     override fun read(length: Int, messageType: MessageType, stream: ByteBuf): BitFieldMessage {
         val buffer = ByteArray(length)
         stream.readBytes(buffer)
-
-        val state = SimpleState(buffer.size())
-        state.done(buffer)
-
-        return BitFieldMessage(state)
+        return BitFieldMessage(BitSet.valueOf(buffer))
     }
 
     override fun write(stream: ByteBuf, message: BitFieldMessage) {
-        val bytes = message.pieces.toBytes()
+        val bytes = message.pieces.toByteArray()
 
         stream.writeInt(bytes.size() + 1)
         stream.writeByte(message.messageType.value)

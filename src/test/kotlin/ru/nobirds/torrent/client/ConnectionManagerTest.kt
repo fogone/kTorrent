@@ -1,6 +1,7 @@
 package ru.nobirds.torrent.client
 
 import org.junit.Assert
+import org.junit.Ignore
 import org.junit.Test
 import ru.nobirds.torrent.client.connection.NettyConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage
@@ -11,6 +12,7 @@ import java.net.InetSocketAddress
 public class ConnectionManagerTest {
 
     @Test
+    // @Ignore
     public fun test1() {
         val manager1 = NettyConnectionManager(6500)
         val manager2 = NettyConnectionManager(6501)

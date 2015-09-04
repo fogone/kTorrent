@@ -1,27 +1,34 @@
 package ru.nobirds.torrent.dht
 
+import org.junit.Ignore
 import org.junit.Test
 import ru.nobirds.torrent.utils.Id
+import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import org.junit.Test as test
 
 public class DhtTest {
 
     @Test
+    @Ignore
     public fun test1() {
-        val dht = Dht(11111L..111113L)
+        val dht = Dht(11111, sequenceOf())
+        dht.announce(Id.fromHexString("944D2E1C1443008DDFA34A89AEC282393AC8D883"))
+        dht.makeInitialized()
+
+        val dht2 = Dht(11112, sequenceOf(InetSocketAddress(11111)))
 
         val peers = ConcurrentHashMap<String, Boolean>()
 
-        dht.findPeersForHash(Id.fromHexString("944D2E1C1443008DDFA34A89AEC282393AC8D883")) { address ->
-            val addressString = address.toString()
+        dht2.findPeersForHash(Id.fromHexString("944D2E1C1443008DDFA34A89AEC282393AC8D883")) { address ->
+            address.equals(InetSocketAddress(11111))
 
-            if (!peers.containsKey(addressString)) {
-                peers.put(addressString, true)
-                println(addressString)
-            }
+
         }
 
-        Thread.sleep(1000000)
+        Thread.sleep(10000)
+
+        dht.close()
+        dht2.close()
     }
 }

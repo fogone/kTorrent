@@ -37,7 +37,7 @@ public class TorrentStateTest() {
 
         val bitSet = digestProvider.checkHashes(torrent.info.pieceLength, torrent.info.hashes, compositeFile)
 
-        state.done(bitSet.toByteArray())
+        state.done(bitSet)
 
         Assert.assertTrue(state.isDone())
         Assert.assertEquals(4, state.count)
