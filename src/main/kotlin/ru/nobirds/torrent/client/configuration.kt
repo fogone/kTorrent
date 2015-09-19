@@ -43,7 +43,7 @@ public open class TorrentClientConfiguration() {
     public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports.availablePort())
 
     @Bean
-    public open fun peerManager(localPeer: Peer, providers:List<PeerProvider>): PeerManager {
+    public open fun peerManager(providers:List<PeerProvider>): PeerManager {
         val peerManager = PeerManager()
         for (provider in providers) {
             peerManager.registerProvider(provider)
@@ -61,32 +61,23 @@ public open class TorrentClientConfiguration() {
     public open fun sha1Provider(): DigestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
 
     @Bean
-    public open fun clientRunner(taskManage: TaskManager): ClientCommandLineRunner = ClientCommandLineRunner(taskManage)
+    public open fun clientRunner(taskManager: TaskManager): ClientCommandLineRunner = ClientCommandLineRunner(taskManager)
 
 }
 
 @Configuration
 public open class ConfigConfiguration {
 
-/*
-    @Bean
-    public open fun conversionService(): ConversionService {
-        val conversionService = DefaultConversionService()
-        conversionService.addConverter()
-        return conversionService
-    }
-*/
-
     @Bean
     public open fun stringToPathConverter():Converter<String, Path>
             = Converter { source -> if(source == null) null else Paths.get(source) }
 
     @Bean
-    public open fun stringToLongRangeConverter():Converter<String, LongRange>
+    public open fun stringToIntRangeConverter():Converter<String, IntRange>
             = Converter { source ->
         if(source != null) {
             val (start, end) = source.split("\\.\\.")
-            start.toLong().rangeTo(end.toLong())
+            start.toInt().rangeTo(end.toInt())
         } else null
     }
 

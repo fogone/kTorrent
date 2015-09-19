@@ -14,7 +14,7 @@ import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.utils.asString
 import ru.nobirds.torrent.utils.nullOr
 
-deprecated("Use TorrentParserImpl")
+@Deprecated("Use TorrentParserImpl")
 public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private val HASH_SIZE = 20
@@ -97,7 +97,7 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
         var position = 0
 
-        count.times {
+        repeat(count) {
             val hash = ByteArray(HASH_SIZE)
             System.arraycopy(pieces, position, hash, 0, HASH_SIZE)
             list.add(hash)

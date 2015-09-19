@@ -52,7 +52,7 @@ public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
                 if(files != null)
                 for (file in files.map { it as  BMap }) {
-                    file(file.getLong("length")!!, *file.getStrings("path")!!.copyToArray())
+                    file(file.getLong("length")!!, *file.getStrings("path")!!.toTypedArray())
                 }
             }
         }

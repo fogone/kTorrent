@@ -19,11 +19,6 @@ public class SerializerTest {
     }
 
     @Test
-    public fun handshakeTest() {
-        assertMessages(HandshakeMessage(Id.random(), Id.random()))
-    }
-
-    @Test
     public fun bitfieldTest() {
         val simpleState = SimpleState(10)
         simpleState.done(4)

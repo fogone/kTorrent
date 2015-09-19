@@ -67,7 +67,7 @@ public class HttpAnnounceProvider : AnnounceProvider {
                 "info_hash" to hash.toBytes().toUrlString(),
                 "peer_id" to localPeer.id.toBytes().toUrlString(),
                 //"ip" to localPeer.address.getAddress().toString(),
-                "port" to localPeer.address.getPort().toString(),
+                "port" to localPeer.address.port.toString(),
                 "uploaded" to "0",
                 "downloaded" to "0",
                 "left" to "0"

@@ -16,13 +16,12 @@ public class BEncodeHttpMessageConverter() : AbstractHttpMessageConverter<BMap>(
     }
 
     override fun readInternal(clazz: Class<out BMap>?, inputMessage: HttpInputMessage): BMap {
-        val body = inputMessage.getBody()!!
-        val bytes = body.buffered().readBytes()
+        val bytes = inputMessage.body.buffered().readBytes()
         return Bencoder.decodeBMap(ByteArrayInputStream(bytes))
     }
 
     override fun writeInternal(t: BMap, outputMessage: HttpOutputMessage) {
-        Bencoder.encodeBType(outputMessage.getBody()!!, t)
+        Bencoder.encodeBType(outputMessage.body, t)
     }
 
 }

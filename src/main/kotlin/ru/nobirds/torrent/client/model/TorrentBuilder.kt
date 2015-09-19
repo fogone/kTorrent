@@ -167,7 +167,7 @@ public object Torrents {
 
             hashes(hashes)
 
-            files(root.getName()) {
+            files(root.name) {
                 for (file in files) {
                     file(file.length(), directory.relativize(file.toPath()!!).map { it.toString() })
                 }
@@ -177,7 +177,7 @@ public object Torrents {
         }
     }
 
-    private fun fetchFiles(root:File):List<File> = if(root.isDirectory()) root.listFiles()!!.flatMap { fetchFiles(it) }
+    private fun fetchFiles(root:File):List<File> = if(root.isDirectory) root.listFiles()!!.flatMap { fetchFiles(it) }
                                                     else Collections.singletonList(root)
 
 }

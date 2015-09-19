@@ -1,6 +1,7 @@
 package ru.nobirds.torrent.client.message.serializer
 
 import io.netty.buffer.ByteBuf
+import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.MessageType
 
@@ -16,15 +17,13 @@ public class MessageSerializerProvider {
     private fun getUnmarshaller(t:MessageType):MessageUnmarshaller<Message> = getSerializerImpl(t)
 
     public fun unmarshall(buffer: ByteBuf):Message {
-        val length = buffer.readInt()
         val type = buffer.readByte()
         val messageType = findMessageTypeByValue(type.toInt())
         val unmarshaller = getUnmarshaller(messageType)
-        return unmarshaller.read(length-1, messageType, buffer)
+        return unmarshaller.read(buffer.readableBytes(), messageType, buffer)
     }
 
     private fun getSerializerImpl(t:MessageType): MessageSerializer<*> = when(t) {
-        MessageType.handshake -> HandshakeMessageSerializer
         MessageType.choke,
         MessageType.unchoke,
         MessageType.interested,
@@ -37,5 +36,10 @@ public class MessageSerializerProvider {
         MessageType.port -> PortMessageSerializer
         else -> throw IllegalArgumentException("Illegal message type $t")
     }
+
+    fun unmarshallHandshake(buffer: ByteBuf): HandshakeMessage = HandshakeMessageSerializer.read(buffer)
+
+    fun marshallHandshake(buffer: ByteBuf, message: HandshakeMessage) { HandshakeMessageSerializer.write(buffer, message) }
+
 }
 

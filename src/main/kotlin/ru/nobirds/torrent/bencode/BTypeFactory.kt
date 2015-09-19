@@ -57,7 +57,7 @@ public class BMapBuilder(val bmap:BMap = BMap()) {
     }
 
     public fun value(name:String, date:Date?) {
-        numberValue(name, date) { BNumber().set(BigInteger(it.getTime().toString())) }
+        numberValue(name, date) { BNumber().set(BigInteger(it.time.toString())) }
     }
 
     public fun value(name:String, number:Long?) {

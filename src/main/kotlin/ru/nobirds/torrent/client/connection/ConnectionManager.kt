@@ -8,14 +8,12 @@ import io.netty.channel.ChannelOption
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import ru.nobirds.torrent.bencode.requestQueueStorage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.utils.addCompleteListener
-import ru.nobirds.torrent.utils.channelInitializerHandler
-import ru.nobirds.torrent.utils.childHandler
-import ru.nobirds.torrent.utils.queueHandlerThread
+import ru.nobirds.torrent.utils.*
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.SocketAddress
@@ -24,17 +22,6 @@ import java.util.concurrent.ArrayBlockingQueue
 public data class PeerAndMessage(val peer: Peer, val message: Message)
 public data class AddressAndMessage(val address: InetSocketAddress, val message: Message)
 
-public data class Handshake(var local:Boolean = false, var remote:Boolean = false) {
-
-    public val complete:Boolean
-        get() = local && remote
-
-    public fun check(local: Boolean) {
-        if(local) this.local = true
-        else this.remote = true
-    }
-
-}
 
 public interface ConnectionManager : Closeable {
 
@@ -49,6 +36,8 @@ public interface ConnectionManager : Closeable {
 }
 
 public class NettyConnectionManager(val port:Int) : ConnectionManager {
+
+    private val logger = log()
 
     private val registry = ConnectionRegistry()
     private val incoming = ArrayBlockingQueue<PeerAndMessage>(1000)
@@ -99,18 +88,16 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
                 else {
                     if (it.channel().remoteAddress() != null)
                         registry.unregister(it.channel().remoteAddress())
-                    it.get()
                 }
             }
         } else {
-            val chnl = channel
-            synchronized(chnl) {
-                chnl.writeAndFlush(message.message).sync()
-            }
+            channel.writeAndFlush(message.message)
         }
     }
 
     public override fun send(message: AddressAndMessage) {
+        logger.debug("ConnectionManager accept message {} from {} to send", message.message.javaClass.simpleName, message.address)
+
         outgoing.put(message)
     }
 

@@ -1,5 +1,7 @@
 package ru.nobirds.torrent.dht.message.bencode
 
+import ru.nobirds.torrent.bencode.BBytes
+import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BTypeFactory
 import ru.nobirds.torrent.dht.message.*
@@ -29,12 +31,24 @@ public class BencodeMessageSerializer(val localPeer: Id, val requestContainer: R
         return when(messageType) {
             MessageType.error -> {
                 val requestMessage = requestContainer.removeById(id)
-                val list = map.getBList("e")!!
-                if (requestMessage != null) {
-                    ErrorMessageResponse(requestMessage, list.getInt(0), list.getString(1), localPeer)
+                val pair = map.get("e")!!
+
+                if(pair.value is BList) {
+                    val list = pair.value as BList
+                    if (requestMessage != null) {
+                        ErrorMessageResponse(requestMessage, list.getInt(0), list.getString(1), requestMessage.sender)
+                    } else {
+                        ErrorMessage(id, list.getInt(0), list.getString(1), Id.Zero)
+                    }
                 } else {
-                    ErrorMessage(id, list.getInt(0), list.getString(1), Id.Zero)
+                    val bytes = pair.value as BBytes
+                    if (requestMessage != null) {
+                        ErrorMessageResponse(requestMessage, 0, bytes.toString(), requestMessage.sender)
+                    } else {
+                        ErrorMessage(id, 0, bytes.toString(), Id.Zero)
+                    }
                 }
+
             }
             MessageType.request -> {
                 val queryType = map.getString("q")!!

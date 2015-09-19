@@ -1,72 +1,134 @@
 package ru.nobirds.torrent.client.connection
 
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.Unpooled
+import io.netty.channel.ChannelHandlerAdapter
 import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelPromise
 import io.netty.handler.codec.ByteToMessageCodec
+import io.netty.handler.codec.ByteToMessageDecoder
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder
+import io.netty.handler.codec.MessageToByteEncoder
 import io.netty.util.AttributeKey
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.peers.Peer
+import ru.nobirds.torrent.utils.addCompleteListener
 import ru.nobirds.torrent.utils.getOrSet
+import ru.nobirds.torrent.utils.log
+import ru.nobirds.torrent.utils.rewind
 import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.nio.ByteOrder
+
+class ConnectionState() {
+
+    var localHandshakeSent:Boolean = false
+    var remoteHandshakeReceived:Boolean = false
+
+    var peer:Peer? = null
+
+    var isCurrentMessageHandshake = false
+
+    public val handshakeComplete:Boolean
+        get() = localHandshakeSent && remoteHandshakeReceived
+
+}
+
+object Attributes {
+
+    public val connectionState: AttributeKey<ConnectionState> = AttributeKey.valueOf<ConnectionState>("state")
+
+
+}
+
+fun ChannelHandlerContext.getState():ConnectionState = attr(Attributes.connectionState).getOrSet { ConnectionState() }
 
 public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<Message>(Message::class.java) {
 
-    object Attributes {
-
-        public val peer: AttributeKey<Peer> = AttributeKey.valueOf<Peer>("peer")
-        public val handshake: AttributeKey<Handshake> = AttributeKey.valueOf<Handshake>("handshake")
-
-    }
+    private val logger = log()
 
     override fun decode(ctx: ChannelHandlerContext, buffer: ByteBuf, out: MutableList<Any>) {
-        val length = buffer.readInt()
+        val message = extractFrame(ctx, buffer)
+        if (message != null) {
+            val msg = deserialize(ctx, message)
 
-        buffer.readerIndex(buffer.readerIndex()-4)
+            logger.debug("Received message {} from {}", msg.messageType, ctx.channel().remoteAddress())
 
-        if (length > buffer.readableBytes()-4) {
-            return
+            out.add(msg)
+        }
+    }
+
+    fun extractFrame(ctx: ChannelHandlerContext, buffer: ByteBuf):ByteBuf? {
+        val state = ctx.getState()
+
+        val isHandshake = !state.remoteHandshakeReceived
+
+        val lengthFieldSize = if (isHandshake) 1 else 4
+
+        if (buffer.readableBytes() < lengthFieldSize) {
+            return null
         }
 
-        val message = serializerProvider.unmarshall(buffer)
+        val length = if(isHandshake) buffer.readUnsignedByte().toInt() + 8 + 20 + 20 else buffer.readUnsignedInt().toInt()
 
-        val peer = getPeerOrHandshake(ctx, message, false)
+        if (buffer.readableBytes() < length) {
+            buffer.rewind(-lengthFieldSize)
+            return null
+        }
 
-        out.add(PeerAndMessage(peer, message))
+        val frame = ctx.alloc().buffer(length)
+
+        frame.writeBytes(buffer, buffer.readerIndex(), length)
+
+        buffer.rewind(length)
+
+        if (isHandshake) {
+            state.remoteHandshakeReceived = true
+            state.isCurrentMessageHandshake = true
+        } else {
+            state.isCurrentMessageHandshake = false
+        }
+
+        return frame
+    }
+
+    private fun deserialize(ctx: ChannelHandlerContext, buffer: ByteBuf): Message {
+        val state = ctx.getState()
+
+        return if (state.isCurrentMessageHandshake) {
+            val handshakeMessage = serializerProvider.unmarshallHandshake(buffer)
+
+            state.peer = Peer(handshakeMessage.hash, handshakeMessage.peer,
+                    ctx.channel().remoteAddress() as InetSocketAddress)
+
+            handshakeMessage.complete = state.handshakeComplete
+
+            handshakeMessage
+        } else {
+            serializerProvider.unmarshall(buffer)
+        }
     }
 
     override fun encode(ctx: ChannelHandlerContext, msg: Message, out: ByteBuf) {
-        checkHandshake(ctx, msg, true)
+        if (msg is HandshakeMessage) {
+            val state = ctx.getState()
 
-        serializerProvider.marshall(msg, out)
-    }
+            if(state.localHandshakeSent)
+                throw IllegalArgumentException("Duplicate handshake")
 
-    private fun getPeerOrHandshake(ctx: ChannelHandlerContext, message: Message, local: Boolean): Peer {
-        checkHandshake(ctx, message, local)
+            state.localHandshakeSent = true
 
-        val peer = ctx.attr(Attributes.peer).get()
-
-        requireNotNull(peer, "Need handshake before")
-
-        return peer!!
-    }
-
-    private fun checkHandshake(ctx: ChannelHandlerContext, message: Message, local: Boolean) {
-        if (message is HandshakeMessage) {
-            val handshake = ctx.attr(Attributes.handshake).getOrSet { Handshake() }
-
-            require(handshake.complete.not(), "Unexpected handshake: $message")
-
-            handshake.check(local)
-
-            if (!local) {
-                ctx.attr(Attributes.peer)
-                        .getOrSet { Peer(message.hash, message.peer, ctx.channel().remoteAddress() as InetSocketAddress) }
-            }
+            serializerProvider.marshallHandshake(out, msg)
         } else {
-            require(ctx.attr(Attributes.handshake).get()?.complete ?: false)
+            serializerProvider.marshall(msg, out)
         }
+
+        logger.debug("Sent message {} to {}", msg.messageType, ctx.channel().remoteAddress())
     }
 
+    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+        ctx.channel().close()
+    }
 }

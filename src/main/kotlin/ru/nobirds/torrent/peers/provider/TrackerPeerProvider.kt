@@ -71,13 +71,13 @@ public class TrackerPeerProvider() : AbstractPeerProvider() {
     private fun mapException(e:Exception):TrackerStatus = when(e) {
         is InfoHashNotFoundException -> TrackerStatus.notFound
         is HttpServerErrorException ->
-            if(e.getStatusCode() == HttpStatus.NOT_FOUND) TrackerStatus.notFound else TrackerStatus.error
+            if(e.statusCode == HttpStatus.NOT_FOUND) TrackerStatus.notFound else TrackerStatus.error
         else -> TrackerStatus.error
     }
 
     private fun processTracker(hash: Id, tracker: Tracker) {
-        val announceProvider = announceProviders[tracker.uri.getScheme()]
-                ?: throw RuntimeException("Schema ${tracker.uri.getScheme()} not supported.")
+        val announceProvider = announceProviders[tracker.uri.scheme]
+                ?: throw RuntimeException("Schema ${tracker.uri.scheme} not supported.")
 
         val trackerInfo = announceProvider.getTrackerInfoByUrl(tracker.uri, Peer(Id.Zero, Id.Zero, InetSocketAddress(0)), hash)
 

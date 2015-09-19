@@ -9,7 +9,7 @@ import java.nio.file.Paths
 public class RandomAccessTest {
 
 
-    Test
+    @Test
     public fun test1() {
         val file = CompositeRandomAccessFile(
                 arrayOf("file1.txt", "file2.txt").map {

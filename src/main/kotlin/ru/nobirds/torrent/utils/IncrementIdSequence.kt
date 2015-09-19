@@ -6,6 +6,6 @@ public class IncrementIdSequence : IdSequence {
 
     private val counter = AtomicLong(1)
 
-    override fun next(): String = counter.getAndIncrement().toString()
+    override fun next(): String = counter.andIncrement.toString()
 
 }

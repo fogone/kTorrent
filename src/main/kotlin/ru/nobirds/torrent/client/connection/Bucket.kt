@@ -38,7 +38,7 @@ class Bucket() {
 
     fun add(key:SelectionKey) {
         val channel = key.channel() as SocketChannel
-        val address = channel.getRemoteAddress()
+        val address = channel.remoteAddress
 
         keys.remove(address)?.channel()?.close()
 
@@ -47,14 +47,14 @@ class Bucket() {
     }
 
     fun remove(channel: SocketChannel) {
-        val address = channel.getLocalAddress()
+        val address = channel.localAddress
         keys.remove(address)?.channel()?.close()
         distributionStrategy.remove(channel)
     }
 
     fun contains(address: SocketAddress): Boolean {
         val key = keys[address]
-        return key != null && key.isValid()
+        return key != null && key.isValid
     }
 
     fun close() {

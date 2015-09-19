@@ -18,6 +18,7 @@ import ru.nobirds.torrent.client.task.state.SimpleState
 import ru.nobirds.torrent.client.task.state.State
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.Id
+import ru.nobirds.torrent.utils.log
 import ru.nobirds.torrent.utils.queueHandlerThread
 import java.io.Closeable
 import java.net.InetSocketAddress
@@ -30,6 +31,8 @@ public class TorrentTask(val directory:Path,
                          val digestProvider: DigestProvider,
                          val connectionManager:ConnectionManager,
                          val requirementsStrategy: RequirementsStrategy) : Closeable {
+
+    private val logger = log()
 
     public val hash:Id = Id.fromBytes(torrent.hash!!)
 
@@ -94,6 +97,8 @@ public class TorrentTask(val directory:Path,
     }
 
     private fun handleMessage(message: TaskMessage) {
+        logger.debug("Message {} handled by task {}", message.javaClass.simpleName, hash)
+
         when(message) {
             is HandleTaskMessage -> handleIncomingMessage(message.message)
             is RehashTorrentFilesMessage -> rehashTorrentFiles()
@@ -111,6 +116,8 @@ public class TorrentTask(val directory:Path,
     }
 
     private fun handleIncomingMessage(message: PeerAndMessage) {
+        logger.debug("Torrent message {} from {} handled by task {}", message.message.messageType, message.peer.address, hash)
+
         when (message.message) {
             is HandshakeMessage -> handleHandshake(message.peer, message.message)
             is BitFieldMessage -> handleBifField(message.peer, message.message)
@@ -132,8 +139,11 @@ public class TorrentTask(val directory:Path,
         addBlock(message.index, message.begin, message.block)
     }
 
-    private fun newPeers(peers:Sequence<InetSocketAddress>):Sequence<InetSocketAddress>
-            = peers.filter { it !in this.peers }
+    private fun newPeers(peers:Sequence<InetSocketAddress>):Sequence<InetSocketAddress> {
+        val new = peers.filter { it !in this.peers }.toList()
+        this.peers.addAll(new)
+        return new.asSequence()
+    }
 
     override fun close() {
         handlerThread.interrupt()
@@ -143,7 +153,11 @@ public class TorrentTask(val directory:Path,
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
         peers.add(peer.address)
-        sendState(peer, piecesState)
+        if (message.complete) {
+            sendState(peer, piecesState)
+        } else {
+            sendHandshake(peer.hash, peer.address)
+        }
     }
 
     private fun sendState(peer: Peer, state: State) {

@@ -13,7 +13,7 @@ import java.security.MessageDigest
 
 public class TorrentStateTest() {
 
-    Test
+    @Test
     public fun test1() {
         //val directory = File("D://Torrents//Vikings - Season 1 (AlexFilm) WEB-DL 1080p").toPath()
         val directory = File("D:\\Torrents\\4R6").toPath()
@@ -22,7 +22,7 @@ public class TorrentStateTest() {
         System.out.println(TorrentSerializer().torrentToBMap(torrent).toString())
     }
 
-    Test
+    @Test
     public fun test2() {
         val digestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
 

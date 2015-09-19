@@ -59,7 +59,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
     public fun write(b:ByteArray, off:Int, len:Int) {
         val toWrite = len - off
 
-        val currentPosition = current.getFilePointer()
+        val currentPosition = current.filePointer
         val currentLength = current.length()
 
         if(currentPosition + toWrite <= currentLength) {
@@ -86,7 +86,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
     public fun read(b:ByteArray, off:Int, len:Int):Int {
         val toRead = len - off
 
-        val currentPosition = current.getFilePointer()
+        val currentPosition = current.filePointer
         val currentLength = current.length()
 
         if(currentPosition + toRead <= currentLength) {

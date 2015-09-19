@@ -2,7 +2,7 @@ package ru.nobirds.torrent.client.message
 
 public enum class MessageType(val value:Int) {
 
-    handshake('B'.toInt()),
+    handshake(-1),
     choke(0),
     unchoke(1),
     interested(2),

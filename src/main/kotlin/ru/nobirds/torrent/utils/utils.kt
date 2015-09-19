@@ -1,5 +1,8 @@
 package ru.nobirds.torrent.utils
 
+import io.netty.buffer.ByteBuf
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import ru.nobirds.torrent.peers.Peer
@@ -13,6 +16,7 @@ import java.security.MessageDigest
 import java.util.*
 import java.util.concurrent.BlockingQueue
 import kotlin.concurrent.thread
+import kotlin.properties.ReadOnlyProperty
 
 fun <P:Any, R:Any> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -326,12 +330,15 @@ public fun String.hexToByteArray(): ByteArray {
 }
 
 public fun infiniteLoop(block: () -> Unit) {
-    try {
-        while (Thread.currentThread().isInterrupted.not()) {
+    while (Thread.currentThread().isInterrupted.not()) {
+        try {
             block()
+        } catch(e: InterruptedException) {
+            // do nothing
+        } catch(e: Exception) {
+            e.printStackTrace()
+            break
         }
-    } catch(e: InterruptedException) {
-        // do nothing
     }
 }
 
@@ -342,3 +349,10 @@ public fun <M> queueHandlerThread(queue:BlockingQueue<M>, handler: (M) -> Unit):
 public fun IntRange.availablePort():Int =
         firstOrNull { it.toInt().isPortAvailable() }?.toInt()  ?: throw IllegalStateException("All configured ports used.")
 
+
+public fun ByteBuf.rewind(bytesCount:Int): ByteBuf {
+    readerIndex(readerIndex() + bytesCount)
+    return this
+}
+
+public inline fun <reified T:Any> T.log():Logger = LoggerFactory.getLogger(T::class.java)

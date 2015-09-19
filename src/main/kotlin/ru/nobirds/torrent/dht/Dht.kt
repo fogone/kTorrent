@@ -37,7 +37,7 @@ public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Close
 
     private fun initialize() {
         bootstrap.forEach {
-            server.send(AddressAndMessage(it, messageFactory.createBootstrapFindNodeRequest(localHash)))
+            server.send(it, messageFactory.createBootstrapFindNodeRequest(localHash))
         }
 
         infiniteLoopThread {
