@@ -1,7 +1,7 @@
 package ru.nobirds.torrent.client.model
 
-import java.util.Date
 import ru.nobirds.torrent.utils.equalsNullable
+import java.util.*
 
 public data class Torrent(
         val info:TorrentInfo,

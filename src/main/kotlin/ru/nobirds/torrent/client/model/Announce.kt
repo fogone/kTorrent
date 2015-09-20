@@ -1,8 +1,6 @@
 package ru.nobirds.torrent.client.model
 
-import java.net.URL
-import java.util.Collections
-import java.util.ArrayList
+import java.util.*
 
 public data class Announce(
         val url:String,

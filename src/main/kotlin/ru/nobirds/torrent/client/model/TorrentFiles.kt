@@ -1,8 +1,7 @@
 package ru.nobirds.torrent.client.model
 
-import java.util.Collections
-import java.util.ArrayList
 import ru.nobirds.torrent.utils.equalsNullable
+import java.util.*
 
 
 public data class TorrentFiles(

@@ -3,7 +3,6 @@ package ru.nobirds.torrent.client.message.serializer
 import io.netty.buffer.ByteBuf
 import ru.nobirds.torrent.client.message.BitFieldMessage
 import ru.nobirds.torrent.client.message.MessageType
-import ru.nobirds.torrent.client.task.state.SimpleState
 import java.util.*
 
 public object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {

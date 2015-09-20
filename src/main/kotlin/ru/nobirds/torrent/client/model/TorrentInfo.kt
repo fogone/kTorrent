@@ -1,8 +1,7 @@
 package ru.nobirds.torrent.client.model
 
-import java.util.ArrayList
-import java.util.Collections
 import ru.nobirds.torrent.utils.equalsList
+import java.util.*
 
 public data class TorrentInfo(
         val pieceLength:Long,

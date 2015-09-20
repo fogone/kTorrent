@@ -1,8 +1,8 @@
 package ru.nobirds.torrent.announce
 
-import java.net.URI
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.Id
+import java.net.URI
 
 public class UdpAnnounceProvider : AnnounceProvider {
 

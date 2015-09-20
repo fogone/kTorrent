@@ -1,10 +1,9 @@
 package ru.nobirds.torrent.parser
 
 import ru.nobirds.torrent.bencode.*
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
-
-import java.io.ByteArrayOutputStream
 
 public object Bencoder {
 

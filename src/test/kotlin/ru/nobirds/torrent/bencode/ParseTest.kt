@@ -1,22 +1,17 @@
 package ru.nobirds.torrent.bencode
 
 import io.netty.buffer.Unpooled
-import org.junit.Test
-import java.io.FileInputStream
-import java.math.BigInteger
-import java.io.FileOutputStream
 import org.junit.Assert
-import ru.nobirds.torrent.parser.TorrentParserImpl
+import org.junit.Test
+import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.parser.Bencoder
+import ru.nobirds.torrent.parser.OldTorrentParserImpl
+import ru.nobirds.torrent.parser.TorrentParserImpl
+import ru.nobirds.torrent.parser.TorrentSerializer
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import ru.nobirds.torrent.client.DigestProvider
-import java.net.ServerSocket
-import java.io.File
-import java.net.URLEncoder
-import java.net.URLDecoder
-import ru.nobirds.torrent.parser.TorrentSerializer
-import ru.nobirds.torrent.parser.OldTorrentParserImpl
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.security.MessageDigest
 
 

@@ -3,7 +3,7 @@ package ru.nobirds.torrent.utils
 import io.netty.buffer.ByteBuf
 import java.math.BigInteger
 import java.security.SecureRandom
-import java.util.Arrays
+import java.util.*
 
 public class Id(val size:Int = 20, factory:(Int)->Byte) {
 

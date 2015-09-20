@@ -3,9 +3,8 @@ package ru.nobirds.torrent.client.connection
 import java.net.SocketAddress
 import java.nio.channels.SelectionKey
 import java.nio.channels.SocketChannel
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.Random
-import java.util.ArrayList
 
 class Bucket() {
 

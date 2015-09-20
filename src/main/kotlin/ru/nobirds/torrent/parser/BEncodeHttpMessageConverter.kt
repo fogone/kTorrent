@@ -1,13 +1,11 @@
 package ru.nobirds.torrent.parser
 
-import org.springframework.http.converter.AbstractHttpMessageConverter
 import org.springframework.http.HttpInputMessage
 import org.springframework.http.HttpOutputMessage
-import ru.nobirds.torrent.parser.Bencoder
 import org.springframework.http.MediaType
+import org.springframework.http.converter.AbstractHttpMessageConverter
 import ru.nobirds.torrent.bencode.BMap
 import java.io.ByteArrayInputStream
-import java.io.FileOutputStream
 
 public class BEncodeHttpMessageConverter() : AbstractHttpMessageConverter<BMap>(MediaType.ALL) {
 

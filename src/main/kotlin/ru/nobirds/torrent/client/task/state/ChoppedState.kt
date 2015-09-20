@@ -1,9 +1,10 @@
 package ru.nobirds.torrent.client.task.state
 
 import ru.nobirds.torrent.client.model.TorrentInfo
-import ru.nobirds.torrent.utils.*
+import ru.nobirds.torrent.utils.copy
+import ru.nobirds.torrent.utils.divToUp
+import ru.nobirds.torrent.utils.setBits
 import java.util.*
-import kotlin.support.AbstractIterator
 
 public interface State {
 

@@ -4,7 +4,6 @@ import ru.nobirds.torrent.dht.message.*
 import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.infiniteLoopThread
-import ru.nobirds.torrent.utils.isPortAvailable
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.util.*
@@ -44,6 +43,8 @@ public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Close
             handleMessage(server.read())
         }
     }
+
+    public fun hasPeersFor(hash: Id):Boolean = peers.getValue(hash).isNotEmpty()
 
     public fun findPeersForHash(hash: Id, callback:(InetSocketAddress)->Unit) {
         processAction {

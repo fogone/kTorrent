@@ -18,7 +18,7 @@ import java.util.*
 public class TaskManager(val directory: Path,
                          val peerManager: PeerProvider,
                          val connectionManager: ConnectionManager,
-                         val parserService: TorrentParser,
+                         val torrentParser: TorrentParser,
                          val digestProvider: DigestProvider) {
 
     private val logger = log()
@@ -40,7 +40,7 @@ public class TaskManager(val directory: Path,
     }
 
     public fun add(torrent:InputStream, target:Path = directory) {
-        add(parserService.parse(torrent), target)
+        add(torrentParser.parse(torrent), target)
     }
 
     public fun add(torrent:Torrent, target:Path = directory) {
@@ -48,7 +48,11 @@ public class TaskManager(val directory: Path,
 
         if (id !in tasks.keySet()) {
             addTask(createTask(target, torrent))
+
+            logger.info("Created new task {}", id)
         } else {
+            logger.info("Task {} already managed, will try rehash it.", id)
+
             task(id).sendMessage(RehashTorrentFilesMessage())
         }
     }

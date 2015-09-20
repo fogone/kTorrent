@@ -1,12 +1,8 @@
 package ru.nobirds.torrent.peers
 
-import ru.nobirds.torrent.utils.Id
-import java.util.ArrayList
-import ru.nobirds.torrent.utils.LinksCounter
-import java.util.HashMap
-import java.util.HashSet
-import java.util.Collections
 import ru.nobirds.torrent.peers.provider.PeerProvider
+import ru.nobirds.torrent.utils.Id
+import java.util.*
 
 public class PeerManager : PeerProvider {
 

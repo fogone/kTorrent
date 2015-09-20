@@ -9,14 +9,16 @@ import ru.nobirds.torrent.peers.Peer
 import java.io.File
 import java.io.RandomAccessFile
 import java.math.BigInteger
-import java.net.*
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.SocketException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.util.*
 import java.util.concurrent.BlockingQueue
 import kotlin.concurrent.thread
-import kotlin.properties.ReadOnlyProperty
 
 fun <P:Any, R:Any> P?.nullOr(body:P.()->R):R?
         = if(this == null) null else body()
@@ -89,6 +91,7 @@ public fun BitSet.setBits(count: Int):Sequence<Int> {
     var last = 0
     return sequence {
         val nextSetBit = nextSetBit(last)
+        last = nextSetBit
         if (nextSetBit != -1 || nextSetBit < count) nextSetBit else null
     }
 }
@@ -97,6 +100,7 @@ public fun BitSet.clearBits():Sequence<Int> {
     var last = 0
     return sequence {
         val nextClearBit = nextClearBit(last)
+        last = nextClearBit
         if (nextClearBit != -1) nextClearBit else null
     }
 }

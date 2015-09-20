@@ -1,12 +1,11 @@
 package ru.nobirds.torrent.parser
 
-import ru.nobirds.torrent.client.model.Torrent
-import java.io.OutputStream
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BTypeFactory
-import java.math.BigInteger
-import java.io.ByteArrayOutputStream
+import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.TorrentInfo
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 
 public class TorrentSerializer {
 

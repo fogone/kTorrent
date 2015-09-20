@@ -1,12 +1,10 @@
 package ru.nobirds.torrent.client
 
 
-import java.security.MessageDigest
-import java.util.BitSet
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
-import java.io.DataInput
-import java.util.ArrayList
 import ru.nobirds.torrent.utils.equalsArray
+import java.security.MessageDigest
+import java.util.*
 
 public class DigestProvider(val digestFactory:()-> MessageDigest) {
 
@@ -70,6 +68,6 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
             position += piece
         }
 
-        return messageDigest.digest()!!
+        return messageDigest.digest()
     }
 }

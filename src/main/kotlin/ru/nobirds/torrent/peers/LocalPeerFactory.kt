@@ -1,7 +1,6 @@
 package ru.nobirds.torrent.peers
 
 import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.utils.isPortAvailable
 import java.net.InetSocketAddress
 
 public class LocalPeerFactory(val port:Int) {

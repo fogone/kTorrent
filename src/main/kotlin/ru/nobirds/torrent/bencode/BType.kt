@@ -1,9 +1,9 @@
 package ru.nobirds.torrent.bencode
 
-import java.io.StringWriter
-import java.io.Writer
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import java.io.StringWriter
+import java.io.Writer
 
 public interface BType {
 

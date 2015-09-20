@@ -1,9 +1,7 @@
 package ru.nobirds.torrent.client.message.serializer
 
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
 import ru.nobirds.torrent.client.message.HandshakeMessage
-import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.utils.Id
 import java.nio.charset.Charset
 

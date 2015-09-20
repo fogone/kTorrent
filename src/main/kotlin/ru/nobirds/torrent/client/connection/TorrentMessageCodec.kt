@@ -1,26 +1,17 @@
 package ru.nobirds.torrent.client.connection
 
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
-import io.netty.channel.ChannelHandlerAdapter
 import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.ChannelPromise
 import io.netty.handler.codec.ByteToMessageCodec
-import io.netty.handler.codec.ByteToMessageDecoder
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder
-import io.netty.handler.codec.MessageToByteEncoder
 import io.netty.util.AttributeKey
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.utils.addCompleteListener
 import ru.nobirds.torrent.utils.getOrSet
 import ru.nobirds.torrent.utils.log
 import ru.nobirds.torrent.utils.rewind
 import java.net.InetSocketAddress
-import java.net.SocketAddress
-import java.nio.ByteOrder
 
 class ConnectionState() {
 

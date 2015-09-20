@@ -1,9 +1,9 @@
 package ru.nobirds.torrent.peers.provider
 
-import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.peers.PeerListener
 import ru.nobirds.torrent.peers.PeerEvent
+import ru.nobirds.torrent.peers.PeerListener
 import ru.nobirds.torrent.peers.PeerListenerWrapper
+import ru.nobirds.torrent.utils.Id
 
 public interface PeerProvider {
 

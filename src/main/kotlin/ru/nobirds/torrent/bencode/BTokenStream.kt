@@ -2,7 +2,6 @@ package ru.nobirds.torrent.bencode
 
 import io.netty.buffer.ByteBuf
 import java.io.InputStream
-import kotlin.properties.Delegates
 
 public interface BTokenStream {
 

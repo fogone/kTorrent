@@ -1,7 +1,10 @@
 package ru.nobirds.torrent.client.message.serializer
 
 import io.netty.buffer.ByteBuf
-import ru.nobirds.torrent.client.message.*
+import ru.nobirds.torrent.client.message.AbstractRequestMessage
+import ru.nobirds.torrent.client.message.CancelMessage
+import ru.nobirds.torrent.client.message.MessageType
+import ru.nobirds.torrent.client.message.RequestMessage
 
 public abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage> : MessageSerializer<M> {
 

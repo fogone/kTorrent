@@ -6,7 +6,6 @@ import org.junit.Test
 import ru.nobirds.torrent.client.message.*
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.client.task.state.SimpleState
-import ru.nobirds.torrent.utils.Id
 
 public class SerializerTest {
 

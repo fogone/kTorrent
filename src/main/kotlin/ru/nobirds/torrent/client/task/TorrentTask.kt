@@ -20,8 +20,10 @@ import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.log
 import ru.nobirds.torrent.utils.queueHandlerThread
+import ru.nobirds.torrent.utils.setBits
 import java.io.Closeable
 import java.net.InetSocketAddress
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
@@ -44,9 +46,10 @@ public class TorrentTask(val directory:Path,
 
     private val messages = ArrayBlockingQueue<TaskMessage>(1000)
 
+    private val state: ChoppedState = ChoppedState(torrent)
+
     private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-    private val state: ChoppedState = ChoppedState(torrent)
     private val peersState = ConcurrentHashMap<Id, State>()
 
     private val peers:MutableSet<InetSocketAddress> = ConcurrentSet<InetSocketAddress>()
@@ -58,6 +61,7 @@ public class TorrentTask(val directory:Path,
     }
 
     private fun addBlock(index: FreeBlockIndex, block:ByteArray) {
+        logger.debug("Block {} add for task {}", index, hash)
 /*
         val file = files.compositeRandomAccessFile
         val blockIndex = state.freeIndexToBlockIndex(index.piece, index.begin, index.length) ?: return
@@ -80,8 +84,14 @@ public class TorrentTask(val directory:Path,
     }
 
     private fun rehashTorrentFiles() {
+        logger.debug("Task {} starting rehash", hash)
+
         val bitSet = digestProvider.checkHashes(
                 torrent.pieceLength, torrent.hashes, files.compositeRandomAccessFile)
+
+        val doneCount = bitSet.setBits(torrent.pieceCount).count()
+
+        logger.info("Task {} rehashed, done: {}/{}", hash, doneCount, torrent.pieceCount)
 
         state.done(bitSet)
     }
@@ -91,7 +101,10 @@ public class TorrentTask(val directory:Path,
 
         val parent = directory.resolve(files.name)
 
-        // if(files exists) sendMessage(UpdateTorrentStateMessage())
+        if (Files.exists(parent)) {
+            logger.info("Task {} files exists and will be rehashed", hash)
+            sendMessage(RehashTorrentFilesMessage())
+        }
 
         return files.files.map { FileDescriptor(parent, it) }
     }
@@ -153,11 +166,12 @@ public class TorrentTask(val directory:Path,
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
         peers.add(peer.address)
-        if (message.complete) {
-            sendState(peer, piecesState)
-        } else {
+
+        if (!message.complete) {
             sendHandshake(peer.hash, peer.address)
         }
+
+        sendState(peer, piecesState)
     }
 
     private fun sendState(peer: Peer, state: State) {

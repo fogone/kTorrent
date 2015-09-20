@@ -1,15 +1,13 @@
 package ru.nobirds.torrent.client.model
 
-import java.util.Date
-import kotlin.properties.Delegates
-import java.util.ArrayList
 import ru.nobirds.torrent.client.DigestProvider
-import java.nio.file.Path
-import ru.nobirds.torrent.parser.TorrentSerializer
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
-import java.io.File
-import java.util.Collections
+import ru.nobirds.torrent.parser.TorrentSerializer
 import ru.nobirds.torrent.utils.randomAccess
+import java.io.File
+import java.nio.file.Path
+import java.util.*
+import kotlin.properties.Delegates
 
 public class TorrentFilesBuilder(val name:String) {
 

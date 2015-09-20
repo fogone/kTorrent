@@ -13,7 +13,6 @@ import ru.nobirds.torrent.dht.Dht
 import ru.nobirds.torrent.parser.TorrentParser
 import ru.nobirds.torrent.parser.TorrentParserImpl
 import ru.nobirds.torrent.peers.LocalPeerFactory
-import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.peers.PeerManager
 import ru.nobirds.torrent.peers.provider.DhtPeerProvider
 import ru.nobirds.torrent.peers.provider.PeerProvider

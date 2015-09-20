@@ -1,8 +1,8 @@
 package ru.nobirds.torrent.parser
 
-import java.io.InputStream
-import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.client.model.Torrent
+import java.io.InputStream
 
 public interface TorrentParser {
 

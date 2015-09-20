@@ -1,7 +1,6 @@
 package ru.nobirds.torrent.client
 
 import org.junit.Assert
-import org.junit.Ignore
 import org.junit.Test
 import ru.nobirds.torrent.client.connection.NettyConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage

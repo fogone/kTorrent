@@ -1,18 +1,13 @@
 package ru.nobirds.torrent.parser
 
-import ru.nobirds.torrent.client.model.Torrent
-import ru.nobirds.torrent.bencode.BMap
-import ru.nobirds.torrent.client.model.Announce
-import java.util.Collections
-import ru.nobirds.torrent.client.model.TorrentInfo
-import ru.nobirds.torrent.client.DigestProvider
-import ru.nobirds.torrent.client.model.TorrentFiles
-import ru.nobirds.torrent.client.model.TorrentFile
-import java.util.ArrayList
-import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BBytes
+import ru.nobirds.torrent.bencode.BList
+import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.client.DigestProvider
+import ru.nobirds.torrent.client.model.*
 import ru.nobirds.torrent.utils.asString
 import ru.nobirds.torrent.utils.nullOr
+import java.util.*
 
 @Deprecated("Use TorrentParserImpl")
 public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
