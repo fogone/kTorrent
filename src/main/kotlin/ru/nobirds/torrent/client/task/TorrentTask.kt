@@ -4,10 +4,7 @@ import io.netty.util.internal.ConcurrentSet
 import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.connection.ConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage
-import ru.nobirds.torrent.client.message.BitFieldMessage
-import ru.nobirds.torrent.client.message.HandshakeMessage
-import ru.nobirds.torrent.client.message.PieceMessage
-import ru.nobirds.torrent.client.message.RequestMessage
+import ru.nobirds.torrent.client.message.*
 import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.client.task.file.CompositeFileDescriptor
 import ru.nobirds.torrent.client.task.file.FileDescriptor
@@ -116,12 +113,12 @@ public class TorrentTask(val directory:Path,
             is HandleTaskMessage -> handleIncomingMessage(message.message)
             is RehashTorrentFilesMessage -> rehashTorrentFiles()
             is AddPeersMessage -> handleAddPeers(message.peers)
-            is RequestBlockMessage -> sendRequest(message.peer.address, message.index)
+            is RequestBlockMessage -> sendRequest(message.peer, message.index)
         }
     }
 
-    private fun sendRequest(address: InetSocketAddress, index: FreeBlockIndex) {
-        connectionManager.send(address, RequestMessage(index.piece, index.begin, index.length))
+    private fun sendRequest(peer: Peer, index: FreeBlockIndex) {
+        connectionManager.send(peer, RequestMessage(index.piece, index.begin, index.length))
     }
 
     private fun handleAddPeers(peers: Set<InetSocketAddress>) {
@@ -134,7 +131,28 @@ public class TorrentTask(val directory:Path,
         when (message.message) {
             is HandshakeMessage -> handleHandshake(message.peer, message.message)
             is BitFieldMessage -> handleBifField(message.peer, message.message)
+            is HaveMessage -> handleHave(message.peer, message.message)
             is PieceMessage -> handlePiece(message.peer.id, message.message)
+            is RequestMessage -> handleRequest(message.peer, message.message)
+        }
+    }
+
+    private fun handleRequest(peer: Peer, message: RequestMessage) {
+        if (state.isDone(message.index)) {
+            val globalIndex = state.getGlobalIndex(FreeBlockIndex(message.index, message.begin, message.length))
+
+            val bytes = files.compositeRandomAccessFile.read(globalIndex)
+
+            connectionManager.send(peer, PieceMessage(message.index, message.begin, bytes))
+        }
+    }
+
+    private fun handleHave(peer: Peer, message: HaveMessage) {
+        val peerTorrentState = getPeerTorrentState(peer.id)
+        peerTorrentState.done(message.piece)
+
+        requirementsStrategy.next(state, peerTorrentState, 10).forEach {
+            sendMessage(RequestBlockMessage(peer, it))
         }
     }
 
@@ -145,7 +163,6 @@ public class TorrentTask(val directory:Path,
         requirementsStrategy.next(state, peerTorrentState, 10).forEach {
             sendMessage(RequestBlockMessage(peer, it))
         }
-
     }
 
     private fun handlePiece(peer:Id, message: PieceMessage) {
@@ -175,11 +192,11 @@ public class TorrentTask(val directory:Path,
     }
 
     private fun sendState(peer: Peer, state: State) {
-        connectionManager.send(peer.address, BitFieldMessage(state.getBits()))
+        connectionManager.send(peer, BitFieldMessage(state.getBits()))
     }
 
     private fun sendHandshake(hash:Id, address: InetSocketAddress) {
-        connectionManager.send(address, HandshakeMessage(hash, localPeer))
+        connectionManager.send(Peer(hash, Id.Zero, address), HandshakeMessage(hash, localPeer))
     }
 
 

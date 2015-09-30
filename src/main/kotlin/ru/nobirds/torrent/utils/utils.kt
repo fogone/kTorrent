@@ -92,7 +92,7 @@ public fun BitSet.setBits(count: Int):Sequence<Int> {
     return sequence {
         val nextSetBit = nextSetBit(last)
         last = nextSetBit
-        if (nextSetBit != -1 || nextSetBit < count) nextSetBit else null
+        if (nextSetBit != -1 && nextSetBit < count) nextSetBit else null
     }
 }
 
@@ -346,9 +346,11 @@ public fun infiniteLoop(block: () -> Unit) {
     }
 }
 
-public fun infiniteLoopThread(block: () -> Unit):Thread = thread(start = true) { infiniteLoop(block) }
+public fun infiniteLoopThread(block: () -> Unit):Thread =
+        thread(start = true) { infiniteLoop(block) }
 
-public fun <M> queueHandlerThread(queue:BlockingQueue<M>, handler: (M) -> Unit):Thread = infiniteLoopThread { handler(queue.take()) }
+public fun <M> queueHandlerThread(queue:BlockingQueue<M>, handler: (M) -> Unit):Thread =
+        infiniteLoopThread { handler(queue.take()) }
 
 public fun IntRange.availablePort():Int =
         firstOrNull { it.toInt().isPortAvailable() }?.toInt()  ?: throw IllegalStateException("All configured ports used.")

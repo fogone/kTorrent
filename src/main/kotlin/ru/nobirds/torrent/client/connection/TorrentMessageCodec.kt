@@ -36,7 +36,7 @@ object Attributes {
 
 fun ChannelHandlerContext.getState():ConnectionState = attr(Attributes.connectionState).getOrSet { ConnectionState() }
 
-public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<Message>(Message::class.java) {
+public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<PeerAndMessage>(PeerAndMessage::class.java) {
 
     private val logger = log()
 
@@ -47,7 +47,7 @@ public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvid
 
             logger.debug("Received message {} from {}", msg.messageType, ctx.channel().remoteAddress())
 
-            out.add(msg)
+            out.add(PeerAndMessage(ctx.getState().peer!!, msg))
         }
     }
 
@@ -102,7 +102,9 @@ public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvid
         }
     }
 
-    override fun encode(ctx: ChannelHandlerContext, msg: Message, out: ByteBuf) {
+    override fun encode(ctx: ChannelHandlerContext, message: PeerAndMessage, out: ByteBuf) {
+        val msg = message.message
+
         if (msg is HandshakeMessage) {
             val state = ctx.getState()
 

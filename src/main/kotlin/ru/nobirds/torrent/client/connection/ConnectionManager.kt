@@ -19,15 +19,13 @@ import java.net.SocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 
 public data class PeerAndMessage(val peer: Peer, val message: Message)
-public data class AddressAndMessage(val address: InetSocketAddress, val message: Message)
-
 
 public interface ConnectionManager : Closeable {
 
-    fun send(message: AddressAndMessage)
+    fun send(message: PeerAndMessage)
 
-    fun send(address: InetSocketAddress, message: Message) {
-        send(AddressAndMessage(address, message))
+    fun send(peer: Peer, message: Message) {
+        send(PeerAndMessage(peer, message))
     }
 
     fun read(): PeerAndMessage
@@ -40,7 +38,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
 
     private val registry = ConnectionRegistry()
     private val incoming = ArrayBlockingQueue<PeerAndMessage>(1000)
-    private val outgoing = ArrayBlockingQueue<AddressAndMessage>(1000)
+    private val outgoing = ArrayBlockingQueue<PeerAndMessage>(1000)
 
     private val acceptGroup = NioEventLoopGroup()
     private val workerGroup = NioEventLoopGroup()
@@ -75,14 +73,13 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             }
             .option(ChannelOption.SO_KEEPALIVE, true)
 
-
     private val sendWorker = queueHandlerThread(outgoing) { sendMessage(it) }
 
-    private fun sendMessage(message: AddressAndMessage) {
-        var channel = registry.find(message.address)
+    private fun sendMessage(message: PeerAndMessage) {
+        var channel = registry.find(message.peer.address)
 
         if (channel == null) {
-            connect(message.address).addCompleteListener {
+            connect(message.peer.address).addCompleteListener {
                 if(it.isSuccess) send(message)
                 else {
                     if (it.channel().remoteAddress() != null)
@@ -94,8 +91,8 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         }
     }
 
-    public override fun send(message: AddressAndMessage) {
-        logger.debug("ConnectionManager accept message {} from {} to send", message.message.javaClass.simpleName, message.address)
+    public override fun send(message: PeerAndMessage) {
+        logger.debug("ConnectionManager accept message {} from {} to send", message.message.javaClass.simpleName, message.peer.address)
 
         outgoing.put(message)
     }

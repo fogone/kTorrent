@@ -173,6 +173,15 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
         return FreeBlockIndex(piece, block*blockLength, length)
     }
 
+    fun getPieceLength(piece: Int):Int = if (piece == count) pieceLength else lastBlockLength
+
+    val piecesRange:IntRange = 0..count
+
+    fun piecesLengths():Sequence<Int> = piecesRange.asSequence().map { getPieceLength(it) }
+
+    fun getGlobalIndex(free:FreeBlockIndex):GlobalBlockIndex =
+            GlobalBlockIndex(piecesLengths().take(free.piece).sum() + free.begin, free.length)
+
     override fun getBits(): BitSet {
         val bitSet = BitSet(count)
         blocksState.forEachIndexed { i, state -> bitSet.set(i, state.isDone()) }
@@ -186,6 +195,8 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
     override fun complete(): Sequence<Int> = blocksState.asSequence().filter { it.isDone() }.map { it.index }
 
     override fun incomplete(): Sequence<Int> = blocksState.asSequence().filter { !it.isDone() }.map { it.index }
+
+
 
 }
 
