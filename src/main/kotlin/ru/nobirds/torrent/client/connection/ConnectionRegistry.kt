@@ -11,6 +11,8 @@ class ConnectionRegistry {
 
     private val connections = ConcurrentHashMap<Peer, Channel>()
 
+    fun registered(peer: Peer):Boolean = connections.get(peer).run { this != null && this.isOpen }
+
     fun register(peer: Peer, context: Channel) {
         connections.put(peer, context)
 
@@ -23,14 +25,19 @@ class ConnectionRegistry {
         return if(channel != null) {
             if(channel.isOpen) channel
             else {
-                logger.debug("Connection with peer {} closed", peer)
-
-                channel.close()
-
-                connections.remove(peer)
+                unregister(peer)
                 null
             }
         } else null
+    }
+
+    fun unregister(peer: Peer) {
+        logger.debug("Connection with peer {} closed", peer)
+
+        val channel = connections.remove(peer)
+        if (channel != null && channel.isOpen) {
+            channel.close()
+        }
     }
 
 }

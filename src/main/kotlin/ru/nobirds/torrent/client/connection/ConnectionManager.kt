@@ -9,7 +9,6 @@ import io.netty.channel.ChannelPipeline
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import ru.nobirds.torrent.bencode.requestQueueStorage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.peers.Peer
@@ -70,7 +69,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             .option(ChannelOption.SO_KEEPALIVE, true)
 
     private fun ChannelPipeline.setupHandlers() {
-        addLast(requestQueueStorage<PeerAndMessage>(incoming))
+        //addLast(requestQueueStorage<PeerAndMessage>(incoming))
         addLast(TorrentMessageCodec(messageSerializerProvider))
     }
 
@@ -82,10 +81,12 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         when (subMessage) {
             is ConnectMessage -> connect(peer.address).addCompleteListener {
                 if (it.isSuccess) {
-                    registry.register(peer, it.channel())
-                    subMessage.onConnect()
+                    if (!registry.registered(peer)) {
+                        registry.register(peer, it.channel())
+                        subMessage.onConnect()
+                    }
                 } else {
-                    logger.warn("Unable to connect to $peer")
+                    registry.unregister(peer)
                 }
             }
             is Message -> {
