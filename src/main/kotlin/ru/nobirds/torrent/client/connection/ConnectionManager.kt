@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelOption
+import io.netty.channel.ChannelPipeline
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
@@ -12,19 +13,28 @@ import ru.nobirds.torrent.bencode.requestQueueStorage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.utils.*
+import ru.nobirds.torrent.utils.addCompleteListener
+import ru.nobirds.torrent.utils.channelInitializerHandler
+import ru.nobirds.torrent.utils.childHandler
+import ru.nobirds.torrent.utils.log
+import ru.nobirds.torrent.utils.queueHandlerThread
 import java.io.Closeable
-import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 
-public data class PeerAndMessage(val peer: Peer, val message: Message)
+public data class PeerAndMessage(val peer: Peer, val message: Any)
+
+public class ConnectMessage(val onConnect:()->Unit)
 
 public interface ConnectionManager : Closeable {
 
+    fun connect(peer: Peer, onConnect:()->Unit) {
+        send(peer, ConnectMessage(onConnect))
+    }
+
     fun send(message: PeerAndMessage)
 
-    fun send(peer: Peer, message: Message) {
+    fun send(peer: Peer, message: Any) {
         send(PeerAndMessage(peer, message))
     }
 
@@ -49,50 +59,52 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
     private val server = ServerBootstrap()
             .group(acceptGroup, workerGroup)
             .channel(NioServerSocketChannel::class.java)
-            .childHandler<Channel> {
-                it.pipeline()
-                        .addLast(
-                                ConnectionStorageHandler(registry),
-                                TorrentMessageCodec(messageSerializerProvider),
-                                requestQueueStorage(incoming)
-                        )
-            }
+            .childHandler<Channel> { it.pipeline().setupHandlers() }
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .bind(port)
 
     private val clientBootstrap = Bootstrap()
             .group(clientGroup)
             .channel(NioSocketChannel::class.java)
-            .channelInitializerHandler<Channel,Bootstrap>{
-                it.pipeline()
-                    .addLast(
-                            ConnectionStorageHandler(registry),
-                            TorrentMessageCodec(messageSerializerProvider),
-                            requestQueueStorage(incoming)
-                    )
-            }
+            .channelInitializerHandler<Channel,Bootstrap>{ it.pipeline().setupHandlers() }
             .option(ChannelOption.SO_KEEPALIVE, true)
+
+    private fun ChannelPipeline.setupHandlers() {
+        addLast(requestQueueStorage<PeerAndMessage>(incoming))
+        addLast(TorrentMessageCodec(messageSerializerProvider))
+    }
 
     private val sendWorker = queueHandlerThread(outgoing) { sendMessage(it) }
 
     private fun sendMessage(message: PeerAndMessage) {
-        var channel = registry.find(message.peer.address)
+        val (peer, subMessage) = message
 
-        if (channel == null) {
-            connect(message.peer.address).addCompleteListener {
-                if(it.isSuccess) send(message)
-                else {
-                    if (it.channel().remoteAddress() != null)
-                        registry.unregister(it.channel().remoteAddress())
+        when (subMessage) {
+            is ConnectMessage -> connect(peer.address).addCompleteListener {
+                if (it.isSuccess) {
+                    registry.register(peer, it.channel())
+                    subMessage.onConnect()
+                } else {
+                    logger.warn("Unable to connect to $peer")
                 }
             }
-        } else {
-            channel.writeAndFlush(message.message)
+            is Message -> {
+                val channel = registry.find(peer)
+
+                if (channel != null) {
+                    logger.debug("Sending message {}.", subMessage.messageType)
+
+                    channel.writeAndFlush(subMessage)
+                }
+                else logger.warn("Message for peer without connection {}. Ignored.", message)
+            }
+            else -> throw IllegalArgumentException("Unsupported message $message}")
         }
     }
 
     public override fun send(message: PeerAndMessage) {
-        logger.debug("ConnectionManager accept message {} from {} to send", message.message.javaClass.simpleName, message.peer.address)
+        logger.debug("ConnectionManager accept message {} from {} to send",
+                message.message.javaClass.simpleName, message.peer.address)
 
         outgoing.put(message)
     }

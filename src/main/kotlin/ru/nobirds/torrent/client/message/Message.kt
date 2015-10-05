@@ -1,7 +1,9 @@
 package ru.nobirds.torrent.client.message
 
+import ru.nobirds.torrent.client.task.state.BlockPositionAndBytes
+import ru.nobirds.torrent.client.task.state.BlockPositionAndSize
 import ru.nobirds.torrent.utils.Id
-import java.util.*
+import java.util.BitSet
 
 interface Message {
 
@@ -24,16 +26,21 @@ public data class BitFieldMessage(val pieces:BitSet) : Message {
     override val messageType:MessageType = MessageType.bitfield
 }
 
-public abstract data class AbstractRequestMessage(override val messageType: MessageType,
-                                                  val index:Int, val begin:Int, val length:Int) : Message
+public interface AbstractRequestMessage : Message {
 
-public class RequestMessage(index:Int, begin:Int, length:Int) :
-        AbstractRequestMessage(MessageType.request, index, begin, length)
+    val positionAndSize: BlockPositionAndSize
 
-public data class CancelMessage(index:Int, begin:Int, length:Int) :
-        AbstractRequestMessage(MessageType.cancel, index, begin, length)
+}
 
-public data class PieceMessage(val index:Int, val begin:Int, val block:ByteArray) : Message {
+public data class RequestMessage(override val positionAndSize: BlockPositionAndSize) : AbstractRequestMessage {
+    override val messageType: MessageType = MessageType.request
+}
+
+public data class CancelMessage(override val positionAndSize: BlockPositionAndSize) : AbstractRequestMessage {
+    override val messageType: MessageType = MessageType.cancel
+}
+
+public data class PieceMessage(val positionAndBytes: BlockPositionAndBytes) : Message {
     override val messageType:MessageType = MessageType.piece
 }
 

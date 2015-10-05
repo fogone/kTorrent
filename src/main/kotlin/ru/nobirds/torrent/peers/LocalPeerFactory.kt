@@ -6,7 +6,7 @@ import java.net.InetSocketAddress
 public class LocalPeerFactory(val port:Int) {
 
     public fun createLocalPeer(hash:Id): Peer
-            = Peer(hash, Id.random(), InetSocketAddress(port.toInt()))
+            = Peer(hash, InetSocketAddress(port.toInt()))
 
 }
 

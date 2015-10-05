@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.client.task.file
 
-import ru.nobirds.torrent.client.task.state.GlobalBlockIndex
+import ru.nobirds.torrent.client.task.state.GlobalBlockPositionAndSize
 import ru.nobirds.torrent.utils.closeQuietly
 import java.io.*
 
@@ -119,7 +119,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         input.readFully(bytes)
     }
 
-    public fun read(index:GlobalBlockIndex, buffer:ByteArray = ByteArray(index.length)):ByteArray {
+    public fun read(index: GlobalBlockPositionAndSize, buffer:ByteArray = ByteArray(index.length)):ByteArray {
         seek(index.begin.toLong())
         input.readFully(buffer)
         return buffer

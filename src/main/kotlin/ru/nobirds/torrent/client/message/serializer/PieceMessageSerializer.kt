@@ -3,6 +3,7 @@ package ru.nobirds.torrent.client.message.serializer
 import io.netty.buffer.ByteBuf
 import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.PieceMessage
+import ru.nobirds.torrent.client.task.state.Blocks
 
 public object PieceMessageSerializer : MessageSerializer<PieceMessage> {
 
@@ -11,15 +12,15 @@ public object PieceMessageSerializer : MessageSerializer<PieceMessage> {
         val begin = stream.readInt()
         val buffer = ByteArray(length - 8)
         stream.readBytes(buffer)
-        return PieceMessage(index, begin, buffer)
+        return PieceMessage(Blocks.positionAndBytes(index, begin, buffer))
     }
 
     override fun write(stream: ByteBuf, message: PieceMessage) {
-        stream.writeInt(message.block.size() + 9)
+        stream.writeInt(message.positionAndBytes.block.size() + 9)
         stream.writeByte(message.messageType.value)
-        stream.writeInt(message.index)
-        stream.writeInt(message.begin)
-        stream.writeBytes(message.block)
+        stream.writeInt(message.positionAndBytes.position.piece)
+        stream.writeInt(message.positionAndBytes.position.begin)
+        stream.writeBytes(message.positionAndBytes.block)
     }
 
 }

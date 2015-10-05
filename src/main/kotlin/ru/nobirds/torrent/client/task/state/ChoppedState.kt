@@ -4,7 +4,7 @@ import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.utils.copy
 import ru.nobirds.torrent.utils.divToUp
 import ru.nobirds.torrent.utils.setBits
-import java.util.*
+import java.util.BitSet
 
 public interface State {
 
@@ -18,30 +18,30 @@ public interface State {
 
     fun done(piece: Int)
 
-    fun isDone():Boolean
+    fun isDone(): Boolean
 
-    fun isDone(piece: Int):Boolean
+    fun isDone(piece: Int): Boolean
 
-    fun getBits():BitSet
+    fun getBits(): BitSet
 
     fun undone()
 
-    fun complete():Sequence<Int>
+    fun complete(): Sequence<Int>
 
-    fun incomplete():Sequence<Int>
+    fun incomplete(): Sequence<Int>
 
 }
 
 public interface IndexedState : State {
 
-    val index:Int
+    val index: Int
 
 }
 
 
 public open class SimpleState(override val count: Int) : State {
 
-    private val state:BitSet = BitSet(count)
+    private val state: BitSet = BitSet(count)
 
     override fun done() {
         state.set(0, count)
@@ -74,19 +74,19 @@ public open class SimpleState(override val count: Int) : State {
     }
 
     override fun equals(other: Any?): Boolean {
-        if(other == null || other !is State) return false
+        if (other == null || other !is State) return false
         return complete().toSet() == other.complete().toSet()
     }
 
     override fun toString(): String {
-        return (0..count).joinToString(",", "[", "]") { if(isDone(it)) "1" else "0" }
+        return (0..count).joinToString(",", "[", "]") { if (isDone(it)) "1" else "0" }
     }
 
     override fun complete(): Sequence<Int> {
         var index = 0
         return sequence {
             val next = state.nextSetBit(index)
-            if(next != -1) next else null
+            if (next != -1) next else null
         }
     }
 
@@ -97,9 +97,9 @@ public open class SimpleState(override val count: Int) : State {
 
 }
 
-public class SimpleIndexedState(count:Int, override val index:Int) : SimpleState(count), IndexedState
+public class SimpleIndexedState(count: Int, override val index: Int) : SimpleState(count), IndexedState
 
-public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 * 1024) : State {
+public class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 16 * 1024) : State {
 
     private val length = torrentInfo.files.totalLength
 
@@ -107,7 +107,7 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
 
     private val blocksInPiece = pieceLength.divToUp(blockLength).toInt()
 
-    private val commonLastBlockLength = pieceLength - ((blocksInPiece-1) * blockLength)
+    private val commonLastBlockLength = pieceLength - ((blocksInPiece - 1) * blockLength)
 
     public override val count: Int
         get() = torrentInfo.pieceCount
@@ -120,33 +120,33 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
 
     private val lastPieceBlocksCount = lastPieceBlocksLength.divToUp(blockLength).toInt()
 
-    private val lastBlockLength = lastPieceBlocksLength - ((lastPieceBlocksCount-1) * blockLength)
+    private val lastBlockLength = lastPieceBlocksLength - ((lastPieceBlocksCount - 1) * blockLength)
 
-    public val blocksCount:Int = (commonBlocksCount + lastPieceBlocksCount).toInt()
+    public val blocksCount: Int = (commonBlocksCount + lastPieceBlocksCount).toInt()
 
-    private val blocksState:Array<IndexedState> = Array(torrentInfo.pieceCount) {
-        if(it < count)
+    private val blocksState: Array<IndexedState> = Array(torrentInfo.pieceCount) {
+        if (it < count)
             SimpleIndexedState(blocksInPiece.toInt(), it)
         else
             SimpleIndexedState(lastPieceBlocksCount.toInt(), it)
     }
 
-    public fun piece(piece: Int):IndexedState = blocksState[piece]
+    public fun piece(piece: Int): IndexedState = blocksState[piece]
 
-    public fun pieces():Sequence<IndexedState> = blocksState.asSequence()
+    public fun pieces(): Sequence<IndexedState> = blocksState.asSequence()
 
-    public override fun isDone(piece: Int):Boolean = piece(piece).isDone()
+    public override fun isDone(piece: Int): Boolean = piece(piece).isDone()
 
-    public fun isDone(piece:Int, block:Int):Boolean = piece(piece).isDone(block)
+    public fun isDone(piece: Int, block: Int): Boolean = piece(piece).isDone(block)
 
     override fun isDone(): Boolean = blocksState.all { it.isDone() }
 
-    public fun done(piece:Int, block:Int) {
+    public fun done(piece: Int, block: Int) {
         piece(piece).done(block)
     }
 
     public override fun done(bits: BitSet) {
-        blocksState.forEachIndexed { i, blockState -> if(bits.get(i)) blockState.done() else blockState.undone() }
+        blocksState.forEachIndexed { i, blockState -> if (bits.get(i)) blockState.done() else blockState.undone() }
     }
 
     override fun done(state: State) {
@@ -162,7 +162,7 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
         piece(piece).done()
     }
 
-    public fun getIndex(piece: Int, block: Int):FreeBlockIndex {
+    public fun getIndex(piece: Int, block: Int): BlockPositionAndSize {
 
         val length = when {
             piece == count && block == lastPieceBlocksCount -> lastBlockLength
@@ -170,17 +170,17 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
             else -> blockLength
         }
 
-        return FreeBlockIndex(piece, block*blockLength, length)
+        return Blocks.positionAndSize(piece, block * blockLength, length)
     }
 
-    fun getPieceLength(piece: Int):Int = if (piece == count) pieceLength else lastBlockLength
+    fun getPieceLength(piece: Int): Int = if (piece == count) pieceLength else lastBlockLength
 
-    val piecesRange:IntRange = 0..count
+    val piecesRange: IntRange = 0..count
 
-    fun piecesLengths():Sequence<Int> = piecesRange.asSequence().map { getPieceLength(it) }
+    fun piecesLengths(): Sequence<Int> = piecesRange.asSequence().map { getPieceLength(it) }
 
-    fun getGlobalIndex(free:FreeBlockIndex):GlobalBlockIndex =
-            GlobalBlockIndex(piecesLengths().take(free.piece).sum() + free.begin, free.length)
+    fun toGlobalBlock(positionAndSize: BlockPositionAndSize): GlobalBlockPositionAndSize =
+            GlobalBlockPositionAndSize(piecesLengths().take(positionAndSize.position.piece).sum() + positionAndSize.position.begin, positionAndSize.size)
 
     override fun getBits(): BitSet {
         val bitSet = BitSet(count)
@@ -195,7 +195,6 @@ public class ChoppedState(val torrentInfo:TorrentInfo, val blockLength:Int = 16 
     override fun complete(): Sequence<Int> = blocksState.asSequence().filter { it.isDone() }.map { it.index }
 
     override fun incomplete(): Sequence<Int> = blocksState.asSequence().filter { !it.isDone() }.map { it.index }
-
 
 
 }

@@ -5,7 +5,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
-import ru.nobirds.torrent.peers.Peer
 import java.io.File
 import java.io.RandomAccessFile
 import java.math.BigInteger
@@ -16,7 +15,14 @@ import java.net.SocketException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
-import java.util.*
+import java.util.ArrayList
+import java.util.Arrays
+import java.util.BitSet
+import java.util.Collections
+import java.util.PriorityQueue
+import java.util.Queue
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.BlockingQueue
 import kotlin.concurrent.thread
 
@@ -248,6 +254,7 @@ public fun List<Pair<Id, InetSocketAddress>>.toCompact():ByteArray {
     return result
 }
 
+/*
 public fun Peer.toCompact(): ByteArray {
     val compact = ByteArray(26)
 
@@ -258,6 +265,7 @@ public fun Peer.toCompact(): ByteArray {
 
     return compact
 }
+*/
 
 public fun ByteArray.copyTo(target:ByteArray, offset:Int = 0, position:Int = 0, length:Int = target.size()):ByteArray {
     System.arraycopy(this, offset, target, position, length)

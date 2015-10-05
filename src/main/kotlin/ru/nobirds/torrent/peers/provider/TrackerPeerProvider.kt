@@ -11,7 +11,8 @@ import ru.nobirds.torrent.peers.PeerEvent
 import ru.nobirds.torrent.utils.Id
 import java.net.InetSocketAddress
 import java.net.URI
-import java.util.*
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.timerTask
@@ -76,7 +77,7 @@ public class TrackerPeerProvider() : AbstractPeerProvider() {
         val announceProvider = announceProviders[tracker.uri.scheme]
                 ?: throw RuntimeException("Schema ${tracker.uri.scheme} not supported.")
 
-        val trackerInfo = announceProvider.getTrackerInfoByUrl(tracker.uri, Peer(Id.Zero, Id.Zero, InetSocketAddress(0)), hash)
+        val trackerInfo = announceProvider.getTrackerInfoByUrl(tracker.uri, Peer(Id.Zero, InetSocketAddress(0)), hash)
 
         if (trackerInfo.peers.isNotEmpty<Any?>())
             notifyPeerEvent(PeerEvent(hash, trackerInfo.peers.map { it.address }.toSet()))

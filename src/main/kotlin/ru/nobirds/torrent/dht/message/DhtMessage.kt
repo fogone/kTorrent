@@ -30,8 +30,8 @@ public abstract class DhtMessage(val id:String, val sender: Id, val messageType:
 
 public open class AbstractErrorMessage(id:String, val error:Int, val message:String, sender: Id): DhtMessage(id, sender, MessageType.error)
 
-public data class ErrorMessage(id:String, error:Int, message:String, sender: Id): AbstractErrorMessage(id, error, message, sender)
-public data class ErrorMessageResponse(val request: RequestMessage, error:Int, message:String, sender: Id): AbstractErrorMessage(request.id, error, message, sender)
+public class ErrorMessage(id:String, error:Int, message:String, sender: Id): AbstractErrorMessage(id, error, message, sender)
+public class ErrorMessageResponse(val request: RequestMessage, error:Int, message:String, sender: Id): AbstractErrorMessage(request.id, error, message, sender)
 
 public abstract class AbstractRoutingMessage(id:String, sender: Id, mType:MessageType) : DhtMessage(id, sender, mType)
 
@@ -39,30 +39,30 @@ public abstract class RequestMessage(id:String, sender: Id, val type: RequestTyp
 
 public abstract class ResponseMessage(sender: Id, val request: RequestMessage) : AbstractRoutingMessage(request.id, sender, MessageType.response)
 
-public data class PingRequest(id:String, sender: Id) : RequestMessage(id, sender, RequestType.ping)
-public data class PingResponse(sender: Id, request: PingRequest) : ResponseMessage(sender, request)
+public class PingRequest(id:String, sender: Id) : RequestMessage(id, sender, RequestType.ping)
+public class PingResponse(sender: Id, request: PingRequest) : ResponseMessage(sender, request)
 
-public data class AnnouncePeerRequest(
+public class AnnouncePeerRequest(
         id:String, sender: Id,
         val hash: Id, val impliedPort:Boolean,
         val port:Int?, val token:String) : RequestMessage(id, sender, RequestType.announcePeer)
 
-public data class AnnouncePeerResponse(sender: Id, request: AnnouncePeerRequest) : ResponseMessage(sender, request)
+public class AnnouncePeerResponse(sender: Id, request: AnnouncePeerRequest) : ResponseMessage(sender, request)
 
-public data open class FindNodeRequest(id:String, sender: Id, val target: Id) : RequestMessage(id, sender, RequestType.findNode)
-public data class BootstrapFindNodeRequest(id:String, sender: Id, target: Id) : FindNodeRequest(id, sender, target)
+public open class FindNodeRequest(id:String, sender: Id, val target: Id) : RequestMessage(id, sender, RequestType.findNode)
+public class BootstrapFindNodeRequest(id:String, sender: Id, target: Id) : FindNodeRequest(id, sender, target)
 
-public data class FindNodeResponse(sender: Id, request: FindNodeRequest, val nodes:List<Peer>) : ResponseMessage(sender, request)
+public class FindNodeResponse(sender: Id, request: FindNodeRequest, val nodes:List<Peer>) : ResponseMessage(sender, request)
 
-public data class GetPeersRequest(id:String, sender: Id, val hash: Id) : RequestMessage(id, sender, RequestType.findPeer)
+public class GetPeersRequest(id:String, sender: Id, val hash: Id) : RequestMessage(id, sender, RequestType.findPeer)
 
 public abstract class GetPeersResponse(sender: Id, request: GetPeersRequest, val token:String?) : ResponseMessage(sender, request)
 
-public data class PeersFoundResponse(sender: Id, request: GetPeersRequest, token:String?, val nodes:List<InetSocketAddress>) : GetPeersResponse(sender, request, token)
-public data class ClosestNodesResponse(sender: Id, request: GetPeersRequest, token:String?, val nodes:List<Peer>) : GetPeersResponse(sender, request, token)
+public class PeersFoundResponse(sender: Id, request: GetPeersRequest, token:String?, val nodes:List<InetSocketAddress>) : GetPeersResponse(sender, request, token)
+public class ClosestNodesResponse(sender: Id, request: GetPeersRequest, token:String?, val nodes:List<Peer>) : GetPeersResponse(sender, request, token)
 
-public data class LostRequest(source: Id) : RequestMessage("0", source, RequestType.unknown)
-public data class LostResponse(source: Id, request: LostRequest) : ResponseMessage(source, request)
+public class LostRequest(source: Id) : RequestMessage("0", source, RequestType.unknown)
+public class LostResponse(source: Id, request: LostRequest) : ResponseMessage(source, request)
 
 class DefaultErrors(val factory:MessageFactory) {
 

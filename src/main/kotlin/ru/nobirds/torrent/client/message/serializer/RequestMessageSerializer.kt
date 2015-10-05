@@ -5,6 +5,7 @@ import ru.nobirds.torrent.client.message.AbstractRequestMessage
 import ru.nobirds.torrent.client.message.CancelMessage
 import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.RequestMessage
+import ru.nobirds.torrent.client.task.state.Blocks
 
 public abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage> : MessageSerializer<M> {
 
@@ -20,17 +21,17 @@ public abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage
     override fun write(stream: ByteBuf, message: M) {
         stream.writeInt(13)
         stream.writeByte(message.messageType.value)
-        stream.writeInt(message.index)
-        stream.writeInt(message.begin)
-        stream.writeInt(message.length)
+        stream.writeInt(message.positionAndSize.position.piece)
+        stream.writeInt(message.positionAndSize.position.begin)
+        stream.writeInt(message.positionAndSize.size)
     }
 
 }
 
 public object RequestMessageSerializer : AbstractRequestMessageSerializer<RequestMessage>() {
-    override fun create(index: Int, begin: Int, length: Int): RequestMessage = RequestMessage(index, begin, length)
+    override fun create(index: Int, begin: Int, length: Int): RequestMessage = RequestMessage(Blocks.positionAndSize(index, begin, length))
 }
 
 public object CancelMessageSerializer : AbstractRequestMessageSerializer<CancelMessage>() {
-    override fun create(index: Int, begin: Int, length: Int): CancelMessage = CancelMessage(index, begin, length)
+    override fun create(index: Int, begin: Int, length: Int): CancelMessage = CancelMessage(Blocks.positionAndSize(index, begin, length))
 }

@@ -39,7 +39,7 @@ public class MessageSerializerProvider {
 
     fun unmarshallHandshake(buffer: ByteBuf): HandshakeMessage = HandshakeMessageSerializer.read(buffer)
 
-    fun marshallHandshake(buffer: ByteBuf, message: HandshakeMessage) { HandshakeMessageSerializer.write(buffer, message) }
+    fun marshallHandshake(message: HandshakeMessage, buffer: ByteBuf) { HandshakeMessageSerializer.write(buffer, message) }
 
 }
 

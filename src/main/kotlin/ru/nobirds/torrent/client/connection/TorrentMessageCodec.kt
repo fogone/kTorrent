@@ -91,8 +91,7 @@ public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvid
         return if (state.isCurrentMessageHandshake) {
             val handshakeMessage = serializerProvider.unmarshallHandshake(buffer)
 
-            state.peer = Peer(handshakeMessage.hash, handshakeMessage.peer,
-                    ctx.channel().remoteAddress() as InetSocketAddress)
+            state.peer = Peer(handshakeMessage.hash, ctx.channel().remoteAddress() as InetSocketAddress)
 
             handshakeMessage.complete = state.handshakeComplete
 
@@ -103,9 +102,12 @@ public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvid
     }
 
     override fun encode(ctx: ChannelHandlerContext, message: PeerAndMessage, out: ByteBuf) {
-        val msg = message.message
+        val (peer, subMessage) = message
 
-        if (msg is HandshakeMessage) {
+        if(subMessage !is Message)
+            throw IllegalArgumentException()
+
+        if (subMessage is HandshakeMessage) {
             val state = ctx.getState()
 
             if(state.localHandshakeSent)
@@ -113,15 +115,16 @@ public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvid
 
             state.localHandshakeSent = true
 
-            serializerProvider.marshallHandshake(out, msg)
+            serializerProvider.marshallHandshake(subMessage, out)
         } else {
-            serializerProvider.marshall(msg, out)
+            serializerProvider.marshall(subMessage, out)
         }
 
-        logger.debug("Sent message {} to {}", msg.messageType, ctx.channel().remoteAddress())
+        logger.debug("Sent message {} to {}", subMessage.messageType, ctx.channel().remoteAddress())
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
         ctx.channel().close()
     }
+
 }

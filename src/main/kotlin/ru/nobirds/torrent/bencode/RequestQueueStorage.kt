@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 public inline fun <reified T:Any> requestQueueStorage(incoming: BlockingQueue<T>): ChannelHandler = RequestQueueStorage<T>(incoming, T::class)
 
 public class RequestQueueStorage<T:Any>(val incoming: BlockingQueue<T>, val type:KClass<T>) :
-        SimpleChannelInboundHandler<T>(type.java, true) {
+        SimpleChannelInboundHandler<T>(type.java, false) {
 
     override fun messageReceived(ctx: ChannelHandlerContext, msg: T) {
         incoming.put(msg)

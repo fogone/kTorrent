@@ -10,9 +10,8 @@ import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.bencode.BType
 import ru.nobirds.torrent.parser.BEncodeHttpMessageConverter
 import ru.nobirds.torrent.peers.Peer
-import ru.nobirds.torrent.utils
 import ru.nobirds.torrent.utils.Id
-import ru.nobirds.torrent.utils.toId
+import ru.nobirds.torrent.utils.multiValueMapOf
 import ru.nobirds.torrent.utils.toInetSocketAddresses
 import ru.nobirds.torrent.utils.toUrlString
 import java.net.InetSocketAddress
@@ -63,9 +62,9 @@ public class HttpAnnounceProvider : AnnounceProvider {
     }
 
     private fun createUrlParameters(localPeer: Peer, hash: Id): MultiValueMap<String, String> {
-        return utils.multiValueMapOf(
+        return multiValueMapOf(
                 "info_hash" to hash.toBytes().toUrlString(),
-                "peer_id" to localPeer.id.toBytes().toUrlString(),
+                // "peer_id" to localPeer.id.toBytes().toUrlString(),
                 //"ip" to localPeer.address.getAddress().toString(),
                 "port" to localPeer.address.port.toString(),
                 "uploaded" to "0",
@@ -77,14 +76,14 @@ public class HttpAnnounceProvider : AnnounceProvider {
     private fun fetchPeers(hash: Id, peers: BType):List<Peer> {
         return when(peers) {
             is BList -> parseFullPeersList(hash, peers)
-            is BBytes -> peers.value.toInetSocketAddresses().map { Peer(hash, Id.Zero, it) }
+            is BBytes -> peers.value.toInetSocketAddresses().map { Peer(hash, it) }
             else -> throw IllegalArgumentException()
         }
     }
 
     private fun parseFullPeersList(hash: Id, peers: BList):List<Peer> = peers.map {
         val peer = it as BMap
-        Peer(hash, peer.getBytes("id")!!.toId(), InetSocketAddress(peer.getString("ip")!!, peer.getLong("port")!!.toInt()))
+        Peer(hash, InetSocketAddress(peer.getString("ip")!!, peer.getLong("port")!!.toInt()))
     }
 
 }

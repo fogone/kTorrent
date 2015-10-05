@@ -3,8 +3,17 @@ package ru.nobirds.torrent.client
 import io.netty.buffer.Unpooled
 import org.junit.Assert
 import org.junit.Test
-import ru.nobirds.torrent.client.message.*
+import ru.nobirds.torrent.client.message.BitFieldMessage
+import ru.nobirds.torrent.client.message.CancelMessage
+import ru.nobirds.torrent.client.message.HaveMessage
+import ru.nobirds.torrent.client.message.Message
+import ru.nobirds.torrent.client.message.MessageType
+import ru.nobirds.torrent.client.message.PieceMessage
+import ru.nobirds.torrent.client.message.PortMessage
+import ru.nobirds.torrent.client.message.RequestMessage
+import ru.nobirds.torrent.client.message.SimpleMessage
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
+import ru.nobirds.torrent.client.task.state.Blocks
 import ru.nobirds.torrent.client.task.state.SimpleState
 
 public class SerializerTest {
@@ -32,17 +41,17 @@ public class SerializerTest {
 
     @Test
     public fun requestTest() {
-        assertMessages(RequestMessage(10, 12345, 1024))
+        assertMessages(RequestMessage(Blocks.positionAndSize(10, 12345, 1024)))
     }
 
     @Test
     public fun cancelTest() {
-        assertMessages(CancelMessage(10, 12345, 1024))
+        assertMessages(CancelMessage(Blocks.positionAndSize(10, 12345, 1024)))
     }
 
     @Test
     public fun pieceTest() {
-        assertMessages(PieceMessage(10, 12345, ByteArray(10)))
+        assertMessages(PieceMessage(Blocks.positionAndBytes(10, 12345, ByteArray(10))))
     }
 
     @Test

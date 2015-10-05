@@ -13,7 +13,7 @@ import ru.nobirds.torrent.utils.infiniteLoopThread
 import ru.nobirds.torrent.utils.log
 import java.io.InputStream
 import java.nio.file.Path
-import java.util.*
+import java.util.HashMap
 
 public class TaskManager(val directory: Path,
                          val peerManager: PeerProvider,
@@ -33,9 +33,6 @@ public class TaskManager(val directory: Path,
 
     private fun handleMessage(message: PeerAndMessage) {
         val task = task(message.peer.hash)
-
-        logger.debug("Message {} translated to task {}", message.message.messageType, task.hash)
-
         task.sendMessage(HandleTaskMessage(message))
     }
 
