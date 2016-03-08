@@ -1,10 +1,12 @@
 package ru.nobirds.torrent.bencode
 
-public abstract class AbstractBType : BType {
+import java.io.StringWriter
 
-    public abstract fun processChar(stream: BTokenStream):Boolean
+abstract class AbstractBType : BType {
 
-    public override fun process(stream: BTokenStream) {
+    abstract fun processChar(stream: BTokenStream):Boolean
+
+    override fun process(stream: BTokenStream) {
         if(processByte(stream))
             return
 
@@ -21,4 +23,9 @@ public abstract class AbstractBType : BType {
 
         return processChar(stream)
     }
+
+    override fun toString(): String {
+        return toString(StringWriter()).toString()
+    }
+
 }

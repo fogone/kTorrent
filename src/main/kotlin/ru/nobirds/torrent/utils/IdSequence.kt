@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.utils
 
-public interface IdSequence {
+interface IdSequence {
 
     fun next():String
 

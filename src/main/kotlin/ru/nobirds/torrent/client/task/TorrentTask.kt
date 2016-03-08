@@ -31,7 +31,7 @@ import java.nio.file.Path
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
-public class TorrentTask(val directory:Path,
+class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
                          val digestProvider: DigestProvider,
                          val connectionManager:ConnectionManager,
@@ -39,13 +39,13 @@ public class TorrentTask(val directory:Path,
 
     private val logger = log()
 
-    public val hash:Id = Id.fromBytes(torrent.hash!!)
+    val hash:Id = Id.fromBytes(torrent.hash!!)
 
-    public val localPeer:Id = Id.random()
+    val localPeer:Id = Id.random()
 
-    public val uploadStatistics:TrafficStatistics = TrafficStatistics()
+    val uploadStatistics:TrafficStatistics = TrafficStatistics()
 
-    public val downloadStatistics:TrafficStatistics = TrafficStatistics()
+    val downloadStatistics:TrafficStatistics = TrafficStatistics()
 
     private val messages = ArrayBlockingQueue<TaskMessage>(1000)
 
@@ -76,10 +76,10 @@ public class TorrentTask(val directory:Path,
         */
     }
 
-    public val piecesState:State
+    val piecesState:State
         get() = state
 
-    public fun sendMessage(message:TaskMessage) {
+    fun sendMessage(message:TaskMessage) {
         messages.put(message)
     }
 
@@ -201,7 +201,7 @@ public class TorrentTask(val directory:Path,
         val new = peers.filter { it !in this.peers }.toList()
 
         return if (new.isNotEmpty()) {
-            logger.debug("Found {} new peers for task {}", new.size(), hash)
+            logger.debug("Found {} new peers for task {}", new.size, hash)
 
             this.peers.addAll(new)
             new.asSequence()
@@ -212,7 +212,7 @@ public class TorrentTask(val directory:Path,
         handlerThread.interrupt()
     }
 
-    private fun getPeerTorrentState(peer: InetSocketAddress) = peersState.concurrentGetOrPut(peer) { SimpleState(torrent.pieceCount) }
+    private fun getPeerTorrentState(peer: InetSocketAddress) = peersState.getOrPut(peer) { SimpleState(torrent.pieceCount) }
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
         peers.add(peer.address)

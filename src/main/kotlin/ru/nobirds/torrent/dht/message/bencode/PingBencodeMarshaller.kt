@@ -6,7 +6,7 @@ import ru.nobirds.torrent.dht.message.PingRequest
 import ru.nobirds.torrent.dht.message.PingResponse
 import ru.nobirds.torrent.utils.Id
 
-public class PingBencodeMarshaller :
+class PingBencodeMarshaller :
         RequestMarshaller<PingRequest>, RequestUnmarshaller<PingRequest>,
         ResponseMarshaller<PingRequest, PingResponse>, ResponseUnmarshaller<PingResponse> {
 

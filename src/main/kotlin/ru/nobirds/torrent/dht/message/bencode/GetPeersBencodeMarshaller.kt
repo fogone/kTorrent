@@ -16,7 +16,7 @@ import ru.nobirds.torrent.utils.toInetSocketAddress
 import java.net.InetSocketAddress
 import java.util.*
 
-public class GetPeersBencodeMarshaller :
+class GetPeersBencodeMarshaller :
         RequestMarshaller<GetPeersRequest>, RequestUnmarshaller<GetPeersRequest>,
         ResponseMarshaller<GetPeersRequest, GetPeersResponse>, ResponseUnmarshaller<GetPeersResponse> {
 

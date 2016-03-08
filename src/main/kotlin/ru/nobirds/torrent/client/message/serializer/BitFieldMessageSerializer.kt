@@ -3,9 +3,9 @@ package ru.nobirds.torrent.client.message.serializer
 import io.netty.buffer.ByteBuf
 import ru.nobirds.torrent.client.message.BitFieldMessage
 import ru.nobirds.torrent.client.message.MessageType
-import java.util.*
+import java.util.BitSet
 
-public object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {
+object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {
 
     override fun read(length: Int, messageType: MessageType, stream: ByteBuf): BitFieldMessage {
         val buffer = ByteArray(length)
@@ -16,7 +16,7 @@ public object BitFieldMessageSerializer : MessageSerializer<BitFieldMessage> {
     override fun write(stream: ByteBuf, message: BitFieldMessage) {
         val bytes = message.pieces.toByteArray()
 
-        stream.writeInt(bytes.size() + 1)
+        stream.writeInt(bytes.size + 1)
         stream.writeByte(message.messageType.value)
         stream.writeBytes(bytes)
     }

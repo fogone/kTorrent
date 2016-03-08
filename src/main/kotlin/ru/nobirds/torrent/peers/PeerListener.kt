@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.peers
 
-public interface PeerListener {
+interface PeerListener {
 
     fun onPeerEvent(event: PeerEvent)
 

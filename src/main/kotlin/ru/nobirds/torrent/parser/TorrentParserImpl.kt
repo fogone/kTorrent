@@ -8,21 +8,19 @@ import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.Torrents
 import ru.nobirds.torrent.utils.asString
 import ru.nobirds.torrent.utils.copyTo
-import ru.nobirds.torrent.utils.nullOr
 
-public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
+class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private val HASH_SIZE = 20
 
-    public override fun parse(source:BMap):Torrent = Torrents.createTorrent(digest) {
+    override fun parse(source:BMap):Torrent = Torrents.createTorrent(digest) {
         created(source.getDate("creation date"))
         createdBy(source.getString("created by"))
         comment(source.getString("comment"))
 
         announce(source.getString("announce")!!) {
-            val announces = source.getBList("announce-list").nullOr {
-                map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
-            }
+            val announces = source.getBList("announce-list")?.
+                map { it as BList }?.flatMap { it }?.map { (it as BBytes).value.asString() }
 
             if(announces != null)
                 for (url in announces) {
@@ -36,7 +34,7 @@ public class TorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
             hashes {
                 val pieces = info.getBytes("pieces")!!
-                val piecesCount = pieces.size() / HASH_SIZE
+                val piecesCount = pieces.size / HASH_SIZE
 
                 var position = 0
 

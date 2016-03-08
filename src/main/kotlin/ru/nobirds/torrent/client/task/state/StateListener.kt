@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.client.task.state
 
-public interface StateListener {
+interface StateListener {
 
     fun onPieceComplete(piece:Int)
 

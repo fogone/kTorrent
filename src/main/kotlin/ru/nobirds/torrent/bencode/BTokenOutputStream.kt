@@ -4,27 +4,27 @@ import io.netty.buffer.ByteBuf
 import java.io.OutputStream
 import java.math.BigInteger
 
-public interface BTokenWriter {
+interface BTokenWriter {
 
-    public fun write(start:Char, end:Char, body:()->Unit) {
+    fun write(start:Char, end:Char, body:()->Unit) {
         writeImpl(start.toInt())
         body()
         writeImpl(end.toInt())
     }
 
-    public fun write(bytes:ByteArray) {
-        writeImpl(bytes.size().toString().toByteArray())
+    fun write(bytes:ByteArray) {
+        writeImpl(bytes.size.toString().toByteArray())
         writeImpl(':'.toInt())
         writeImpl(bytes)
     }
 
-    public fun write(value:BigInteger) {
+    fun write(value:BigInteger) {
         write('i', 'e') {
             writeImpl(value.toString().toByteArray())
         }
     }
 
-    public fun writeList<T>(iterable:Iterable<T>, writer:(T)->Unit) {
+    fun <T> writeList(iterable:Iterable<T>, writer:(T)->Unit) {
         write('l', 'e') {
             for (item in iterable) {
                 writer(item)
@@ -32,35 +32,35 @@ public interface BTokenWriter {
         }
     }
 
-    public fun writeMap<P>(pairs:Iterable<P>, writer:(P)->Unit) {
+    fun <P> writeMap(pairs:Iterable<P>, writer:(P)->Unit) {
         write('d', 'e') {
             for (pair in pairs) {
                 writer(pair)
             }
         }
     }
-    public fun write(map:BMap) {
-        writeMap(map.values()) { write(it) }
+    fun write(map:BMap) {
+        writeMap(map.values) { write(it) }
     }
 
-    public fun write(pair:BKeyValuePair) {
-        write(pair.name.toByteArray("UTF-8"))
+    fun write(pair:BKeyValuePair) {
+        write(pair.name.toByteArray())
         writeBObject(pair.value)
     }
 
-    public fun write(list:BList) {
+    fun write(list:BList) {
         writeList(list) { writeBObject(it) }
     }
 
-    public fun write(number:BNumber) {
+    fun write(number:BNumber) {
         write(number.value)
     }
 
-    public fun write(bytes:BBytes) {
+    fun write(bytes:BBytes) {
         write(bytes.value)
     }
 
-    public fun writeBObject(value:BType) {
+    fun writeBObject(value:BType) {
         when(value) {
             is BMap -> write(value)
             is BKeyValuePair -> write(value)
@@ -75,7 +75,7 @@ public interface BTokenWriter {
 
 }
 
-public class BTokenOutputStream(val stream:OutputStream) : BTokenWriter {
+class BTokenOutputStream(val stream:OutputStream) : BTokenWriter {
 
     override fun writeImpl(byte: Int) {
         stream.write(byte)
@@ -87,7 +87,7 @@ public class BTokenOutputStream(val stream:OutputStream) : BTokenWriter {
 
 }
 
-public class BTokenBufferWriter(val buffer:ByteBuf) : BTokenWriter {
+class BTokenBufferWriter(val buffer:ByteBuf) : BTokenWriter {
 
     override fun writeImpl(byte: Int) {
         buffer.writeByte(byte)

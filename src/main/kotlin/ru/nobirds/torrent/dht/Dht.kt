@@ -1,16 +1,30 @@
 package ru.nobirds.torrent.dht
 
-import ru.nobirds.torrent.dht.message.*
+import ru.nobirds.torrent.dht.message.AbstractErrorMessage
+import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
+import ru.nobirds.torrent.dht.message.BootstrapFindNodeRequest
+import ru.nobirds.torrent.dht.message.ClosestNodesResponse
+import ru.nobirds.torrent.dht.message.DefaultRequestContainer
+import ru.nobirds.torrent.dht.message.ErrorMessageResponse
+import ru.nobirds.torrent.dht.message.FindNodeRequest
+import ru.nobirds.torrent.dht.message.FindNodeResponse
+import ru.nobirds.torrent.dht.message.GetPeersRequest
+import ru.nobirds.torrent.dht.message.MessageFactory
+import ru.nobirds.torrent.dht.message.PeersFoundResponse
+import ru.nobirds.torrent.dht.message.PingRequest
+import ru.nobirds.torrent.dht.message.RequestMessage
+import ru.nobirds.torrent.dht.message.ResponseMessage
 import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
 import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.infiniteLoopThread
 import java.io.Closeable
 import java.net.InetSocketAddress
-import java.util.*
+import java.util.ArrayList
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
-public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Closeable {
+class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Closeable {
 
     private val requestContainer = DefaultRequestContainer()
 
@@ -44,15 +58,15 @@ public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Close
         }
     }
 
-    public fun hasPeersFor(hash: Id):Boolean = peers.getValue(hash).isNotEmpty()
+    fun hasPeersFor(hash: Id):Boolean = peers.getValue(hash).isNotEmpty()
 
-    public fun findPeersForHash(hash: Id, callback:(InetSocketAddress)->Unit) {
+    fun findPeersForHash(hash: Id, callback:(InetSocketAddress)->Unit) {
         processAction {
             if (peers.containsValue(hash)) {
                 peers.getValue(hash).forEach { callback(it) }
             }
 
-            listeners.concurrentGetOrPut(hash) { ArrayList() }.add(callback)
+            listeners.getOrPut(hash) { ArrayList() }.add(callback)
 
             peers.findClosest(hash).forEach {
                 server.send(it.address, messageFactory.createGetPeersRequest(hash))
@@ -60,7 +74,7 @@ public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Close
         }
     }
 
-    public fun announce(hash: Id) {
+    fun announce(hash: Id) {
         processAction {
             peers.findClosest(hash).forEach {
                 server.send(it.address, messageFactory.createAnnouncePeerRequest(hash, tokens.getLocalToken()))
@@ -68,7 +82,7 @@ public class Dht(val port:Int,val bootstrap:Sequence<InetSocketAddress>) : Close
         }
     }
 
-    public fun makeInitialized() {
+    fun makeInitialized() {
         if (!initialized) {
             initialized = true
             postponedActions.forEach { it() }

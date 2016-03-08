@@ -7,11 +7,10 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import org.junit.Test as test
 
-public class DhtTest {
+class DhtTest {
 
     @Test
-    @Ignore
-    public fun test1() {
+    @Ignore fun test1() {
         val dht = Dht(11111, sequenceOf())
         dht.announce(Id.fromHexString("944D2E1C1443008DDFA34A89AEC282393AC8D883"))
         dht.makeInitialized()

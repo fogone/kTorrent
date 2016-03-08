@@ -5,7 +5,7 @@ import java.io.OutputStreamWriter
 import java.io.StringWriter
 import java.io.Writer
 
-public interface BType {
+interface BType {
 
     fun process(stream: BTokenStream)
 
@@ -13,11 +13,7 @@ public interface BType {
 
     val endPosition:Long
 
-    override fun toString(): String {
-        return toString(StringWriter()).toString()
-    }
-
-    fun toString<T:Writer>(writer:T):T {
+    fun <T:Writer> toString(writer:T):T {
         BTypeFormatter(writer).format(this)
         return writer
     }

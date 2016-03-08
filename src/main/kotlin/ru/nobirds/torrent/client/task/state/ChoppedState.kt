@@ -6,7 +6,7 @@ import ru.nobirds.torrent.utils.divToUp
 import ru.nobirds.torrent.utils.setBits
 import java.util.BitSet
 
-public interface State {
+interface State {
 
     val count: Int
 
@@ -32,14 +32,14 @@ public interface State {
 
 }
 
-public interface IndexedState : State {
+interface IndexedState : State {
 
     val index: Int
 
 }
 
 
-public open class SimpleState(override val count: Int) : State {
+open class SimpleState(override val count: Int) : State {
 
     private val state: BitSet = BitSet(count)
 
@@ -47,7 +47,7 @@ public open class SimpleState(override val count: Int) : State {
         state.set(0, count)
     }
 
-    public override fun done(bits: BitSet) {
+    override fun done(bits: BitSet) {
         undone()
         bits.setBits(count).forEach { done(it) }
     }
@@ -84,7 +84,7 @@ public open class SimpleState(override val count: Int) : State {
 
     override fun complete(): Sequence<Int> {
         var index = 0
-        return sequence {
+        return generateSequence {
             val next = state.nextSetBit(index)
             if (next != -1) next else null
         }
@@ -97,9 +97,9 @@ public open class SimpleState(override val count: Int) : State {
 
 }
 
-public class SimpleIndexedState(count: Int, override val index: Int) : SimpleState(count), IndexedState
+class SimpleIndexedState(count: Int, override val index: Int) : SimpleState(count), IndexedState
 
-public class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 16 * 1024) : State {
+class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 16 * 1024) : State {
 
     private val length = torrentInfo.files.totalLength
 
@@ -109,7 +109,7 @@ public class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 1
 
     private val commonLastBlockLength = pieceLength - ((blocksInPiece - 1) * blockLength)
 
-    public override val count: Int
+    override val count: Int
         get() = torrentInfo.pieceCount
 
     private val commonBlocksCount = (blocksInPiece * (count - 1)).toInt()
@@ -122,7 +122,7 @@ public class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 1
 
     private val lastBlockLength = lastPieceBlocksLength - ((lastPieceBlocksCount - 1) * blockLength)
 
-    public val blocksCount: Int = (commonBlocksCount + lastPieceBlocksCount).toInt()
+    val blocksCount: Int = (commonBlocksCount + lastPieceBlocksCount).toInt()
 
     private val blocksState: Array<IndexedState> = Array(torrentInfo.pieceCount) {
         if (it < count)
@@ -131,21 +131,21 @@ public class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 1
             SimpleIndexedState(lastPieceBlocksCount.toInt(), it)
     }
 
-    public fun piece(piece: Int): IndexedState = blocksState[piece]
+    fun piece(piece: Int): IndexedState = blocksState[piece]
 
-    public fun pieces(): Sequence<IndexedState> = blocksState.asSequence()
+    fun pieces(): Sequence<IndexedState> = blocksState.asSequence()
 
-    public override fun isDone(piece: Int): Boolean = piece(piece).isDone()
+    override fun isDone(piece: Int): Boolean = piece(piece).isDone()
 
-    public fun isDone(piece: Int, block: Int): Boolean = piece(piece).isDone(block)
+    fun isDone(piece: Int, block: Int): Boolean = piece(piece).isDone(block)
 
     override fun isDone(): Boolean = blocksState.all { it.isDone() }
 
-    public fun done(piece: Int, block: Int) {
+    fun done(piece: Int, block: Int) {
         piece(piece).done(block)
     }
 
-    public override fun done(bits: BitSet) {
+    override fun done(bits: BitSet) {
         blocksState.forEachIndexed { i, blockState -> if (bits.get(i)) blockState.done() else blockState.undone() }
     }
 
@@ -162,7 +162,7 @@ public class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 1
         piece(piece).done()
     }
 
-    public fun getIndex(piece: Int, block: Int): BlockPositionAndSize {
+    fun getIndex(piece: Int, block: Int): BlockPositionAndSize {
 
         val length = when {
             piece == count && block == lastPieceBlocksCount -> lastBlockLength

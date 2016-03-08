@@ -5,10 +5,10 @@ import ru.nobirds.torrent.client.task.state.BlockPositionAndSize
 import ru.nobirds.torrent.peers.Peer
 import java.net.InetSocketAddress
 
-public interface TaskMessage
+interface TaskMessage
 
-public class HandleTaskMessage(val message:PeerAndMessage) : TaskMessage
+class HandleTaskMessage(val message:PeerAndMessage) : TaskMessage
 
-public class RehashTorrentFilesMessage() : TaskMessage
-public class AddPeersMessage(val peers:Set<InetSocketAddress>) : TaskMessage
-public class RequestBlockMessage(val peer: Peer, val positionAndSize: BlockPositionAndSize) : TaskMessage
+class RehashTorrentFilesMessage() : TaskMessage
+class AddPeersMessage(val peers:Set<InetSocketAddress>) : TaskMessage
+class RequestBlockMessage(val peer: Peer, val positionAndSize: BlockPositionAndSize) : TaskMessage

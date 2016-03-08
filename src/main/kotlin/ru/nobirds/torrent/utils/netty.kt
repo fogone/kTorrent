@@ -9,7 +9,7 @@ import io.netty.channel.ChannelInitializer
 import io.netty.util.Attribute
 
 
-public fun ChannelFuture.addCompleteListener(listener:(ChannelFuture)->Unit) {
+fun ChannelFuture.addCompleteListener(listener:(ChannelFuture)->Unit) {
     addListener(object: ChannelFutureListener {
         override fun operationComplete(future: ChannelFuture) {
             listener(future)
@@ -17,19 +17,19 @@ public fun ChannelFuture.addCompleteListener(listener:(ChannelFuture)->Unit) {
     })
 }
 
-public fun <C: Channel> ServerBootstrap.childHandler(initializer:(C)->Unit): ServerBootstrap =
+fun <C: Channel> ServerBootstrap.childHandler(initializer:(C)->Unit): ServerBootstrap =
         childHandler(channelInitializer(initializer))
 
-public fun <C: Channel, B: AbstractBootstrap<B, C>> B.channelInitializerHandler(initializer:(C)->Unit):B =
+fun <C: Channel, B: AbstractBootstrap<B, C>> B.channelInitializerHandler(initializer:(C)->Unit):B =
         handler(channelInitializer(initializer))
 
-public fun <C: Channel> channelInitializer(initializer:(C)->Unit): ChannelInitializer<C> = object: ChannelInitializer<C>() {
+fun <C: Channel> channelInitializer(initializer:(C)->Unit): ChannelInitializer<C> = object: ChannelInitializer<C>() {
     override fun initChannel(channel: C) {
         initializer(channel)
     }
 }
 
-public fun <T> Attribute<T>.getOrSet(getter:()->T):T {
+fun <T> Attribute<T>.getOrSet(getter:()->T):T {
     if (get() == null) {
         set(getter())
     }

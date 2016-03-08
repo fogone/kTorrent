@@ -7,7 +7,7 @@ import ru.nobirds.torrent.bencode.BTypeFactory
 import ru.nobirds.torrent.dht.message.*
 import ru.nobirds.torrent.utils.Id
 
-public class BencodeMessageSerializer(val localPeer: Id, val requestContainer: RequestContainer) : MessageSerializer {
+class BencodeMessageSerializer(val localPeer: Id, val requestContainer: RequestContainer) : MessageSerializer {
 
     private val marshallers = MarshallerContainer()
 

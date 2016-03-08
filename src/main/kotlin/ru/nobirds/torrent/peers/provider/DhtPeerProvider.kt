@@ -5,7 +5,7 @@ import ru.nobirds.torrent.peers.PeerEvent
 import ru.nobirds.torrent.utils.Id
 import java.util.concurrent.*
 
-public class DhtPeerProvider(val dht:Dht) : AbstractPeerProvider() {
+class DhtPeerProvider(val dht:Dht) : AbstractPeerProvider() {
 
     private val scheduler:ScheduledExecutorService = ScheduledThreadPoolExecutor(10)
 

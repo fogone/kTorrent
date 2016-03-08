@@ -1,4 +1,8 @@
 client:
   threads: 10
   ports: 6881..6889
-  directory: d:\tmp
+  directory: d:\tmp\torrents
+
+logging:
+  level:
+    ru.nobirds.torrent.client: DEBUG

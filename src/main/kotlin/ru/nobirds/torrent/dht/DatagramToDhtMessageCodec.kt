@@ -13,7 +13,7 @@ import ru.nobirds.torrent.dht.message.DhtMessage
 import ru.nobirds.torrent.dht.message.bencode.BencodeMessageSerializer
 import ru.nobirds.torrent.utils.log
 
-public class DatagramToDhtMessageCodec(val messageSerializer: BencodeMessageSerializer) :
+class DatagramToDhtMessageCodec(val messageSerializer: BencodeMessageSerializer) :
         MessageToMessageCodec<DatagramPacket, AddressAndMessage>(DatagramPacket::class.java, AddressAndMessage::class.java) {
 
     private val logger = log()
@@ -62,6 +62,6 @@ public class DatagramToDhtMessageCodec(val messageSerializer: BencodeMessageSeri
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        logger.debug("Channel problem {}", cause.getMessage())
+        logger.debug("Channel problem {}", cause.message)
     }
 }

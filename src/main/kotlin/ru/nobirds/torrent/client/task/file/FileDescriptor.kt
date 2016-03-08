@@ -5,13 +5,13 @@ import java.io.RandomAccessFile
 import java.nio.file.Files
 import java.nio.file.Path
 
-public class FileDescriptor(val parent:Path, val torrentFile:TorrentFile) {
+class FileDescriptor(val parent:Path, val torrentFile:TorrentFile) {
 
     private val file = createFile(torrentFile.path)
 
     val randomAccessFile:RandomAccessFile = createRandomAccessFile()
 
-    public val length:Long
+    val length:Long
         get() = randomAccessFile.length()
 
     private fun createRandomAccessFile():RandomAccessFile {

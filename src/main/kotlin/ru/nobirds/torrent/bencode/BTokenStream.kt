@@ -3,7 +3,7 @@ package ru.nobirds.torrent.bencode
 import io.netty.buffer.ByteBuf
 import java.io.InputStream
 
-public interface BTokenStream {
+interface BTokenStream {
 
     fun next():Int
 
@@ -17,7 +17,7 @@ public interface BTokenStream {
 
     fun position():Long
 
-    public fun processBType():BType {
+    fun processBType():BType {
         val value = createBType(currentChar())
         value.process(this)
         return value
@@ -34,7 +34,7 @@ public interface BTokenStream {
     }
 }
 
-public class BTokenStreamImpl(val reader:ByteReader) : BTokenStream {
+class BTokenStreamImpl(val reader:ByteReader) : BTokenStream {
 
     private var current:Int = -1
 
@@ -44,7 +44,7 @@ public class BTokenStreamImpl(val reader:ByteReader) : BTokenStream {
 
     private val emptyBytes = ByteArray(0)
 
-    public override fun next():Int {
+    override fun next():Int {
         this.current = this.next
         this.next = reader.read()
         position++
@@ -53,7 +53,7 @@ public class BTokenStreamImpl(val reader:ByteReader) : BTokenStream {
 
     override fun hasNext(): Boolean = next > 0
 
-    public override fun nextBytes(count:Int):ByteArray {
+    override fun nextBytes(count:Int):ByteArray {
         if(count == 0)
             return emptyBytes
 
@@ -72,9 +72,9 @@ public class BTokenStreamImpl(val reader:ByteReader) : BTokenStream {
         return result
     }
 
-    public override fun current():Int = current
+    override fun current():Int = current
 
-    public override fun position():Long = position
+    override fun position():Long = position
 
 }
 
@@ -86,7 +86,7 @@ interface ByteReader {
 
 }
 
-public class StreamByteReader(val stream:InputStream) : ByteReader {
+class StreamByteReader(val stream:InputStream) : ByteReader {
 
     override fun read(): Int = stream.read()
 
@@ -96,7 +96,7 @@ public class StreamByteReader(val stream:InputStream) : ByteReader {
 
 }
 
-public class BufferByteReader(val buffer:ByteBuf) : ByteReader {
+class BufferByteReader(val buffer:ByteBuf) : ByteReader {
 
     override fun read(): Int = if(buffer.readableBytes() < 1) -1 else buffer.readByte().toInt()
 

@@ -15,7 +15,7 @@ import java.io.InputStream
 import java.nio.file.Path
 import java.util.HashMap
 
-public class TaskManager(val directory: Path,
+class TaskManager(val directory: Path,
                          val peerManager: PeerProvider,
                          val connectionManager: ConnectionManager,
                          val torrentParser: TorrentParser,
@@ -36,14 +36,14 @@ public class TaskManager(val directory: Path,
         task.sendMessage(HandleTaskMessage(message))
     }
 
-    public fun add(torrent:InputStream, target:Path = directory) {
+    fun add(torrent:InputStream, target:Path = directory) {
         add(torrentParser.parse(torrent), target)
     }
 
-    public fun add(torrent:Torrent, target:Path = directory) {
+    fun add(torrent:Torrent, target:Path = directory) {
         val id = Id.fromBytes(torrent.info.hash!!)
 
-        if (id !in tasks.keySet()) {
+        if (id !in tasks.keys) {
             addTask(createTask(target, torrent))
 
             logger.info("Created new task {}", id)

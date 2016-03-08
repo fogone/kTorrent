@@ -4,29 +4,30 @@ package ru.nobirds.torrent.client
 import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import ru.nobirds.torrent.utils.equalsArray
 import java.security.MessageDigest
-import java.util.*
+import java.util.ArrayList
+import java.util.BitSet
 
-public class DigestProvider(val digestFactory:()-> MessageDigest) {
+class DigestProvider(val digestFactory:()-> MessageDigest) {
 
     private val MAX_BUFFER_SIZE = 16 * 1024
 
-    public fun encode(bytes:ByteArray):ByteArray {
+    fun encode(bytes:ByteArray):ByteArray {
         return digestFactory().digest(bytes)!!
     }
 
-    public fun checkHashes(pieceLength:Long, hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
-        val result = BitSet(hashes.size())
+    fun checkHashes(pieceLength:Long, hashes:List<ByteArray>, files:CompositeRandomAccessFile):BitSet {
+        val result = BitSet(hashes.size)
 
         val fileHashes = calculateHashes(files, pieceLength)
 
-        for (i in 0..hashes.size() - 1) {
+        for (i in 0..hashes.size - 1) {
             result.set(i, hashes[i].equalsArray(fileHashes[i]))
         }
 
         return result
     }
 
-    public fun calculateHashes(files:CompositeRandomAccessFile, pieceLength:Long):List<ByteArray> {
+    fun calculateHashes(files:CompositeRandomAccessFile, pieceLength:Long):List<ByteArray> {
         val result = ArrayList<ByteArray>()
 
         val length = files.length
@@ -55,7 +56,7 @@ public class DigestProvider(val digestFactory:()-> MessageDigest) {
     private fun readAndCalculateDigest(input:CompositeRandomAccessFile, buffer:ByteArray, length:Long):ByteArray {
         val messageDigest = digestFactory()
 
-        val bufferSize = buffer.size().toLong()
+        val bufferSize = buffer.size.toLong()
 
         var position = 0L
         for (index in 0..(length/ bufferSize)-1) {

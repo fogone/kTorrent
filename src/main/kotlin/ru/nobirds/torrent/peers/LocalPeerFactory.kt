@@ -3,9 +3,9 @@ package ru.nobirds.torrent.peers
 import ru.nobirds.torrent.utils.Id
 import java.net.InetSocketAddress
 
-public class LocalPeerFactory(val port:Int) {
+class LocalPeerFactory(val port:Int) {
 
-    public fun createLocalPeer(hash:Id): Peer
+    fun createLocalPeer(hash:Id): Peer
             = Peer(hash, InetSocketAddress(port.toInt()))
 
 }

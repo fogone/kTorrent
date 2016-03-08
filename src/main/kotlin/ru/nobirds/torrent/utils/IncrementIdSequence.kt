@@ -2,7 +2,7 @@ package ru.nobirds.torrent.utils
 
 import java.util.concurrent.atomic.AtomicLong
 
-public class IncrementIdSequence : IdSequence {
+class IncrementIdSequence : IdSequence {
 
     private val counter = AtomicLong(1)
 

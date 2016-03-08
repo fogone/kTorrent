@@ -6,11 +6,10 @@ import ru.nobirds.torrent.client.task.file.CompositeRandomAccessFile
 import java.io.RandomAccessFile
 import java.nio.file.Paths
 
-public class RandomAccessTest {
-
+class RandomAccessTest {
 
     @Test
-    public fun test1() {
+    fun test1() {
         val file = CompositeRandomAccessFile(
                 arrayOf("file1.txt", "file2.txt").map {
                     RandomAccessFile(Paths.get(ClassLoader.getSystemResource(it)!!.toURI())!!.toFile(), "rw")
@@ -19,7 +18,7 @@ public class RandomAccessTest {
 
         val byteArray = ByteArray(file.length.toInt())
         file.read(byteArray)
-        val str = String(byteArray, "UTF-8")
+        val str = String(byteArray)
         Assert.assertEquals("hello worldthis is me", str)
     }
 

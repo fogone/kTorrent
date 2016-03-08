@@ -5,7 +5,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 
-public class DefaultRequestContainer() : RequestContainer {
+class DefaultRequestContainer() : RequestContainer {
 
     private data class ContainerSlot(val request:RequestMessage, val task:TimerTask)
 

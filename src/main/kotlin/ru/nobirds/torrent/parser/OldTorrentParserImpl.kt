@@ -4,17 +4,20 @@ import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BMap
 import ru.nobirds.torrent.client.DigestProvider
-import ru.nobirds.torrent.client.model.*
+import ru.nobirds.torrent.client.model.Announce
+import ru.nobirds.torrent.client.model.Torrent
+import ru.nobirds.torrent.client.model.TorrentFile
+import ru.nobirds.torrent.client.model.TorrentFiles
+import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.utils.asString
-import ru.nobirds.torrent.utils.nullOr
-import java.util.*
+import java.util.ArrayList
+import java.util.Collections
 
-@Deprecated("Use TorrentParserImpl")
-public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
+@Deprecated("Use TorrentParserImpl") class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private val HASH_SIZE = 20
 
-    public override fun parse(source:BMap):Torrent {
+    override fun parse(source:BMap):Torrent {
         val torrentInfo = parseTorrentInfo(source.getBMap("info")!!)
 
         val announce = parseAnnounce(source)
@@ -34,9 +37,8 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
 
     private fun parseAnnounce(map: BMap):Announce {
 
-        val announces = map.getBList("announce-list").nullOr {
-            map { it as BList }.flatMap { it }.map { (it as BBytes).value.asString() }
-        }
+        val announces = map.getBList("announce-list")?.map { it as BList }?.
+                flatMap { it }?.map { (it as BBytes).value.asString() }
 
         return Announce(
                 url = map.getString("announce")!!,
@@ -52,7 +54,7 @@ public class OldTorrentParserImpl(val digest: DigestProvider) : TorrentParser {
         val pieceLength = map.getLong("piece length")!!
         val pieces = map.getBytes("pieces")!!
 
-        val piecesCount = pieces.size() / HASH_SIZE
+        val piecesCount = pieces.size / HASH_SIZE
 
         val hashes = splitHashes(pieces, piecesCount)
 

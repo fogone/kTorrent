@@ -2,7 +2,14 @@ package ru.nobirds.torrent.client.task.file
 
 import ru.nobirds.torrent.client.task.state.GlobalBlockPositionAndSize
 import ru.nobirds.torrent.utils.closeQuietly
-import java.io.*
+import java.io.DataInput
+import java.io.DataInputStream
+import java.io.DataOutput
+import java.io.DataOutputStream
+import java.io.EOFException
+import java.io.InputStream
+import java.io.OutputStream
+import java.io.RandomAccessFile
 
 class InputImplementer(val file:CompositeRandomAccessFile) : InputStream() {
     override fun read(): Int = file.read()
@@ -20,7 +27,7 @@ class OutputImplementer(val file:CompositeRandomAccessFile) : OutputStream() {
     }
 }
 
-public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
+class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
 
     private val input:DataInput = DataInputStream(InputImplementer(this))
     private val output:DataOutput = DataOutputStream(OutputImplementer(this))
@@ -32,9 +39,9 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
 
     private val lengths = files.map { it.length() }
 
-    public val length:Long = lengths.reduce { it, length -> it + length }
+    val length:Long = lengths.reduce { it, length -> it + length }
 
-    public fun seek(position:Long) {
+    fun seek(position:Long) {
         var pos = 0L
         var index = 0
 
@@ -52,11 +59,11 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         throw IllegalStateException()
     }
 
-    public fun write(b:ByteArray) {
-        write(b, 0, b.size())
+    fun write(b:ByteArray) {
+        write(b, 0, b.size)
     }
 
-    public fun write(b:ByteArray, off:Int, len:Int) {
+    fun write(b:ByteArray, off:Int, len:Int) {
         val toWrite = len - off
 
         val currentPosition = current.filePointer
@@ -72,18 +79,19 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         }
     }
 
-    public fun write(b:Int) {
+    fun write(b:Int) {
         if(current.filePointer == current.length()) {
-            if(index == files.size() -1)
+            if (index == files.size - 1) {
                 throw EOFException()
-            else
+            } else {
                 next()
+            }
         }
 
         current.write(b)
     }
 
-    public fun read(b:ByteArray, off:Int, len:Int):Int {
+    fun read(b:ByteArray, off:Int, len:Int):Int {
         val toRead = len - off
 
         val currentPosition = current.filePointer
@@ -100,11 +108,11 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         }
     }
 
-    public fun read():Int {
+    fun read():Int {
         var value = current.read()
 
         if(value == -1) {
-            if(index == files.size() -1)
+            if(index == files.size -1)
                 return -1
             else {
                 next()
@@ -115,11 +123,11 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         return value
     }
 
-    public fun read(bytes:ByteArray) {
+    fun read(bytes:ByteArray) {
         input.readFully(bytes)
     }
 
-    public fun read(index: GlobalBlockPositionAndSize, buffer:ByteArray = ByteArray(index.length)):ByteArray {
+    fun read(index: GlobalBlockPositionAndSize, buffer:ByteArray = ByteArray(index.length)):ByteArray {
         seek(index.begin.toLong())
         input.readFully(buffer)
         return buffer
@@ -130,7 +138,7 @@ public class CompositeRandomAccessFile(val files:List<RandomAccessFile>) {
         current.seek(0)
     }
 
-    public fun close() {
+    fun close() {
         for (file in files) {
             file.closeQuietly()
         }

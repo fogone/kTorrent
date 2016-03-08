@@ -2,7 +2,7 @@ package ru.nobirds.torrent.dht.message
 
 import ru.nobirds.torrent.bencode.BMap
 
-public interface MessageSerializer {
+interface MessageSerializer {
 
     fun deserialize(map:BMap): DhtMessage
 

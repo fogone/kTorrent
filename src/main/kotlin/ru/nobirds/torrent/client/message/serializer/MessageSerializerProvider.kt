@@ -5,18 +5,18 @@ import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.MessageType
 
-public class MessageSerializerProvider {
+class MessageSerializerProvider {
 
     private fun findMessageTypeByValue(t:Int): MessageType = MessageType.values().find { it.value == t }!!
 
-    public fun marshall(message: Message, buffer:ByteBuf) {
+    fun marshall(message: Message, buffer:ByteBuf) {
         getMarshaller(message.messageType).write(buffer, message)
     }
 
     private fun getMarshaller(t:MessageType):MessageMarshaller<Message> = getSerializerImpl(t) as MessageMarshaller<Message>
     private fun getUnmarshaller(t:MessageType):MessageUnmarshaller<Message> = getSerializerImpl(t)
 
-    public fun unmarshall(buffer: ByteBuf):Message {
+    fun unmarshall(buffer: ByteBuf):Message {
         val type = buffer.readByte()
         val messageType = findMessageTypeByValue(type.toInt())
         val unmarshaller = getUnmarshaller(messageType)

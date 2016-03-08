@@ -5,11 +5,11 @@ import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.utils.Id
 import java.nio.charset.Charset
 
-public object HandshakeMessageSerializer {
+object HandshakeMessageSerializer {
 
     private val zeroBytes = ByteArray(8)
 
-    public fun read(stream: ByteBuf): HandshakeMessage {
+    fun read(stream: ByteBuf): HandshakeMessage {
         val protocolLength = stream.readableBytes() - (8 + 20 + 20)
 
         val protocol = stream.readBytes(protocolLength)
@@ -27,10 +27,10 @@ public object HandshakeMessageSerializer {
         return message
     }
 
-    public fun write(stream: ByteBuf, message: HandshakeMessage) {
-        val protocolBytes = message.protocol.toByteArray("UTF-8")
+    fun write(stream: ByteBuf, message: HandshakeMessage) {
+        val protocolBytes = message.protocol.toByteArray()
 
-        stream.writeByte(protocolBytes.size())
+        stream.writeByte(protocolBytes.size)
         stream.writeBytes(protocolBytes)
         stream.writeBytes(zeroBytes)
         stream.writeBytes(message.hash.toBytes())

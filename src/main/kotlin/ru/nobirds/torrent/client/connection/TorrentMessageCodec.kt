@@ -22,21 +22,21 @@ class ConnectionState() {
 
     var isCurrentMessageHandshake = false
 
-    public val handshakeComplete:Boolean
+    val handshakeComplete:Boolean
         get() = localHandshakeSent && remoteHandshakeReceived
 
 }
 
 object Attributes {
 
-    public val connectionState: AttributeKey<ConnectionState> = AttributeKey.valueOf<ConnectionState>("state")
+    val connectionState: AttributeKey<ConnectionState> = AttributeKey.valueOf<ConnectionState>("state")
 
 
 }
 
 fun ChannelHandlerContext.getState():ConnectionState = attr(Attributes.connectionState).getOrSet { ConnectionState() }
 
-public class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<PeerAndMessage>(PeerAndMessage::class.java) {
+class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<PeerAndMessage>(PeerAndMessage::class.java) {
 
     private val logger = log()
 

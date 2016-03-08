@@ -17,7 +17,7 @@ import java.io.Closeable
 import java.net.InetSocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 
-public class NettyDhtServer(val port: Int, val messageSerializer: BencodeMessageSerializer, val requestContainer: DefaultRequestContainer) : Closeable {
+class NettyDhtServer(val port: Int, val messageSerializer: BencodeMessageSerializer, val requestContainer: DefaultRequestContainer) : Closeable {
 
     private val workerGroup = NioEventLoopGroup()
 
@@ -49,7 +49,7 @@ public class NettyDhtServer(val port: Int, val messageSerializer: BencodeMessage
         server.writeAndFlush(addressAndMessage)
     }
 
-    public fun read():AddressAndMessage {
+    fun read():AddressAndMessage {
         val message = incoming.take()
 
         if(message.message is ResponseMessage)
@@ -58,11 +58,11 @@ public class NettyDhtServer(val port: Int, val messageSerializer: BencodeMessage
         return message
     }
 
-    public fun send(addressAndMessage: AddressAndMessage) {
+    fun send(addressAndMessage: AddressAndMessage) {
         outgoing.put(addressAndMessage)
     }
 
-    public fun send(address:InetSocketAddress, message: DhtMessage) {
+    fun send(address:InetSocketAddress, message: DhtMessage) {
         outgoing.put(AddressAndMessage(address, message))
     }
 

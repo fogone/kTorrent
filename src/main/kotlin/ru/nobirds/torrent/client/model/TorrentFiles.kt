@@ -4,16 +4,16 @@ import ru.nobirds.torrent.utils.equalsNullable
 import java.util.*
 
 
-public data class TorrentFiles(
+data class TorrentFiles(
         val name:String,
         val length:Long? = null,
         val files: List<TorrentFile> = ArrayList()) {
 
-    public val totalLength:Long = files
+    val totalLength:Long = files
             .map { it.length }
             .reduce { total, it -> it + total  }
 
-    public fun equals(other:TorrentFiles):Boolean {
+    fun equals(other:TorrentFiles):Boolean {
         if(!other.name.equals(name)) return false
         if(!other.length.equalsNullable(length)) return false
         if(!other.files.equals(files)) return false

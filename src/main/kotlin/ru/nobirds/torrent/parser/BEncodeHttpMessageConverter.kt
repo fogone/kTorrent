@@ -7,7 +7,7 @@ import org.springframework.http.converter.AbstractHttpMessageConverter
 import ru.nobirds.torrent.bencode.BMap
 import java.io.ByteArrayInputStream
 
-public class BEncodeHttpMessageConverter() : AbstractHttpMessageConverter<BMap>(MediaType.ALL) {
+class BEncodeHttpMessageConverter() : AbstractHttpMessageConverter<BMap>(MediaType.ALL) {
 
     override fun supports(clazz: Class<out Any?>?): Boolean {
         return clazz != null && BMap::class.java.isAssignableFrom(clazz)

@@ -2,11 +2,11 @@ package ru.nobirds.torrent.bencode
 
 import kotlin.properties.Delegates
 
-public class BKeyValuePair() : BType {
+class BKeyValuePair() : BType {
 
     private var bpair:Pair<String, BType> by Delegates.notNull()
 
-    public fun set(name:String, value:BType):BKeyValuePair {
+    fun set(name:String, value:BType):BKeyValuePair {
         bpair = name to value
         return this
     }
@@ -27,10 +27,10 @@ public class BKeyValuePair() : BType {
         bpair = Pair(nameAsString, value)
     }
 
-    public val value:BType
+    val value:BType
         get() = bpair.second
 
-    public val name:String
+    val name:String
         get() = bpair.first
 
     override var startPosition: Long = 0L

@@ -5,13 +5,13 @@ import ru.nobirds.torrent.utils.toPriorityQueue
 import ru.nobirds.torrent.utils.top
 import java.math.BigInteger
 import java.net.InetSocketAddress
-import java.util.*
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
-public data class Peer(val id:Id, val address: InetSocketAddress)
+data class Peer(val id:Id, val address: InetSocketAddress)
 
-public interface KBucket {
+interface KBucket {
 
     fun addNode(peer: Peer)
 
@@ -37,15 +37,15 @@ public interface KBucket {
 
 }
 
-public class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
+class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
 
     private val values = ConcurrentHashMap<Id, MutableList<InetSocketAddress>>()
 
     private val peers = ConcurrentHashMap<Id, Peer>()
 
-    public override fun addNode(peer: Peer) {
-        if(peers.size() >= k) {
-            val furthestNodes = peers.find(localId, peers.size() - k) { it }
+    override fun addNode(peer: Peer) {
+        if(peers.size >= k) {
+            val furthestNodes = peers.find(localId, peers.size - k) { it }
             for (node in furthestNodes) {
                 peers.remove(node.id)
             }
@@ -58,26 +58,26 @@ public class SimpleKBucket(val localId: Id, val k:Int = 100) : KBucket {
         peers.remove(key)
     }
 
-    public override fun putValue(key: Id, values: Iterable<InetSocketAddress>) {
-        this.values.concurrentGetOrPut(key) { CopyOnWriteArrayList() }.addAll(values)
+    override fun putValue(key: Id, values: Iterable<InetSocketAddress>) {
+        this.values.getOrPut(key) { CopyOnWriteArrayList() }.addAll(values)
     }
 
-    public override fun getNode(key: Id): Peer? = peers.get(key)
+    override fun getNode(key: Id): Peer? = peers.get(key)
 
-    public override fun getValue(key: Id):List<InetSocketAddress> = values.getOrElse(key) { Collections.emptyList<InetSocketAddress>() }
+    override fun getValue(key: Id):List<InetSocketAddress> = values.getOrElse(key) { Collections.emptyList<InetSocketAddress>() }
 
-    public override fun containsNode(id: Id): Boolean = peers.containsKey(id)
+    override fun containsNode(id: Id): Boolean = peers.containsKey(id)
 
-    public override fun containsValue(key: Id): Boolean = values.containsKey(key)
+    override fun containsValue(key: Id): Boolean = values.containsKey(key)
 
-    public override fun findClosest(key: Id, count:Int):List<Peer> = when {
+    override fun findClosest(key: Id, count:Int):List<Peer> = when {
         //peers.containsKey(key) -> Collections.singletonList(peers.get(key))
-        peers.size() == 0 -> Collections.emptyList()
-        peers.size() == 1 -> Collections.singletonList(peers.values().first())
+        peers.size == 0 -> Collections.emptyList()
+        peers.size == 1 -> Collections.singletonList(peers.values.first())
         else -> peers.find(key, count) { it.negate() }
     }
 
 }
 
 fun Map<Id, Peer>.find(key:Id, count:Int, distanceTransformer:(BigInteger)->BigInteger): List<Peer> =
-        values().toPriorityQueue { distanceTransformer((it.id xor key).toBigInteger()) }.top(count)
+        values.toPriorityQueue { distanceTransformer((it.id xor key).toBigInteger()) }.top(count)

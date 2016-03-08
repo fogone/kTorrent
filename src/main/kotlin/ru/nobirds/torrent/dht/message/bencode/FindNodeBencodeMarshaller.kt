@@ -9,7 +9,7 @@ import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.parse26BytesPeers
 import ru.nobirds.torrent.utils.toCompact
 
-public class FindNodeBencodeMarshaller :
+class FindNodeBencodeMarshaller :
         RequestMarshaller<FindNodeRequest>, RequestUnmarshaller<FindNodeRequest>,
         ResponseMarshaller<FindNodeRequest, FindNodeResponse>, ResponseUnmarshaller<FindNodeResponse> {
 

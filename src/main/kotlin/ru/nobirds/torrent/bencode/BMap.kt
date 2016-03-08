@@ -1,21 +1,21 @@
 package ru.nobirds.torrent.bencode
 
 import ru.nobirds.torrent.utils.asString
-import ru.nobirds.torrent.utils.nullOr
 import java.math.BigInteger
-import java.util.*
+import java.util.Date
+import java.util.LinkedHashMap
 
 
-public class BMap(private val children:MutableMap<String, BKeyValuePair> = LinkedHashMap())
+class BMap(private val children:MutableMap<String, BKeyValuePair> = LinkedHashMap())
     : AbstractBlockBType('d'), MutableMap<String, BKeyValuePair> by children {
 
-    public fun getValue(name:String):BType? = get(name).nullOr { value }
+    fun getValue(name:String):BType? = get(name)?.value
 
-    public fun putValue(name:String, value:BType) {
+    fun putValue(name:String, value:BType) {
         put(name, BKeyValuePair().set(name, value))
     }
 
-    public fun getOrPutValue(name:String, defaultValue:()->BType):BType
+    fun getOrPutValue(name:String, defaultValue:()->BType):BType
             = getOrPut(name) { BKeyValuePair().set(name, defaultValue()) }.value
 
     override fun onChar(stream: BTokenStream) {
@@ -24,7 +24,7 @@ public class BMap(private val children:MutableMap<String, BKeyValuePair> = Linke
         children.put(bpair.name, bpair)
     }
 
-    fun get<T:Any>(key:String, cast:(BKeyValuePair)->T):T? {
+    fun <T:Any> get(key:String, cast:(BKeyValuePair)->T):T? {
         val value = get(key)
         return if(value != null) cast(value) else null
     }
@@ -45,9 +45,9 @@ public class BMap(private val children:MutableMap<String, BKeyValuePair> = Linke
     fun getBNumber(key:String):BNumber? = get(key) { it.value as BNumber }
     fun getBigInteger(key:String):BigInteger? = getBNumber(key)?.value
 
-    fun getLong(key:String):Long? = getBigInteger(key)?.longValue()
-    fun getInt(key:String):Int? = getBigInteger(key)?.intValue()
+    fun getLong(key:String):Long? = getBigInteger(key)?.toLong()
+    fun getInt(key:String):Int? = getBigInteger(key)?.toInt()
 
-    fun getDate(key:String):Date? = getLong(key).nullOr { Date(this) }
+    fun getDate(key:String):Date? = getLong(key)?.let { long -> Date(long) }
 
 }

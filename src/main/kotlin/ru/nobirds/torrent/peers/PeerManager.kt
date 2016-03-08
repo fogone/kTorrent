@@ -4,11 +4,11 @@ import ru.nobirds.torrent.peers.provider.PeerProvider
 import ru.nobirds.torrent.utils.Id
 import java.util.*
 
-public class PeerManager : PeerProvider {
+class PeerManager : PeerProvider {
 
     private val providers = ArrayList<PeerProvider>()
 
-    public fun registerProvider(peerProvider: PeerProvider) {
+    fun registerProvider(peerProvider: PeerProvider) {
         providers.add(peerProvider)
     }
 

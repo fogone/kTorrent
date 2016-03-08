@@ -5,11 +5,11 @@ import ru.nobirds.torrent.utils.containsNonPrintable
 import ru.nobirds.torrent.utils.forEachWithStatus
 import java.io.Writer
 
-public class BTypeFormatter(val writer:Writer) {
+class BTypeFormatter(val writer:Writer) {
 
     private var level = 0
 
-    public fun format(value:BType) {
+    fun format(value:BType) {
         when(value) {
             is BMap -> formatBMap(value)
             is BList -> formatBList(value)
@@ -18,12 +18,12 @@ public class BTypeFormatter(val writer:Writer) {
         }
     }
 
-    public fun formatBMap(bmap:BMap) {
+    fun formatBMap(bmap:BMap) {
         writer.write("{\n")
 
         level++
 
-        bmap.values().forEachWithStatus {
+        bmap.values.forEachWithStatus {
             writeTabs()
             val pair = it.value()
             writer.write("'${pair.name}':")
@@ -37,7 +37,7 @@ public class BTypeFormatter(val writer:Writer) {
         writer.write("}")
     }
 
-    public fun formatBList(blist:BList) {
+    fun formatBList(blist:BList) {
         writer.write("[\n")
 
         level++
@@ -57,11 +57,11 @@ public class BTypeFormatter(val writer:Writer) {
         repeat(level*2) { writer.write(' '.toInt()) }
     }
 
-    public fun formatBNumber(bnumber:BNumber) {
+    fun formatBNumber(bnumber:BNumber) {
         writer.write("${bnumber.value}")
     }
 
-    public fun formatBBytes(bbytes:BBytes) {
+    fun formatBBytes(bbytes:BBytes) {
 
         val string = bbytes.value.asString()
 

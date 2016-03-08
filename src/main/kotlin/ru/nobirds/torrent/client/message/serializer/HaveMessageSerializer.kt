@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf
 import ru.nobirds.torrent.client.message.HaveMessage
 import ru.nobirds.torrent.client.message.MessageType
 
-public object HaveMessageSerializer : MessageSerializer<HaveMessage> {
+object HaveMessageSerializer : MessageSerializer<HaveMessage> {
 
     override fun read(length: Int, messageType: MessageType, stream: ByteBuf): HaveMessage
             = HaveMessage(stream.readInt())

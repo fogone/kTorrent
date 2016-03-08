@@ -9,6 +9,7 @@ import io.netty.channel.ChannelPipeline
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
+import ru.nobirds.torrent.bencode.requestQueueStorage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.peers.Peer
@@ -21,11 +22,11 @@ import java.io.Closeable
 import java.net.SocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 
-public data class PeerAndMessage(val peer: Peer, val message: Any)
+data class PeerAndMessage(val peer: Peer, val message: Any)
 
-public class ConnectMessage(val onConnect:()->Unit)
+class ConnectMessage(val onConnect:()->Unit)
 
-public interface ConnectionManager : Closeable {
+interface ConnectionManager : Closeable {
 
     fun connect(peer: Peer, onConnect:()->Unit) {
         send(peer, ConnectMessage(onConnect))
@@ -41,7 +42,7 @@ public interface ConnectionManager : Closeable {
 
 }
 
-public class NettyConnectionManager(val port:Int) : ConnectionManager {
+class NettyConnectionManager(val port:Int) : ConnectionManager {
 
     private val logger = log()
 
@@ -60,7 +61,7 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             .channel(NioServerSocketChannel::class.java)
             .childHandler<Channel> { it.pipeline().setupHandlers() }
             .childOption(ChannelOption.SO_KEEPALIVE, true)
-            .bind(port)
+            .bind(port).channel()
 
     private val clientBootstrap = Bootstrap()
             .group(clientGroup)
@@ -69,8 +70,8 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
             .option(ChannelOption.SO_KEEPALIVE, true)
 
     private fun ChannelPipeline.setupHandlers() {
-        //addLast(requestQueueStorage<PeerAndMessage>(incoming))
-        addLast(TorrentMessageCodec(messageSerializerProvider))
+        this.addLast("TorrentCodec", TorrentMessageCodec(messageSerializerProvider))
+        this.addLast("RequestQueueStorage", requestQueueStorage<PeerAndMessage>(incoming))
     }
 
     private val sendWorker = queueHandlerThread(outgoing) { sendMessage(it) }
@@ -103,14 +104,14 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         }
     }
 
-    public override fun send(message: PeerAndMessage) {
+    override fun send(message: PeerAndMessage) {
         logger.debug("ConnectionManager accept message {} from {} to send",
                 message.message.javaClass.simpleName, message.peer.address)
 
         outgoing.put(message)
     }
 
-    public override fun read(): PeerAndMessage = incoming.take()
+    override fun read(): PeerAndMessage = incoming.take()
 
     private fun connect(address: SocketAddress): ChannelFuture {
         return clientBootstrap.connect(address)
@@ -121,6 +122,6 @@ public class NettyConnectionManager(val port:Int) : ConnectionManager {
         acceptGroup.shutdownGracefully()
         workerGroup.shutdownGracefully()
         clientGroup.shutdownGracefully()
-        server.channel().closeFuture().sync()
+        server.closeFuture().sync()
     }
 }

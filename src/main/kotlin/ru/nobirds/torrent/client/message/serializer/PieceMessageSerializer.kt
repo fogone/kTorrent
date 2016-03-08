@@ -5,7 +5,7 @@ import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.PieceMessage
 import ru.nobirds.torrent.client.task.state.Blocks
 
-public object PieceMessageSerializer : MessageSerializer<PieceMessage> {
+object PieceMessageSerializer : MessageSerializer<PieceMessage> {
 
     override fun read(length: Int, messageType: MessageType, stream: ByteBuf): PieceMessage {
         val index = stream.readInt()
@@ -16,7 +16,7 @@ public object PieceMessageSerializer : MessageSerializer<PieceMessage> {
     }
 
     override fun write(stream: ByteBuf, message: PieceMessage) {
-        stream.writeInt(message.positionAndBytes.block.size() + 9)
+        stream.writeInt(message.positionAndBytes.block.size + 9)
         stream.writeByte(message.messageType.value)
         stream.writeInt(message.positionAndBytes.position.piece)
         stream.writeInt(message.positionAndBytes.position.begin)

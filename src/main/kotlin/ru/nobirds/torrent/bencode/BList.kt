@@ -2,9 +2,10 @@ package ru.nobirds.torrent.bencode
 
 import ru.nobirds.torrent.utils.asString
 import java.math.BigInteger
-import java.util.*
+import java.util.ArrayList
+import java.util.Date
 
-public class BList(private val children:MutableList<BType> = ArrayList())
+class BList(private val children:MutableList<BType> = ArrayList())
     : AbstractBlockBType('l'), MutableList<BType> by children {
 
     override fun onChar(stream: BTokenStream) {
@@ -24,8 +25,8 @@ public class BList(private val children:MutableList<BType> = ArrayList())
     fun getString(index:Int):String = getBytes(index).asString()
     fun getBigInteger(index:Int):BigInteger = getBNumber(index).value
 
-    fun getLong(index:Int):Long = getBigInteger(index).longValue()
-    fun getInt(index:Int):Int = getBigInteger(index).intValue()
+    fun getLong(index:Int):Long = getBigInteger(index).toLong()
+    fun getInt(index:Int):Int = getBigInteger(index).toInt()
 
     fun getDate(index:Int):Date = Date(getLong(index))
 

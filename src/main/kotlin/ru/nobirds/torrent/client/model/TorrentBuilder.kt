@@ -6,76 +6,78 @@ import ru.nobirds.torrent.parser.TorrentSerializer
 import ru.nobirds.torrent.utils.randomAccess
 import java.io.File
 import java.nio.file.Path
-import java.util.*
+import java.util.ArrayList
+import java.util.Collections
+import java.util.Date
 import kotlin.properties.Delegates
 
-public class TorrentFilesBuilder(val name:String) {
+class TorrentFilesBuilder(val name:String) {
 
     private var length:Long? = null
 
     private val files = ArrayList<TorrentFile>()
 
-    public fun file(length:Long, vararg path:String) {
+    fun file(length:Long, vararg path:String) {
         files.add(TorrentFile(length, path.toList()))
     }
 
-    public fun file(length:Long, path:List<String>) {
+    fun file(length:Long, path:List<String>) {
         files.add(TorrentFile(length, path))
     }
 
-    public fun length(length:Long?) {
+    fun length(length:Long?) {
         this.length = length
     }
 
-    public fun build():TorrentFiles = TorrentFiles(
+    fun build():TorrentFiles = TorrentFiles(
             name, length, files
     )
 
 }
 
-public class HashesBuilder(val digest: DigestProvider) {
+class HashesBuilder(val digest: DigestProvider) {
 
     private val hashes:MutableList<ByteArray> = ArrayList()
 
-    public fun hash(hash:ByteArray) {
+    fun hash(hash:ByteArray) {
         hashes.add(hash)
     }
 
-    public fun hashOf(body:ByteArray) {
+    fun hashOf(body:ByteArray) {
         hashes.add(digest.encode(body))
     }
 
-    public fun build():MutableList<ByteArray> = hashes
+    fun build():MutableList<ByteArray> = hashes
 }
 
-public class TorrentInfoBuilder(val digest: DigestProvider, val pieceLength:Long) {
+class TorrentInfoBuilder(val digest: DigestProvider, val pieceLength:Long) {
 
     private var hash:ByteArray? = null
 
     private var hashes:MutableList<ByteArray> = ArrayList()
     private var files:TorrentFiles by Delegates.notNull()
 
-    public fun hashOf(bytes:ByteArray) {
+    fun hashOf(bytes:ByteArray) {
         this.hash = digest.encode(bytes)
     }
 
-    public fun hashes(hashes:List<ByteArray>) {
+    fun hashes(hashes:List<ByteArray>) {
         this.hashes.addAll(hashes)
     }
 
-    public fun hashes(block:HashesBuilder.()->Unit) {
+    fun hashes(block:HashesBuilder.()->Unit) {
         val builder = HashesBuilder(digest)
         builder.block()
         hashes.addAll(builder.build())
     }
 
-    public fun files(name:String, block:TorrentFilesBuilder.()->Unit) {
+    fun files(name:String, block:TorrentFilesBuilder.()->Unit) {
         val builder = TorrentFilesBuilder(name)
         builder.block()
         files = builder.build()
     }
 
-    public fun build():TorrentInfo {
+    fun build():TorrentInfo {
         val info = TorrentInfo(pieceLength, hashes, files, hash)
 
         if(hash == null)
@@ -86,21 +88,21 @@ public class TorrentInfoBuilder(val digest: DigestProvider, val pieceLength:Long
 
 }
 
-public class AnnounceBuilder(val url:String) {
+class AnnounceBuilder(val url:String) {
 
     private val additional = ArrayList<String>()
 
-    public fun url(url:String) {
+    fun url(url:String) {
         additional.add(url)
     }
 
-    public fun build():Announce = Announce(
+    fun build():Announce = Announce(
             url, additional
     )
 
 }
 
-public class TorrentBuilder(val digest: DigestProvider) {
+class TorrentBuilder(val digest: DigestProvider) {
 
     private var info:TorrentInfo by Delegates.notNull()
     private var announce:Announce by Delegates.notNull()
@@ -108,45 +110,45 @@ public class TorrentBuilder(val digest: DigestProvider) {
     private var comment:String? = null
     private var createdBy:String? = null
 
-    public fun info(pieceLength:Long, block:TorrentInfoBuilder.()->Unit) {
+    fun info(pieceLength:Long, block:TorrentInfoBuilder.()->Unit) {
         val builder = TorrentInfoBuilder(digest, pieceLength)
         builder.block()
         info = builder.build()
     }
 
-    public fun announce(url:String, block:AnnounceBuilder.()->Unit = {}) {
+    fun announce(url:String, block:AnnounceBuilder.()->Unit = {}) {
         val builder = AnnounceBuilder(url)
         builder.block()
         announce = builder.build()
     }
 
-    public fun created(created:Date?) {
+    fun created(created:Date?) {
         this.created = created
     }
 
-    public fun createdBy(createdBy:String?) {
+    fun createdBy(createdBy:String?) {
         this.createdBy = createdBy
     }
 
-    public fun comment(comment:String?) {
+    fun comment(comment:String?) {
         this.comment = comment
     }
 
-    public fun build():Torrent = Torrent(
+    fun build():Torrent = Torrent(
             info, announce, created, comment, createdBy
     )
 
 }
 
-public object Torrents {
+object Torrents {
 
-    public fun createTorrent(digest: DigestProvider, block:TorrentBuilder.()->Unit):Torrent {
+    fun createTorrent(digest: DigestProvider, block:TorrentBuilder.()->Unit):Torrent {
         val builder = TorrentBuilder(digest)
         builder.block()
         return builder.build()
     }
 
-    public fun createTorrentForDirectory(digest: DigestProvider, directory:Path, pieceLength:Long = 16L * 1024L):Torrent = createTorrent(digest) {
+    fun createTorrentForDirectory(digest: DigestProvider, directory:Path, pieceLength:Long = 16L * 1024L):Torrent = createTorrent(digest) {
 
         created(Date())
         createdBy("kTorrent client 0.1.alfa")

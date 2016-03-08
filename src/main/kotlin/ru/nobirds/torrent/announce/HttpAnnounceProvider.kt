@@ -17,11 +17,11 @@ import ru.nobirds.torrent.utils.toUrlString
 import java.net.InetSocketAddress
 import java.net.URI
 
-public class HttpAnnounceProvider : AnnounceProvider {
+class HttpAnnounceProvider : AnnounceProvider {
 
     private val template = RestTemplate(arrayListOf<HttpMessageConverter<*>>(BEncodeHttpMessageConverter()))
 
-    public override fun getTrackerInfoByUrl(uri: URI, localPeer: Peer, hash: Id): TrackerInfo {
+    override fun getTrackerInfoByUrl(uri: URI, localPeer: Peer, hash: Id): TrackerInfo {
         val parameters = createUrlParameters(localPeer, hash)
 
         val queryUri = UriComponentsBuilder.fromUri(uri)

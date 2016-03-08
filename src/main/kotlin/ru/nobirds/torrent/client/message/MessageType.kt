@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.client.message
 
-public enum class MessageType(val value:Int) {
+enum class MessageType(val value:Int) {
 
     handshake(-1),
     choke(0),

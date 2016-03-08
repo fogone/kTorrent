@@ -11,10 +11,10 @@ import java.io.File
 import java.nio.file.Paths
 import java.security.MessageDigest
 
-public class TorrentStateTest() {
+class TorrentStateTest() {
 
     @Test
-    public fun test1() {
+    fun test1() {
         //val directory = File("D://Torrents//Vikings - Season 1 (AlexFilm) WEB-DL 1080p").toPath()
         val directory = File("D:\\Torrents\\4R6").toPath()
         val torrent = Torrents.createTorrentForDirectory(DigestProvider { MessageDigest.getInstance("SHA-1") }, directory, 1024L * 1024L)
@@ -23,10 +23,10 @@ public class TorrentStateTest() {
     }
 
     @Test
-    public fun test2() {
+    fun test2() {
         val digestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
 
-        val directory = Paths.get(ClassLoader.getSystemResource("torrent")!!.toURI())!!
+        val directory = Paths.get(ClassLoader.getSystemResource("torrent").toURI())
         val torrent = Torrents.createTorrentForDirectory(digestProvider, directory, 4)
 
         val compositeFile = CompositeRandomAccessFile(

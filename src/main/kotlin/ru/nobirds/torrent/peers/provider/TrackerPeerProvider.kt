@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.timerTask
 
-public enum class TrackerStatus() {
+enum class TrackerStatus() {
 
     notChecked,
     waiting,
@@ -29,7 +29,7 @@ public enum class TrackerStatus() {
 
 data class Tracker(val uri: URI, var status: TrackerStatus = TrackerStatus.notChecked)
 
-public class TrackerPeerProvider() : AbstractPeerProvider() {
+class TrackerPeerProvider() : AbstractPeerProvider() {
 
     private val httpAnnounceProvider = HttpAnnounceProvider()
 
@@ -49,7 +49,7 @@ public class TrackerPeerProvider() : AbstractPeerProvider() {
 
     private val workingStatuses = hashSetOf(TrackerStatus.working, TrackerStatus.notChecked)
 
-    public fun registerTracker(uri: String) {
+    fun registerTracker(uri: String) {
         val trackerUri = UriComponentsBuilder.fromUriString(uri).build().toUri()
         trackers.add(Tracker(trackerUri))
     }

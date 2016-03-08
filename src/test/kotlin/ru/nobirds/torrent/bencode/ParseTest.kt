@@ -15,13 +15,12 @@ import java.io.FileOutputStream
 import java.security.MessageDigest
 
 
-public class BencodeTest() {
+class BencodeTest() {
 
     val digestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
     val parserService = TorrentParserImpl(digestProvider)
 
-    @Test
-    public fun infoHashTest() {
+    @Test fun infoHashTest() {
 
         val source = ClassLoader.getSystemResourceAsStream("test2.torrent")!!.readBytes()
 
@@ -42,8 +41,7 @@ public class BencodeTest() {
         Assert.assertArrayEquals(encoded, infoHash)
     }
 
-    @Test
-    public fun test3() {
+    @Test fun test3() {
         val source = ClassLoader.getSystemResourceAsStream("test2.torrent")!!.readBytes()
 
         val map = Bencoder.decodeBMap(ByteArrayInputStream(source))
@@ -58,8 +56,7 @@ public class BencodeTest() {
         Bencoder.encodeBType(FileOutputStream("tmp.torrent"), map)
     }
 
-    @Test
-    public fun encodeDecodeTest() {
+    @Test fun encodeDecodeTest() {
         //val source = ClassLoader.getSystemResourceAsStream("tmp2.bencode")!!.readBytes()
 
         val bMap = BTypeFactory.createBMap {
@@ -91,15 +88,13 @@ public class BencodeTest() {
         println(bType2)
     }
 
-    @Test
-    public fun test5() {
+    @Test fun test5() {
         val map = Bencoder.decodeBMap(FileInputStream("tmp.torrent"))
         val torrent = TorrentParserImpl(digestProvider).parse(map)
         println(torrent)
     }
 
-    @Test
-    public fun test4() {
+    @Test fun test4() {
         val source = ClassLoader.getSystemResourceAsStream("test1.torrent")!!.readBytes()
 
         val map = Bencoder.decodeBMap(ByteArrayInputStream(source))
@@ -109,8 +104,7 @@ public class BencodeTest() {
         Assert.assertArrayEquals(source, target)
     }
 
-    @Test
-    public fun test2() {
+    @Test fun test2() {
         val stream = ClassLoader.getSystemResourceAsStream("tmp.bencode")!!
         val result = Bencoder.decodeBMap(stream)
 
@@ -119,8 +113,7 @@ public class BencodeTest() {
         Assert.assertEquals("Invalid info_hash", warningMessage)
     }
 
-    @Test
-    public fun test6() {
+    @Test fun test6() {
         val parser = TorrentParserImpl(digestProvider)
         val serializer = TorrentSerializer()
 
@@ -136,7 +129,7 @@ public class BencodeTest() {
     }
 
     @Test
-    public fun test7() {
+    fun test7() {
         val parser = OldTorrentParserImpl(digestProvider)
         val parser2 = TorrentParserImpl(digestProvider)
 

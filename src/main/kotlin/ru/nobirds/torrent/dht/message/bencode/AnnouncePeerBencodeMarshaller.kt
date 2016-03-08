@@ -6,7 +6,7 @@ import ru.nobirds.torrent.dht.message.AnnouncePeerRequest
 import ru.nobirds.torrent.dht.message.AnnouncePeerResponse
 import ru.nobirds.torrent.utils.Id
 
-public class AnnouncePeerBencodeMarshaller() :
+class AnnouncePeerBencodeMarshaller() :
         RequestMarshaller<AnnouncePeerRequest>, RequestUnmarshaller<AnnouncePeerRequest>,
         ResponseMarshaller<AnnouncePeerRequest, AnnouncePeerResponse>, ResponseUnmarshaller<AnnouncePeerResponse> {
 

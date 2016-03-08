@@ -11,11 +11,10 @@ import ru.nobirds.torrent.parser.TorrentParserImpl
 import ru.nobirds.torrent.utils.toUrlString
 import java.security.MessageDigest
 
-public class ClientTest {
+class ClientTest {
 
     @Test
-    @Ignore
-    public fun announceTest() {
+    @Ignore fun announceTest() {
         val restTemplate = RestTemplate(arrayListOf<HttpMessageConverter<*>>(BEncodeHttpMessageConverter()))
 
         val torrent = TorrentParserImpl(DigestProvider { MessageDigest.getInstance("SHA-1") }).parse(ClassLoader.getSystemResourceAsStream("test2.torrent")!!)

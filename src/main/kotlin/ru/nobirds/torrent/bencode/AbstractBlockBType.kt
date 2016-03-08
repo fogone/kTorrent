@@ -1,6 +1,6 @@
 package ru.nobirds.torrent.bencode
 
-public abstract class AbstractBlockBType(val start:Char, val end:Char = 'e') : AbstractBType() {
+abstract class AbstractBlockBType(val start:Char, val end:Char = 'e') : AbstractBType() {
 
     private var started = false
 
@@ -32,12 +32,12 @@ public abstract class AbstractBlockBType(val start:Char, val end:Char = 'e') : A
         }
     }
 
-    public open fun onStart(stream: BTokenStream) {
+    open fun onStart(stream: BTokenStream) {
     }
 
-    public open fun onEnd(stream: BTokenStream) {
+    open fun onEnd(stream: BTokenStream) {
     }
 
-    public abstract fun onChar(stream: BTokenStream)
+    abstract fun onChar(stream: BTokenStream)
 
 }

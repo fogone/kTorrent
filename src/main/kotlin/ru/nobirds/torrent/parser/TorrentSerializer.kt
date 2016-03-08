@@ -7,25 +7,25 @@ import ru.nobirds.torrent.client.model.TorrentInfo
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 
-public class TorrentSerializer {
+class TorrentSerializer {
 
-    public fun serialize(torrent:Torrent, stream:OutputStream) {
+    fun serialize(torrent:Torrent, stream:OutputStream) {
         val bmap = torrentToBMap(torrent)
         Bencoder.encodeBType(stream, bmap)
     }
 
-    public fun serialize(info:TorrentInfo, stream:OutputStream) {
+    fun serialize(info:TorrentInfo, stream:OutputStream) {
         val bmap = torrentInfoToBMap(info)
         Bencoder.encodeBType(stream, bmap)
     }
 
-    public fun serialize(info:TorrentInfo):ByteArray {
+    fun serialize(info:TorrentInfo):ByteArray {
         val buffer = ByteArrayOutputStream()
         serialize(info, buffer)
         return buffer.toByteArray()
     }
 
-    public fun torrentToBMap(torrent:Torrent):BMap = BTypeFactory.createBMap {
+    fun torrentToBMap(torrent:Torrent):BMap = BTypeFactory.createBMap {
         value("creation date", torrent.created)
         value("created by", torrent.createdBy)
         value("comment", torrent.comment)
@@ -44,7 +44,7 @@ public class TorrentSerializer {
         map("info", torrentInfoToBMap(torrent.info))
     }
 
-    public fun torrentInfoToBMap(info:TorrentInfo):BMap = BTypeFactory.createBMap {
+    fun torrentInfoToBMap(info:TorrentInfo):BMap = BTypeFactory.createBMap {
         value("piece length", info.pieceLength)
 
         val buffer = ByteArrayOutputStream()

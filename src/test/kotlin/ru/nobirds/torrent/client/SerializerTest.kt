@@ -16,46 +16,39 @@ import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
 import ru.nobirds.torrent.client.task.state.Blocks
 import ru.nobirds.torrent.client.task.state.SimpleState
 
-public class SerializerTest {
+class SerializerTest {
 
     private val buffer = Unpooled.buffer(10 * 1024)
     private val provider = MessageSerializerProvider()
 
-    @Test
-    public fun simpleTest() {
+    @Test fun simpleTest() {
         assertMessages(SimpleMessage(MessageType.choke))
     }
 
-    @Test
-    public fun bitfieldTest() {
+    @Test fun bitfieldTest() {
         val simpleState = SimpleState(10)
         simpleState.done(4)
         simpleState.done(7)
         assertMessages(BitFieldMessage(simpleState.getBits()))
     }
 
-    @Test
-    public fun haveTest() {
+    @Test fun haveTest() {
         assertMessages(HaveMessage(5))
     }
 
-    @Test
-    public fun requestTest() {
+    @Test fun requestTest() {
         assertMessages(RequestMessage(Blocks.positionAndSize(10, 12345, 1024)))
     }
 
-    @Test
-    public fun cancelTest() {
+    @Test fun cancelTest() {
         assertMessages(CancelMessage(Blocks.positionAndSize(10, 12345, 1024)))
     }
 
-    @Test
-    public fun pieceTest() {
+    @Test fun pieceTest() {
         assertMessages(PieceMessage(Blocks.positionAndBytes(10, 12345, ByteArray(10))))
     }
 
-    @Test
-    public fun portTest() {
+    @Test fun portTest() {
         assertMessages(PortMessage(1010))
     }
 
@@ -63,6 +56,8 @@ public class SerializerTest {
         buffer.clear()
 
         provider.marshall(message, buffer)
+
+        val size = buffer.readInt()
 
         val unmarshalledMessage = provider.unmarshall(buffer)
 

@@ -6,7 +6,7 @@ import ru.nobirds.torrent.utils.Id
 import ru.nobirds.torrent.utils.LinksCounter
 import java.util.*
 
-public abstract class AbstractPeerProvider() : PeerProvider {
+abstract class AbstractPeerProvider() : PeerProvider {
 
     private val linksCounter = LinksCounter<Id>()
     private val listeners = HashMap<Id, MutableSet<PeerListener>>()

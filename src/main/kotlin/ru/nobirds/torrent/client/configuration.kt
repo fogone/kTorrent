@@ -25,24 +25,24 @@ import org.springframework.beans.factory.annotation.Autowired as autowired
 @Configuration
 @Import(ConfigConfiguration::class)
 @EnableConfigurationProperties(ClientProperties::class)
-public open class TorrentClientConfiguration() {
+open class TorrentClientConfiguration() {
 
     @Bean
-    public open fun torrentParser(): TorrentParser = TorrentParserImpl(sha1Provider())
+    open fun torrentParser(): TorrentParser = TorrentParserImpl(sha1Provider())
 
     @Bean
-    public open fun connectionManager(localPeerFactory: LocalPeerFactory): ConnectionManager
+    open fun connectionManager(localPeerFactory: LocalPeerFactory): ConnectionManager
             = NettyConnectionManager(localPeerFactory.port)
 
     @Bean
-    public open fun taskManager(config:ClientProperties, localPeerFactory: LocalPeerFactory, peerManager:PeerProvider, connectionManager: ConnectionManager): TaskManager
+    open fun taskManager(config:ClientProperties, localPeerFactory: LocalPeerFactory, peerManager:PeerProvider, connectionManager: ConnectionManager): TaskManager
             = TaskManager(config.directory, peerManager, connectionManager, torrentParser(), sha1Provider())
 
     @Bean
-    public open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports.availablePort())
+    open fun localPeerFactory(config:ClientProperties): LocalPeerFactory = LocalPeerFactory(config.ports.availablePort())
 
     @Bean
-    public open fun peerManager(providers:List<PeerProvider>): PeerManager {
+    open fun peerManager(providers:List<PeerProvider>): PeerManager {
         val peerManager = PeerManager()
         for (provider in providers) {
             peerManager.registerProvider(provider)
@@ -51,28 +51,28 @@ public open class TorrentClientConfiguration() {
     }
 
     @Bean
-    public open fun dht(config: ClientProperties): Dht = Dht(config.dhtPorts.availablePort(), BootstrapHosts.addresses.asSequence())
+    open fun dht(config: ClientProperties): Dht = Dht(config.dhtPorts.availablePort(), BootstrapHosts.addresses.asSequence())
 
     @Bean
-    public open fun dhtPeerProvider(dht:Dht):PeerProvider = DhtPeerProvider(dht)
+    open fun dhtPeerProvider(dht:Dht):PeerProvider = DhtPeerProvider(dht)
 
     @Bean
-    public open fun sha1Provider(): DigestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
+    open fun sha1Provider(): DigestProvider = DigestProvider { MessageDigest.getInstance("SHA-1") }
 
     @Bean
-    public open fun clientRunner(taskManager: TaskManager): ClientCommandLineRunner = ClientCommandLineRunner(taskManager)
+    open fun clientRunner(taskManager: TaskManager): ClientCommandLineRunner = ClientCommandLineRunner(taskManager)
 
 }
 
 @Configuration
-public open class ConfigConfiguration {
+open class ConfigConfiguration {
 
     @Bean
-    public open fun stringToPathConverter():Converter<String, Path>
+    open fun stringToPathConverter():Converter<String, Path>
             = Converter { source -> if(source == null) null else Paths.get(source) }
 
     @Bean
-    public open fun stringToIntRangeConverter():Converter<String, IntRange>
+    open fun stringToIntRangeConverter():Converter<String, IntRange>
             = Converter { source ->
         if(source != null) {
             val (start, end) = source.split("\\.\\.")

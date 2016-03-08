@@ -7,7 +7,7 @@ import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.RequestMessage
 import ru.nobirds.torrent.client.task.state.Blocks
 
-public abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage> : MessageSerializer<M> {
+abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage> : MessageSerializer<M> {
 
     override fun read(length: Int, messageType: MessageType, stream: ByteBuf): M {
         val index = stream.readInt()
@@ -28,10 +28,10 @@ public abstract class AbstractRequestMessageSerializer<M: AbstractRequestMessage
 
 }
 
-public object RequestMessageSerializer : AbstractRequestMessageSerializer<RequestMessage>() {
+object RequestMessageSerializer : AbstractRequestMessageSerializer<RequestMessage>() {
     override fun create(index: Int, begin: Int, length: Int): RequestMessage = RequestMessage(Blocks.positionAndSize(index, begin, length))
 }
 
-public object CancelMessageSerializer : AbstractRequestMessageSerializer<CancelMessage>() {
+object CancelMessageSerializer : AbstractRequestMessageSerializer<CancelMessage>() {
     override fun create(index: Int, begin: Int, length: Int): CancelMessage = CancelMessage(Blocks.positionAndSize(index, begin, length))
 }

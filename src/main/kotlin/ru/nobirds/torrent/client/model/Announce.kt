@@ -2,13 +2,13 @@ package ru.nobirds.torrent.client.model
 
 import java.util.*
 
-public data class Announce(
+data class Announce(
         val url:String,
         val additional:List<String> = ArrayList()) {
 
-    public val allUrls:Set<String> = (additional + url).toSet()
+    val allUrls:Set<String> = (additional + url).toSet()
 
-    public fun equals(other:Announce):Boolean {
+    fun equals(other:Announce):Boolean {
         if(!other.url.equals(url)) return false
         if(!other.additional.equals(additional)) return false
 
