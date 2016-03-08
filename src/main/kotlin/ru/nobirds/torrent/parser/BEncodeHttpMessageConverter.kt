@@ -5,6 +5,7 @@ import org.springframework.http.HttpOutputMessage
 import org.springframework.http.MediaType
 import org.springframework.http.converter.AbstractHttpMessageConverter
 import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.bencode.Bencoder
 import java.io.ByteArrayInputStream
 
 class BEncodeHttpMessageConverter() : AbstractHttpMessageConverter<BMap>(MediaType.ALL) {

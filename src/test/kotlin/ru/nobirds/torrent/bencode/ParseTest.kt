@@ -4,7 +4,7 @@ import io.netty.buffer.Unpooled
 import org.junit.Assert
 import org.junit.Test
 import ru.nobirds.torrent.client.DigestProvider
-import ru.nobirds.torrent.parser.Bencoder
+import ru.nobirds.torrent.bencode.Bencoder
 import ru.nobirds.torrent.parser.OldTorrentParserImpl
 import ru.nobirds.torrent.parser.TorrentParserImpl
 import ru.nobirds.torrent.parser.TorrentSerializer

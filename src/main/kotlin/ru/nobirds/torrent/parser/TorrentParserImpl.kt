@@ -3,6 +3,7 @@ package ru.nobirds.torrent.parser
 import ru.nobirds.torrent.bencode.BBytes
 import ru.nobirds.torrent.bencode.BList
 import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.bencode.Bencoder
 import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.model.Torrent
 import ru.nobirds.torrent.client.model.Torrents

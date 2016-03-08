@@ -1,6 +1,7 @@
 package ru.nobirds.torrent.parser
 
 import ru.nobirds.torrent.bencode.BMap
+import ru.nobirds.torrent.bencode.Bencoder
 import ru.nobirds.torrent.client.model.Torrent
 import java.io.InputStream
 
