@@ -11,7 +11,7 @@ inline fun <reified T:Any> requestQueueStorage(incoming: BlockingQueue<T>): Chan
 class RequestQueueStorage<T:Any>(val incoming: BlockingQueue<T>, val type:KClass<T>) :
         SimpleChannelInboundHandler<T>(type.java, false) {
 
-    override fun messageReceived(ctx: ChannelHandlerContext, msg: T) {
+    override fun channelRead0(ctx: ChannelHandlerContext?, msg: T) {
         incoming.put(msg)
     }
 
