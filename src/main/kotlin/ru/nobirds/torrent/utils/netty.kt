@@ -10,11 +10,7 @@ import io.netty.util.Attribute
 
 
 fun ChannelFuture.addCompleteListener(listener:(ChannelFuture)->Unit) {
-    addListener(object: ChannelFutureListener {
-        override fun operationComplete(future: ChannelFuture) {
-            listener(future)
-        }
-    })
+    addListener( ChannelFutureListener { listener(it) } )
 }
 
 fun <C: Channel> ServerBootstrap.childHandler(initializer:(C)->Unit): ServerBootstrap =

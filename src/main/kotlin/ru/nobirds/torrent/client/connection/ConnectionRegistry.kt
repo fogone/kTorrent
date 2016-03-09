@@ -1,6 +1,7 @@
 package ru.nobirds.torrent.client.connection
 
 import io.netty.channel.Channel
+import io.netty.util.AttributeKey
 import ru.nobirds.torrent.peers.Peer
 import ru.nobirds.torrent.utils.log
 import java.util.concurrent.ConcurrentHashMap
@@ -13,7 +14,13 @@ class ConnectionRegistry {
 
     fun registered(peer: Peer):Boolean = connections.get(peer).run { this != null && this.isOpen }
 
+    companion object {
+        private val idAttributeKey = AttributeKey.newInstance<Peer>("id")
+    }
+
     fun register(peer: Peer, context: Channel) {
+        context.attr(idAttributeKey).setIfAbsent(peer)
+
         connections.put(peer, context)
 
         logger.debug("Connection with peer {} established", peer)
@@ -35,6 +42,9 @@ class ConnectionRegistry {
         logger.debug("Connection with peer {} closed", peer)
 
         val channel = connections.remove(peer)
+
+        channel?.attr(idAttributeKey)?.remove()
+
         if (channel != null && channel.isOpen) {
             channel.close()
         }

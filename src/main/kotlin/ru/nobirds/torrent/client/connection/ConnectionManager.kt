@@ -96,7 +96,7 @@ class NettyConnectionManager(val port:Int) : ConnectionManager {
                 if (channel != null) {
                     logger.debug("Sending message {}.", subMessage.messageType)
 
-                    channel.writeAndFlush(subMessage)
+                    channel.writeAndFlush(message)
                 }
                 else logger.warn("Message for peer without connection {}. Ignored.", message)
             }
