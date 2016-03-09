@@ -32,14 +32,16 @@ import java.nio.file.Path
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
-internal data class PeerState(val address: InetSocketAddress,
-                              val state: State,
-                              var connected:Boolean = false,
-                              var handShacked:Boolean = false,
-                              var choked:Boolean = true,
-                              var interested:Boolean = false) {
+internal data class PeerFlags(var handShacked: Boolean = false,
+                              var choked: Boolean = true,
+                              var interested: Boolean = false) {
 
-    // todo: add torrent state
+    val enabled:Boolean
+        get() = !choked && interested
+
+    fun handshake() {
+        this.handShacked = true
+    }
 
     fun choked(value:Boolean) {
         this.choked = value
@@ -49,15 +51,12 @@ internal data class PeerState(val address: InetSocketAddress,
         this.interested = value
     }
 
-    fun connected(value: Boolean) {
-        this.connected = value
-    }
-
-    fun handshake() {
-        this.handShacked = true
-    }
-
 }
+
+internal data class PeerState(val address: InetSocketAddress,
+                              val state: State,
+                              val myFlags: PeerFlags = PeerFlags(),
+                              val peerFlags: PeerFlags = PeerFlags())
 
 
 class TorrentTask(val directory:Path,
@@ -185,20 +184,52 @@ class TorrentTask(val directory:Path,
 
     private fun handleSimpleMessage(peer: Peer, message: SimpleMessage) {
         when (message.messageType) {
-            MessageType.choke -> peerState(peer).choked(true)
+            MessageType.choke -> handleChoke(peer)
             MessageType.unchoke -> handleUnchoke(peer)
             MessageType.interested -> handleInterested(peer)
-            MessageType.notInterested -> peerState(peer).interested(false)
+            MessageType.notInterested -> handleNotInterested(peer)
             else -> throw IllegalArgumentException("Unknown message $message")
         }
     }
 
+    private fun TorrentTask.handleChoke(peer: Peer) {
+        logger.debug("Peer {} choke communication", peer)
+
+        peerState(peer).peerFlags.choked(true)
+    }
+
+    private fun TorrentTask.handleNotInterested(peer: Peer) {
+        logger.debug("Peer {} not interested in communication more", peer)
+
+        peerState(peer).peerFlags.interested(false)
+    }
+
     private fun TorrentTask.handleInterested(peer: Peer) {
-        peerState(peer).interested(true)
+        logger.debug("Peer {} now interested in communication", peer)
+
+        val peerFlags = peerState(peer).peerFlags
+
+        peerFlags.interested(true)
     }
 
     private fun TorrentTask.handleUnchoke(peer: Peer) {
-        peerState(peer).choked(false)
+        logger.debug("Peer {} unchoke communication", peer)
+
+        val peerFlags = peerState(peer).peerFlags
+
+        peerFlags.choked(false)
+
+        requestBlocks(peer, 10)
+    }
+
+    private fun TorrentTask.requestBlocks(peer: Peer, count: Int) {
+        val peerState = peerState(peer)
+
+        requirementsStrategy.next(state, peerState.state, count).forEach {
+            logger.debug("Request {} to peer {}", it, peer)
+
+            sendMessage(RequestBlockMessage(peer, it))
+        }
     }
 
     private fun peerState(peer: Peer) = peerState(peer.address)
@@ -223,28 +254,28 @@ class TorrentTask(val directory:Path,
         val peerTorrentState = peerState(peer.address).state
 
         peerTorrentState.done(message.piece)
-
-        requirementsStrategy.next(state, peerTorrentState, 10).forEach {
-            logger.debug("Request {} to peer {}", it, peer)
-
-            sendMessage(RequestBlockMessage(peer, it))
-        }
     }
 
     private fun handleBifField(peer: Peer, message: BitFieldMessage) {
         logger.debug("Bitfield {}/{} from peer {}", message.pieces.setBits(torrent.pieceCount), torrent.pieceCount, peer)
 
-        val peerTorrentState = peerState(peer).state
+        val peerState = peerState(peer)
+
+        val peerTorrentState = peerState.state
 
         peerTorrentState.done(message.pieces)
 
         // todo: make decision
         connectionManager.send(peer, SimpleMessage(MessageType.unchoke))
         connectionManager.send(peer, SimpleMessage(MessageType.interested))
+
+        peerState.myFlags.choked(false)
+        peerState.myFlags.interested(true)
     }
 
     private fun handlePiece(peer:Peer, message: PieceMessage) {
         addBlock(message.positionAndBytes)
+        requestBlocks(peer, 1)
     }
 
     private fun newPeers(peers:Sequence<InetSocketAddress>):Sequence<InetSocketAddress> {
@@ -264,13 +295,13 @@ class TorrentTask(val directory:Path,
     }
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
-        val state = peers.getOrPut(peer.address) { PeerState(peer.address, SimpleState(torrent.pieceCount), true, true) }
+        val state = peers.getOrPut(peer.address) { PeerState(peer.address, SimpleState(torrent.pieceCount)) }
 
-        state.connected = true
-        state.handshake()
+        state.peerFlags.handshake()
 
         if (!message.complete) {
             sendHandshake(peer)
+            state.myFlags.handshake()
         }
 
         sendState(peer, piecesState)

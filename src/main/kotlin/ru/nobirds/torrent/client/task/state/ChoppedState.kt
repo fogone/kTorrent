@@ -65,7 +65,9 @@ open class SimpleState(override val count: Int) : State {
         state.complete().forEach { this.state.set(it) }
     }
 
-    override fun isDone(): Boolean = state.setBits(count).all { state.get(it) }
+    override fun isDone(): Boolean {
+        return (0..count-1).all { state.get(it) }
+    }
 
     override fun getBits(): BitSet = state.copy()
 
@@ -139,7 +141,9 @@ class ChoppedState(val torrentInfo: TorrentInfo, val blockLength: Int = 16 * 102
 
     fun isDone(piece: Int, block: Int): Boolean = piece(piece).isDone(block)
 
-    override fun isDone(): Boolean = blocksState.all { it.isDone() }
+    override fun isDone(): Boolean {
+        return blocksState.all { it.isDone() }
+    }
 
     fun done(piece: Int, block: Int) {
         piece(piece).done(block)
