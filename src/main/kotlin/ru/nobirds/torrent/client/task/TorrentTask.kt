@@ -1,6 +1,5 @@
 package ru.nobirds.torrent.client.task
 
-import io.netty.util.internal.ConcurrentSet
 import ru.nobirds.torrent.client.DigestProvider
 import ru.nobirds.torrent.client.connection.ConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage
@@ -8,8 +7,10 @@ import ru.nobirds.torrent.client.message.BitFieldMessage
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.HaveMessage
 import ru.nobirds.torrent.client.message.Message
+import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.PieceMessage
 import ru.nobirds.torrent.client.message.RequestMessage
+import ru.nobirds.torrent.client.message.SimpleMessage
 import ru.nobirds.torrent.client.model.TorrentInfo
 import ru.nobirds.torrent.client.task.file.CompositeFileDescriptor
 import ru.nobirds.torrent.client.task.file.FileDescriptor
@@ -30,6 +31,34 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
+
+internal data class PeerState(val address: InetSocketAddress,
+                              val state: State,
+                              var connected:Boolean = false,
+                              var handShacked:Boolean = false,
+                              var choked:Boolean = true,
+                              var interested:Boolean = false) {
+
+    // todo: add torrent state
+
+    fun choked(value:Boolean) {
+        this.choked = value
+    }
+
+    fun interested(value: Boolean) {
+        this.interested = value
+    }
+
+    fun connected(value: Boolean) {
+        this.connected = value
+    }
+
+    fun handshake() {
+        this.handShacked = true
+    }
+
+}
+
 
 class TorrentTask(val directory:Path,
                          val torrent: TorrentInfo,
@@ -53,9 +82,7 @@ class TorrentTask(val directory:Path,
 
     private val files:CompositeFileDescriptor = CompositeFileDescriptor(createFiles())
 
-    private val peersState = ConcurrentHashMap<InetSocketAddress, State>()
-
-    private val peers:MutableSet<InetSocketAddress> = ConcurrentSet<InetSocketAddress>()
+    private val peers:MutableMap<InetSocketAddress, PeerState> = ConcurrentHashMap()
 
     private val handlerThread = queueHandlerThread(messages) { handleMessage(it) }
 
@@ -149,11 +176,34 @@ class TorrentTask(val directory:Path,
         when (message) {
             is HandshakeMessage -> handleHandshake(peer, message)
             is BitFieldMessage -> handleBifField(peer, message)
+            is SimpleMessage -> handleSimpleMessage(peer, message)
             is HaveMessage -> handleHave(peer, message)
             is PieceMessage -> handlePiece(peer, message)
             is RequestMessage -> handleRequest(peer, message)
         }
     }
+
+    private fun handleSimpleMessage(peer: Peer, message: SimpleMessage) {
+        when (message.messageType) {
+            MessageType.choke -> peerState(peer).choked(true)
+            MessageType.unchoke -> handleUnchoke(peer)
+            MessageType.interested -> handleInterested(peer)
+            MessageType.notInterested -> peerState(peer).interested(false)
+            else -> throw IllegalArgumentException("Unknown message $message")
+        }
+    }
+
+    private fun TorrentTask.handleInterested(peer: Peer) {
+        peerState(peer).interested(true)
+    }
+
+    private fun TorrentTask.handleUnchoke(peer: Peer) {
+        peerState(peer).choked(false)
+    }
+
+    private fun peerState(peer: Peer) = peerState(peer.address)
+    private fun peerState(address: InetSocketAddress) = peers[address] ?:
+            throw IllegalStateException("No state for peer $address")
 
     private fun handleRequest(peer: Peer, message: RequestMessage) {
         logger.debug("Request {} from peer {}", message.positionAndSize, peer)
@@ -170,7 +220,8 @@ class TorrentTask(val directory:Path,
     private fun handleHave(peer: Peer, message: HaveMessage) {
         logger.debug("Have {} piece from peer {}", message.piece, peer)
 
-        val peerTorrentState = getPeerTorrentState(peer.address)
+        val peerTorrentState = peerState(peer.address).state
+
         peerTorrentState.done(message.piece)
 
         requirementsStrategy.next(state, peerTorrentState, 10).forEach {
@@ -183,14 +234,13 @@ class TorrentTask(val directory:Path,
     private fun handleBifField(peer: Peer, message: BitFieldMessage) {
         logger.debug("Bitfield {}/{} from peer {}", message.pieces.setBits(torrent.pieceCount), torrent.pieceCount, peer)
 
-        val peerTorrentState = getPeerTorrentState(peer.address)
+        val peerTorrentState = peerState(peer).state
+
         peerTorrentState.done(message.pieces)
 
-        requirementsStrategy.next(state, peerTorrentState, 10).forEach {
-            logger.debug("Request {} to peer {}", it, peer)
-
-            sendMessage(RequestBlockMessage(peer, it))
-        }
+        // todo: make decision
+        connectionManager.send(peer, SimpleMessage(MessageType.unchoke))
+        connectionManager.send(peer, SimpleMessage(MessageType.interested))
     }
 
     private fun handlePiece(peer:Peer, message: PieceMessage) {
@@ -203,7 +253,8 @@ class TorrentTask(val directory:Path,
         return if (new.isNotEmpty()) {
             logger.debug("Found {} new peers for task {}", new.size, hash)
 
-            this.peers.addAll(new)
+            new.map { PeerState(it, SimpleState(torrent.pieceCount)) }.associateByTo(this.peers) { it.address }
+
             new.asSequence()
         } else emptySequence()
     }
@@ -212,10 +263,11 @@ class TorrentTask(val directory:Path,
         handlerThread.interrupt()
     }
 
-    private fun getPeerTorrentState(peer: InetSocketAddress) = peersState.getOrPut(peer) { SimpleState(torrent.pieceCount) }
-
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
-        peers.add(peer.address)
+        val state = peers.getOrPut(peer.address) { PeerState(peer.address, SimpleState(torrent.pieceCount), true, true) }
+
+        state.connected = true
+        state.handshake()
 
         if (!message.complete) {
             sendHandshake(peer)
