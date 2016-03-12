@@ -124,6 +124,7 @@ class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : B
     }
 
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+        logger.warn("Communication problem with peer ${ctx.channel().remoteAddress()}: ${cause.message}")
         ctx.channel().close()
     }
 

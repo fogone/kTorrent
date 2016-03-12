@@ -41,6 +41,7 @@ class Id(val size:Int = 20, factory:(Int)->Byte) {
         private val random = SecureRandom()
 
         fun random(size:Int = 20):Id = Id(size) { random.nextInt().toByte() }
+        fun randomWithPrefix(bytes:ByteArray, size:Int = 20):Id = Id(size) { if(it < bytes.size) bytes[it] else random.nextInt().toByte() }
 
         fun fromBytes(bytes:ByteArray):Id {
             if(bytes.size != 20)
