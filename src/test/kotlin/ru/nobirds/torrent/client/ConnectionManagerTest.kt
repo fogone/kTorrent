@@ -3,7 +3,7 @@ package ru.nobirds.torrent.client
 import org.junit.Assert
 import org.junit.Ignore
 import org.junit.Test
-import ru.nobirds.torrent.client.connection.NettyConnectionManager
+import ru.nobirds.torrent.client.connection.netty.NettyConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.peers.Peer
@@ -23,7 +23,7 @@ class ConnectionManagerTest {
             val hash = Id.random()
             val peer = Id.random()
 
-            manager1.send(Peer(hash, InetSocketAddress(6501)), HandshakeMessage(hash, peer, "BTest"))
+            manager1.write(Peer(hash, InetSocketAddress(6501)), HandshakeMessage(hash, peer, "BTest"))
 
             val message = manager2.read()
 
@@ -31,7 +31,7 @@ class ConnectionManagerTest {
 
             val peer2 = Id.random()
 
-            manager2.send(Peer(hash, InetSocketAddress(6500)), HandshakeMessage(hash, peer2, "BTest"))
+            manager2.write(Peer(hash, InetSocketAddress(6500)), HandshakeMessage(hash, peer2, "BTest"))
 
             val message2 = manager1.read()
 

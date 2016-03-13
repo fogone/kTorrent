@@ -6,7 +6,6 @@ import ru.nobirds.torrent.client.connection.PeerAndMessage
 import ru.nobirds.torrent.client.message.BitFieldMessage
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.HaveMessage
-import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.MessageType
 import ru.nobirds.torrent.client.message.PieceMessage
 import ru.nobirds.torrent.client.message.RequestMessage
@@ -91,6 +90,9 @@ class TorrentTask(val directory:Path,
 
     private val handlerThread = queueHandlerThread(messages) { handleMessage(it) }
 
+    val piecesState:State
+        get() = state
+
     private fun addBlock(positionAndBytes: BlockPositionAndBytes) {
         logger.debug("Block {} add for task {}", positionAndBytes, hash)
 
@@ -107,9 +109,6 @@ class TorrentTask(val directory:Path,
                 downloadStatistics.process(block.size().toLong())
         */
     }
-
-    val piecesState:State
-        get() = state
 
     fun sendMessage(message:TaskMessage) {
         messages.put(message)
@@ -143,7 +142,7 @@ class TorrentTask(val directory:Path,
 
     private fun handleMessage(message: TaskMessage) {
         when(message) {
-            is HandleTaskMessage -> handleIncomingMessage(message.message)
+            is HandleTaskMessage -> handleTorrentMessage(message.message)
             is RehashTorrentFilesMessage -> rehashTorrentFiles()
             is AddPeersMessage -> handleAddPeers(message.peers)
             is RequestBlockMessage -> sendRequest(message.peer, message.positionAndSize)
@@ -151,7 +150,7 @@ class TorrentTask(val directory:Path,
     }
 
     private fun sendRequest(peer: Peer, positionAndSize: BlockPositionAndSize) {
-        connectionManager.send(peer, RequestMessage(positionAndSize))
+        connectionManager.write(peer, RequestMessage(positionAndSize))
     }
 
     private fun handleAddPeers(peers: Set<InetSocketAddress>) {
@@ -159,23 +158,14 @@ class TorrentTask(val directory:Path,
     }
 
     private fun connect(hash: Id, address: InetSocketAddress) {
-        val peer = Peer(hash, address)
+        logger.debug("Send handshake to {}", address)
 
-        logger.debug("Try connect to {}", address)
-
-        connectionManager.connect(peer) { sendHandshake(peer) }
+        sendHandshake(Peer(hash, address))
     }
 
-    private fun handleIncomingMessage(message: PeerAndMessage) {
-        val (peer, subMessage) = message
+    private fun handleTorrentMessage(peerAndMessage: PeerAndMessage) {
+        val (peer, message) = peerAndMessage
 
-        when (subMessage) {
-            is Message -> handleTorrentMessage(peer, subMessage)
-            else -> throw IllegalArgumentException("Unsupported message for $subMessage for peer $peer")
-        }
-    }
-
-    private fun handleTorrentMessage(peer: Peer, message:Message) {
         logger.debug("Torrent message {} from peer {}", message.messageType, peer)
 
         when (message) {
@@ -198,19 +188,19 @@ class TorrentTask(val directory:Path,
         }
     }
 
-    private fun TorrentTask.handleChoke(peer: Peer) {
+    private fun handleChoke(peer: Peer) {
         logger.debug("Peer {} choke communication", peer)
 
         peerState(peer).peerFlags.choked(true)
     }
 
-    private fun TorrentTask.handleNotInterested(peer: Peer) {
+    private fun handleNotInterested(peer: Peer) {
         logger.debug("Peer {} not interested in communication more", peer)
 
         peerState(peer).peerFlags.interested(false)
     }
 
-    private fun TorrentTask.handleInterested(peer: Peer) {
+    private fun handleInterested(peer: Peer) {
         logger.debug("Peer {} now interested in communication", peer)
 
         val peerFlags = peerState(peer).peerFlags
@@ -218,7 +208,7 @@ class TorrentTask(val directory:Path,
         peerFlags.interested(true)
     }
 
-    private fun TorrentTask.handleUnchoke(peer: Peer) {
+    private fun handleUnchoke(peer: Peer) {
         logger.debug("Peer {} unchoke communication", peer)
 
         val peerFlags = peerState(peer).peerFlags
@@ -228,7 +218,7 @@ class TorrentTask(val directory:Path,
         requestBlocks(peer, 10)
     }
 
-    private fun TorrentTask.requestBlocks(peer: Peer, count: Int) {
+    private fun requestBlocks(peer: Peer, count: Int) {
         val peerState = peerState(peer)
 
         if (peerState.downloadAvailable) {
@@ -250,12 +240,21 @@ class TorrentTask(val directory:Path,
     private fun handleRequest(peer: Peer, message: RequestMessage) {
         logger.debug("Request {} from peer {}", message.positionAndSize, peer)
 
-        if (state.isDone(message.positionAndSize.position.piece)) {
-            val block = state.toGlobalBlock(message.positionAndSize)
+        val peerState = peerState(peer)
 
-            val bytes = files.compositeRandomAccessFile.read(block)
+        if (peerState.uploadAvailable) {
+            if (state.isDone(message.positionAndSize.position.piece)) {
+                val block = state.toGlobalBlock(message.positionAndSize)
 
-            connectionManager.send(peer, PieceMessage(message.positionAndSize.withBytes(bytes)))
+                val bytes = files.compositeRandomAccessFile.read(block)
+
+                connectionManager.write(peer, PieceMessage(message.positionAndSize.withBytes(bytes)))
+            } else {
+                logger.warn("Peer {} request piece which not existed in local state: {}", peer, message.positionAndSize)
+            }
+        } else {
+            logger.warn("Peer {} send request in unexpected state: peer choked {}, me interested {}",
+                    peer, peerState.peerFlags.choked, peerState.myFlags.interested)
         }
     }
 
@@ -277,13 +276,13 @@ class TorrentTask(val directory:Path,
         peerTorrentState.done(message.pieces)
 
         // todo: make decision
-        connectionManager.send(peer, SimpleMessage(MessageType.unchoke))
+        connectionManager.write(peer, SimpleMessage(MessageType.unchoke))
 
 /*
         if (!state.contains(peerTorrentState)) {
         }
 */
-        connectionManager.send(peer, SimpleMessage(MessageType.interested))
+        connectionManager.write(peer, SimpleMessage(MessageType.interested))
 
         peerState.myFlags.choked(false)
         peerState.myFlags.interested(true)
@@ -311,8 +310,6 @@ class TorrentTask(val directory:Path,
     }
 
     private fun handleHandshake(peer: Peer, message: HandshakeMessage) {
-        val state = peers.getOrPut(peer.address) { PeerState(peer.address, SimpleState(torrent.pieceCount)) }
-
         if (!message.complete) {
             sendHandshake(peer)
         }
@@ -323,13 +320,13 @@ class TorrentTask(val directory:Path,
     private fun sendState(peer: Peer, state: State) {
         logger.debug("Sending out state to peer {}", peer)
 
-        connectionManager.send(peer, BitFieldMessage(state.getBits()))
+        connectionManager.write(peer, BitFieldMessage(state.getBits()))
     }
 
     private fun sendHandshake(peer:Peer) {
         logger.debug("Sending handshake to peer {}", peer)
 
-        connectionManager.send(peer, HandshakeMessage(hash, localPeer))
+        connectionManager.write(peer, HandshakeMessage(hash, localPeer))
     }
 
 

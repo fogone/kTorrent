@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.core.convert.converter.Converter
 import ru.nobirds.torrent.client.connection.ConnectionManager
-import ru.nobirds.torrent.client.connection.NettyConnectionManager
+import ru.nobirds.torrent.client.connection.netty.NettyConnectionManager
 import ru.nobirds.torrent.client.task.TaskManager
 import ru.nobirds.torrent.dht.BootstrapHosts
 import ru.nobirds.torrent.dht.Dht

@@ -1,9 +1,10 @@
-package ru.nobirds.torrent.client.connection
+package ru.nobirds.torrent.client.connection.netty
 
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageCodec
 import io.netty.util.AttributeKey
+import ru.nobirds.torrent.client.connection.PeerAndMessage
 import ru.nobirds.torrent.client.message.HandshakeMessage
 import ru.nobirds.torrent.client.message.Message
 import ru.nobirds.torrent.client.message.serializer.MessageSerializerProvider
@@ -18,7 +19,7 @@ class ConnectionState() {
     var localHandshakeSent:Boolean = false
     var remoteHandshakeReceived:Boolean = false
 
-    var peer:Peer? = null
+    var peer: Peer? = null
 
     var isCurrentMessageHandshake = false
 
@@ -34,7 +35,7 @@ object Attributes {
 
 }
 
-fun ChannelHandlerContext.getState():ConnectionState = attr(Attributes.connectionState).getOrSet { ConnectionState() }
+fun ChannelHandlerContext.getState(): ConnectionState = attr(Attributes.connectionState).getOrSet { ConnectionState() }
 
 class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : ByteToMessageCodec<PeerAndMessage>(PeerAndMessage::class.java) {
 
@@ -51,7 +52,7 @@ class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : B
         }
     }
 
-    fun extractFrame(ctx: ChannelHandlerContext, buffer: ByteBuf):ByteBuf? {
+    fun extractFrame(ctx: ChannelHandlerContext, buffer: ByteBuf): ByteBuf? {
         val state = ctx.getState()
 
         val isHandshake = !state.remoteHandshakeReceived
