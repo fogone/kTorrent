@@ -46,7 +46,7 @@ class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : B
         if (message != null) {
             val msg = deserialize(ctx, message)
 
-            logger.debug("Received message {} from {}", msg.messageType, ctx.channel().remoteAddress())
+            logger.debug("Received message {} from {}", msg, ctx.channel().remoteAddress())
 
             out.add(PeerAndMessage(ctx.getState().peer!!, msg))
         }
@@ -122,11 +122,6 @@ class TorrentMessageCodec(val serializerProvider: MessageSerializerProvider) : B
         }
 
         logger.debug("Sent message {} to {}", subMessage.messageType, ctx.channel().remoteAddress())
-    }
-
-    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        logger.warn("Communication problem with peer ${ctx.channel().remoteAddress()}: ${cause.message}")
-        ctx.channel().close()
     }
 
 }

@@ -1,8 +1,7 @@
 package ru.nobirds.torrent.client.model
 
 import ru.nobirds.torrent.utils.equalsNullable
-import java.util.*
-
+import java.util.ArrayList
 
 data class TorrentFiles(
         val name:String,
@@ -10,8 +9,7 @@ data class TorrentFiles(
         val files: List<TorrentFile> = ArrayList()) {
 
     val totalLength:Long = files
-            .map { it.length }
-            .reduce { total, it -> it + total  }
+            .fold(0L) { total, it -> total + it.length.toLong() }
 
     fun equals(other:TorrentFiles):Boolean {
         if(!other.name.equals(name)) return false

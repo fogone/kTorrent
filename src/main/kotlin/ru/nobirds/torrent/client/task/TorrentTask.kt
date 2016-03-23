@@ -267,7 +267,7 @@ class TorrentTask(val directory:Path,
     }
 
     private fun handleBifField(peer: Peer, message: BitFieldMessage) {
-        logger.debug("Bitfield {}/{} from peer {}", message.pieces.setBits(torrent.pieceCount), torrent.pieceCount, peer)
+        logger.debug("Bitfield {}/{} from peer {}", message.pieces.setBits(torrent.pieceCount).count(), torrent.pieceCount, peer)
 
         val peerState = peerState(peer)
 
@@ -276,7 +276,7 @@ class TorrentTask(val directory:Path,
         peerTorrentState.done(message.pieces)
 
         // todo: make decision
-        connectionManager.write(peer, SimpleMessage(MessageType.unchoke))
+        // connectionManager.write(peer, SimpleMessage(MessageType.unchoke))
 
 /*
         if (!state.contains(peerTorrentState)) {
@@ -284,7 +284,7 @@ class TorrentTask(val directory:Path,
 */
         connectionManager.write(peer, SimpleMessage(MessageType.interested))
 
-        peerState.myFlags.choked(false)
+        // peerState.myFlags.choked(false)
         peerState.myFlags.interested(true)
     }
 

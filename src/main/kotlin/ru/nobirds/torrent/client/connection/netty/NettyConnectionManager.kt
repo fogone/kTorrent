@@ -3,13 +3,11 @@ package ru.nobirds.torrent.client.connection.netty
 import io.netty.bootstrap.Bootstrap
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
-import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelOption
 import io.netty.channel.ChannelPipeline
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import io.netty.util.concurrent.DefaultEventExecutorGroup
 import ru.nobirds.torrent.bencode.requestQueueStorage
 import ru.nobirds.torrent.client.connection.ConnectionManager
 import ru.nobirds.torrent.client.connection.PeerAndMessage
@@ -18,7 +16,6 @@ import ru.nobirds.torrent.utils.channelInitializerHandler
 import ru.nobirds.torrent.utils.childHandler
 import ru.nobirds.torrent.utils.log
 import ru.nobirds.torrent.utils.queueHandlerThread
-import java.net.InetSocketAddress
 import java.util.concurrent.ArrayBlockingQueue
 
 class NettyConnectionManager(val port: Int) : ConnectionManager {
@@ -28,9 +25,6 @@ class NettyConnectionManager(val port: Int) : ConnectionManager {
     private val registry = ConnectionRegistry()
     private val incoming = ArrayBlockingQueue<PeerAndMessage>(1000)
     private val outgoing = ArrayBlockingQueue<PeerAndMessage>(1000)
-
-    private val codecEventExecutorGroup = DefaultEventExecutorGroup(4)
-    private val queueStorageEventExecutorGroup = DefaultEventExecutorGroup(1)
 
     private val acceptGroup = NioEventLoopGroup()
     private val workerGroup = NioEventLoopGroup()
@@ -52,9 +46,9 @@ class NettyConnectionManager(val port: Int) : ConnectionManager {
             .option(ChannelOption.SO_KEEPALIVE, true)
 
     private fun ChannelPipeline.setupHandlers() {
-        this.addFirst("ConnectionRegistry", ConnectionRegistryHandler(registry))
-        this.addLast(codecEventExecutorGroup, "TorrentCodec", TorrentMessageCodec(messageSerializerProvider))
-        this.addLast(queueStorageEventExecutorGroup, "RequestQueueStorage", requestQueueStorage<PeerAndMessage>(incoming))
+        this.addLast("ConnectionRegistry", ConnectionRegistryHandler(registry))
+        this.addLast("TorrentCodec", TorrentMessageCodec(messageSerializerProvider))
+        this.addLast("RequestQueueStorage", requestQueueStorage<PeerAndMessage>(incoming))
     }
 
     private val sendWorker = queueHandlerThread(outgoing) { sendMessage(it) }
@@ -69,24 +63,28 @@ class NettyConnectionManager(val port: Int) : ConnectionManager {
 
             channel.writeAndFlush(message)
         } else {
-            connect(peer.address).addListener { write(message) }
+            logger.info("Connection for peer {} not found and will be created.", peer)
 
-            logger.warn("Message for peer without connection {}. Connection will be created.", message)
+            clientBootstrap
+                    .connect(peer.address)
+                    .addListener {
+                        if (it.isSuccess) {
+                            write(message)
+                        } else {
+                            logger.warn("Connection to ${peer.address} failed.", it.cause())
+                        }
+                    }
         }
     }
 
     override fun write(message: PeerAndMessage) {
         logger.debug("ConnectionManager accept message {} from {} to send",
-                message.message.javaClass.simpleName, message.peer.address)
+                message.message, message.peer.address)
 
         outgoing.put(message)
     }
 
     override fun read(): PeerAndMessage = incoming.take()
-
-    private fun connect(address: InetSocketAddress): ChannelFuture {
-        return clientBootstrap.connect(address)
-    }
 
     override fun close() {
         sendWorker.interrupt()
